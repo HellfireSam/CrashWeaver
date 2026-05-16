@@ -1,0 +1,149 @@
+:root {
+  color: #1d1713;
+  background:
+    radial-gradient(circle at top left, rgba(255, 210, 133, 0.55), transparent 32%),
+    linear-gradient(145deg, #f4ede2 0%, #e9e0d3 40%, #d7cab9 100%);
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.shell {
+  display: grid;
+  gap: 2rem;
+  min-height: 100vh;
+  padding: 3rem;
+}
+
+.hero {
+  display: grid;
+  gap: 1rem;
+  max-width: 56rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7d5332;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  line-height: 0.95;
+}
+
+.summary {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 1.15rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.primaryButton {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.95rem 1.35rem;
+  color: #fffaf3;
+  background: linear-gradient(135deg, #8c4d2d, #57301f);
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+  box-shadow: 0 16px 32px rgba(87, 48, 31, 0.18);
+}
+
+.primaryButton:hover:enabled {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.statusPill {
+  display: inline-flex;
+  border: 1px solid rgba(87, 48, 31, 0.2);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: rgba(255, 250, 243, 0.65);
+}
+
+.vaultCard,
+.panel {
+  border: 1px solid rgba(87, 48, 31, 0.12);
+  border-radius: 1.5rem;
+  padding: 1.35rem;
+  background: rgba(255, 250, 243, 0.74);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 40px rgba(78, 48, 30, 0.08);
+}
+
+.label {
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #7d5332;
+}
+
+.pathValue {
+  margin: 0;
+  font-family: 'Courier New', Courier, monospace;
+  overflow-wrap: anywhere;
+}
+
+.errorText {
+  margin: 0.75rem 0 0;
+  color: #8f1d1d;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+.panel ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+@media (max-width: 800px) {
+  .shell {
+    padding: 1.5rem;
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}

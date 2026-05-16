@@ -1,0 +1,34 @@
+{
+  "name": "crashweaver",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for the CrashWeaver AI-enhanced Obsidian knowledge app.",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:main": "tsc -p tsconfig.electron.json --watch",
+    "dev:electron": "wait-on tcp:5173 dist-electron/main.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.electron.json",
+    "build": "npm run typecheck && npm run build:renderer && npm run build:main",
+    "start": "npm run build && electron ."
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^35.5.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "wait-on": "^8.0.3"
+  }
+}
