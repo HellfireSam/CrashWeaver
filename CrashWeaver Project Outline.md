@@ -1,150 +1,224 @@
-# Project Outline: AI-Enhanced Obsidian Knowledge App
+# Project Outline: CrashWeaver
 
-This project is an **external desktop/web app** that manages an Obsidian-style note vault to support structured learning with AI assistance. The vault itself is a local folder of Markdown files (the “vault”), where each note is a `.md` file. Content is organized by Obsidian conventions: internal links (`[[Other Note]]`), tags (`#theorem`), etc.  Notably, Obsidian-style *tags* are just `#`-prefixed words in the text. For example, to label a note or block as a “math theorem,” the user would include `#theorem` in the Markdown【56†L1-L5】.  We will use this same convention for the “type of knowledge” field of each block.  In Markdown, **comments** (ignored in preview) are written with double-percent (`%%...%%`) markers【8†L167-L170】; we will store the memory-trick data and scheduling metadata inside such hidden comments in each note so it doesn’t affect normal rendering. 
+CrashWeaver is an external desktop app that works with an Obsidian vault. The core unit of knowledge is a Crash Card (called a card for short). Cards are represented in markdown notes by using paired Obsidian markdown comments, while the full structured payload for each card is stored in a separate JSON file inside a user-configurable card store folder.
 
-**Vault Format & Comments:** An Obsidian vault is simply a folder of Markdown notes. Each knowledge item (theorem, fact, code snippet, etc.) will eventually reside as a section in a Markdown file. Memory aids and metadata will be embedded as `%%commented%%` blocks. Obsidian’s syntax guide shows that wrapping text in `%%…%%` hides it from preview【8†L167-L170】, which we leverage.  In practice, each knowledge block will have a visible part (the raw text and tags) and a hidden comment part with memory exercises and scheduling data. For example:
+## Current Implementation Snapshot (May 2026)
+
+The repository currently includes a complete Stage 2 Electron implementation with:
+
+- local vault open, read, write, and index refresh workflows through Electron IPC
+- generated index.json with note-level entries and review placeholders
+- Obsidian-style editor shell with explorer, center editor, and inspector panes
+- markdown preview rendered through markdown-it with markdown-it-texmath and katex
+- explorer folders that initialize collapsed and toggle correctly on first click
+- modular renderer structure for maintainability
+
+Card-level parsing, external card-store synchronization, Crashpad, and Weaver are clarified in this document and are planned for upcoming stages.
+
+## 1. Core Product Clarification
+
+### 1.1 Crash Card Terminology
+
+- A knowledge block is called a Crash Card.
+- Future docs and features should use card as the default term.
+
+### 1.2 Crash Card Data Model
+
+Each card has these attributes:
+
+1. type or tags: category labels for the knowledge
+2. UID: unique identifier
+3. topic or title
+4. raw content: factual text or explanation
+5. metadata: spaced-repetition fields (for example familiarity and next review date)
+6. memory tricks, with three subparts:
+   - memory technique: short mnemonic phrase or keyword
+   - Q and A pairs
+   - fill-in-the-blanks exercise
+
+An LLM will assist users in filling these fields. Prompt design and implementation details will be defined in later stages.
+
+### 1.3 In-Note Card Boundary Format
+
+Cards are linked into markdown notes with two separate comment blocks that enclose a section of note text:
+
+- starter comment at the start boundary: contains the card UID
+- ending comment at the end boundary: closes the same card range and references that UID
+
+Conceptual format:
 
 ```md
-Here is some knowledge about {{topic}}.  
-%% METADATA: { "familiarity": 0.7, "next_review": "2026-05-20" } %%
+%%CW_CARD_START uid:<UID>%%
+<the markdown text range related to this card>
+%%CW_CARD_END uid:<UID>%%
 ```
 
-## 1. Architecture Choice: External App vs Plugin
+The note keeps only lightweight boundary markers. Full card attributes are loaded from the matching JSON card file in the configured card store.
 
-Rather than building an Obsidian *plugin*, we choose an **external application** (likely an Electron or web-based app). This insulates our code from Obsidian’s internal updates and allows us to manage the vault via file I/O ourselves. We will rely on the browser File System Access API (or a desktop wrapper) to open and edit the local vault. Modern Chromium browsers (Chrome, Edge, Brave) support the File System Access API: the user can **select the vault directory once** and then the app can read/write Markdown files in it【43†L259-L261】.  However, browser-based solutions have caveats: Firefox currently **does not support** this API (Mozilla decided not to implement it due to consent/privacy concerns【46†L152-L161】), and Safari’s support is limited. Because of this, a **desktop app (Electron)** may be preferable for consistency. Electron embeds Chromium, giving guaranteed FileSystem API support, and can package the app for Mac/Windows/Linux. 
+### 1.4 External Card Store Format
 
-Once the user selects (or configures) the vault folder, the app will maintain a handle to it (e.g. in IndexedDB【43†L259-L261】) so the user doesn’t have to re-select each time【43†L259-L261】. We must implement lazy-loading of files: the FileSystem API can handle thousands of files, but we should *not* load the entire vault tree into memory at once. Instead, follow best practice: load directory listings on demand, virtualize long lists of files, and cache recently-used notes【40†L202-L210】. (A Reddit-based analysis notes that performance bottlenecks are in rendering/DOM updates, not raw I/O【40†L202-L210】.) 
+Each card has a dedicated JSON file named by UID in a user-configurable card store folder.
 
-**Key Points on File Access:**  
-- Use the File System Access API (via Electron) to **read/write Markdown** in the vault.  
-- Store the directory handle persistently (IndexedDB) to avoid repeated prompts【43†L259-L261】.  
-- Because Firefox/Safari lack this API, either restrict to Chromium or use a native fallback.  
+Conceptual format:
 
-## 2. LLM Integration Options
-
-The app heavily relies on large language models (LLMs) for processing user input and guiding learning. We consider two categories: **local models** (run on-device) and **cloud APIs**. 
-
-- **Local LLM (Ollama or similar):** Ollama is an open-source runner that can host models like LLaMA or Mistral on the user’s machine. It provides a local HTTP API (e.g. `http://localhost:11434/api/chat`) for chat-like prompts【19†L109-L118】. For example, the app’s backend (Node.js) can `fetch` the Ollama endpoint with `{model: 'llama3', messages: [...], stream: false}` to get a chat response【19†L109-L118】. This runs fully offline (no keys needed), giving privacy and no usage fees.  **Example:** a Node/React chatbot tutorial uses Ollama locally with no third-party keys【19†L48-L52】【19†L109-L118】. The drawback is that local models may be slower or weaker than cloud LLMs (depending on hardware), but newer models (7B+ parameters) can run on modern PCs (e.g. M-series Macs). 
-
-- **Cloud LLM APIs:** Well-known APIs like OpenAI’s GPT-4 or GPT-3.5, Google’s PaLM2/Vertex, or others can be used by calling their endpoints. For instance, OpenAI provides a Node.js SDK (`npm install openai`) and sample code for chat completions【16†L280-L289】. Hugging Face also offers inference endpoints for many models: the `@huggingface/inference` JavaScript library can call any hosted model by name, across providers【21†L190-L199】.  Using cloud APIs requires API keys and incurs cost per request. It can provide more powerful models and ensures up-to-date knowledge, but requires internet and key management. 
-
-In our design, the user could choose to point to an Ollama server (local) or supply a cloud API key. The code will be modular: for example, a **LLM service layer** that can call either `ollama` (via HTTP) or `openai` (via their SDK/REST) or other. 
-
-**Citing Examples:** The OpenAI Node quickstart repo demonstrates calling the chat endpoint using their SDK【16†L280-L289】. The Ollama tutorial shows a Node backend doing `fetch('http://localhost:11434/api/chat', {model: 'llama3', messages})`【19†L109-L118】. The Hugging Face JS docs list an `inference.chatCompletion({model, provider, messages})` method that can route requests to many model hosts【21†L190-L199】. We will likely use existing NPM libraries (e.g. `openai`, `@huggingface/inference`) or simple `fetch/axios` calls, depending on technology choice.  
-
-## 3. Data Model: Knowledge Blocks & Metadata
-
-Each **knowledge block** represents one item of information the user learned (e.g. a theorem, a code snippet, a fact). We define a data model with fields:
-
-- **ID / UID:** A unique identifier for the block (could be generated or based on timestamp).  
-- **Type/Tags:** Obsidian-style tags (e.g. `#calculus`, `#nutrition`) indicating the category or type of knowledge【56†L1-L5】.  
-- **Raw Content:** The factual text or explanation of the knowledge.  
-- **Memory Tricks:** A sub-structure holding three parts:  
-  1. **Q&A pairs:** One or more question-answer prompts based on the knowledge (e.g. “Q: What is the derivative of sin(x)? A: cos(x)”).  
-  2. **Hint / Short Reminder:** A brief mnemonic phrase or keyword.  
-  3. **Cloze/FIB Exercise:** A sentence with a blank, e.g. “The capital of France is [Paris].”  
-
-- **Scheduling Metadata:** Data for spaced repetition, including: “last reviewed date,” “familiarity score,” and “next review due.”  
-
-In practice, when writing to a Markdown note, the *visible part* will include the tags and raw content. The **Memory Tricks and Metadata** will go into a hidden comment block (`%% … %%`) or as YAML frontmatter (but we prefer comment so it stays attached to the text). For example:
-
-```md
-### #calculus Theorem
-**Fundamental Theorem of Calculus:** If f is continuous on [a,b], then ∫_a^b f(x) dx = F(b) – F(a), where F’=f.  
-  
-%%MEMORY 
-Q: What does the Fundamental Theorem of Calculus relate? | A: Integral of f equals F(b)-F(a).  
-Hint: ∫ and F'.  
-Fill: ∫_a^b f(x) dx = F(__) – F(__).  
-%%META {"last": "2026-05-01","familiarity":0.8,"next":"2026-06-01"}%%
-```
-
-This way, the Markdown renders the theorem normally, but our app can parse the `%%…%%` comment to extract the Q/A, hint, cloze, and meta JSON.
-
-**Global Index (JSON):** In addition to in-note comments, we maintain an external JSON database mapping block IDs to file paths and core metadata. This is similar to some Obsidian plugins that store flashcard schedules in JSON. For example, the *obsidian-spaced-repetition-recall* plugin uses a separate JSON file to hold review data (it “uses separate json data file” for scheduling)【29†L386-L389】. We will keep, say, `index.json` in a fixed location in the vault. Each entry might look like: 
 ```json
 {
-  "block_id": "20260515-1",
-  "file": "Calculus.md",
-  "line": 42,
-  "tags": ["calculus","theorem"],
-  "last_review": "2026-05-01",
-  "familiarity": 0.8,
-  "next_review": "2026-06-01"
+   "uid": "CW-001",
+   "type": ["concept", "oop"],
+   "topic": "Polymorphism",
+   "raw_content": "...",
+   "metadata": {
+      "familiarity": 0,
+      "next_review": null
+   },
+   "memory_tricks": {
+      "memory_technique": "...",
+      "qa_pairs": [],
+      "fill_in_the_blanks": []
+   },
+   "referenced_in": [
+      {
+         "note_path": "programming/oop.md",
+         "start_line": 42,
+         "end_line": 58
+      }
+   ]
 }
 ```
-This makes it easy to quickly find all scheduled reviews without scanning every note.
 
-## 4. UI/UX Flows
+Each note reference tracks both boundary line numbers because one inserted card spans two comment lines in the note.
 
-### 4.1 Daily Note Entry
-- **Screen:** The app shows a “Daily Note” editor (like Obsidian’s daily note). The user picks a date (default today) and enters all new knowledge from that day. For each knowledge item, we present a **form** with fields: (a) *Tags* (user types or selects one or more tags), (b) *Content* (raw text), and (c) *Memory Tricks*, which can be broken into sub-fields (Question / Answer, Hint text, Cloze statement). The interface encourages the user to fill each part but the LLM can assist (see next).
-- **LLM Assistance:** Beside or below each field, a button “Refine with AI” can invoke the LLM. For example, after the user writes a draft theorem, clicking “Refine” sends it to an LLM prompt: “Check correctness and clarity, and help create a question-answer pair and mnemonic hint.” The LLM’s response populates or improves the Q/A, hint, etc. This ensures consistency: each block ends up in the proper format. (This mimics how tools like NotebookLM turn notes into structured content【57†L5-L8】, but here it’s user-triggered refinement.) We don’t need a specific citation here, but the idea is similar to Google’s NotebookLM summarizing user notes.
+## 2. Crashpad
 
-### 4.2 Saving Daily Note → Splitting Blocks
-- When the user saves the daily note, the app **parses** the Markdown, identifies each knowledge entry (we can mark them with a delimiter or heading), and splits them into blocks. Each block is then saved as follows: 
-  - The block content is appended (or inserted via LLM guidance) into an existing topic file or a new file. For example, a #calculus theorem might go into `Calculus.md`. We could use an LLM or keyword match to pick an existing file (e.g. if `#calculus` tag is new, create `Calculus.md`).  
-  - The memory-trick fields are written as hidden comments in that file as shown above.  
-  - Metadata JSON is updated accordingly.  
-  - In effect, the daily note is both a working area and a feeder that distributes new blocks into the vault. This could be implemented with a Markdown parser and editor component on the frontend, and a Node.js script to update files.  
+Crashpad is a canvas for drafting and organizing cards before insertion into the vault.
 
-### 4.3 Knowledge Block Viewer
-- **Screen:** When viewing any note, a side-pane or separate window (“Knowledge Block Viewer”) lists all knowledge blocks in the current note. It pulls out the blocks (including their memory content) and displays them in a quiz-like interface. For each block, the UI shows the question(s) or fill-in prompt (with answers hidden until needed), and an input area for the user’s attempt.
-- **Interactive Review:** The user can attempt each memory trick: e.g., answer the question or fill in the blank. Upon submission, the app checks the answer using the underlying data (or again, using an LLM for leniency/spell-check). For example, if the block has “Q: What is 2+2? A: 4”, the user input “four” would be marked correct. We might use a simple string match or an LLM (ChatGPT) to allow synonyms or handle minor typos. The app then reveals the correct answer and can optionally explain it using the LLM if the user struggled. This gives immediate feedback and clarifies misunderstandings.
-- **Progress Tracking:** After each attempt, we update the block’s `familiarity` score and set a new `last_review` date. The UI highlights blocks due for review (see spaced repetition below).  
+Crashpad supports:
 
-_No explicit citations here:_ this flow is based on standard flashcard app UX (e.g. Anki, Quizlet), combined with AI assistance. It fulfills the requirement “LLM should follow the memory trick arguments and help assess the user’s understanding.”
+- create card
+- delete card with confirmation
+- undo and redo
+- edit all card fields
+- LLM assistance for card generation and organization
 
-## 5. Spaced-Repetition Scheduling
+Crashpad persistence:
 
-We will implement a spaced-repetition algorithm to schedule reviews of each block. Each block’s metadata (in the comment and JSON) includes a **familiarity** score (0–1) and history of reviews. A proven approach is to use an adaptive scheduling algorithm like **FSRS** (Free Spaced Repetition System), which several Obsidian tools now use【29†L386-L393】. For simplicity, we can start with the classic SM-2 algorithm (as in Anki) or a basic Leitner approach, then migrate to FSRS-based formula for smarter timing. 
+- card payloads are stored as individual JSON files in the designated card store folder
+- Crashpad opens existing cards from that store or creates new ones there
+- the card store folder path is configurable in settings
+- Crashpad must preserve the shared card-file schema used by vault sync and review workflows
 
-**Workflow:** Each day, the app consults all blocks’ metadata and uses the scheduling algorithm to mark which blocks are due for review. For example, any block whose `next_review` ≤ today’s date will be listed in the daily review queue. The main interface or a notification prompts the user with “Review X blocks for today.” In the Knowledge Block Viewer, these blocks are highlighted or pre-sorted for practice. 
+## 3. Inserting Cards Into The Vault
 
-**Data Storage:** We keep scheduling data both in the Markdown comments (for context) and in our `index.json`. As seen in existing solutions, storing review logs in a separate JSON is feasible【29†L386-L393】. After each review session, we update the familiarity and compute the next interval. For instance, if a user recalls a block easily, its next-review date moves farther out; if they struggle, it’s scheduled sooner. All this state is saved so that across sessions the algorithm adapts. 
+Users can insert cards in two ways.
 
-By managing this metadata in comments and a central JSON, the app can both present cues in-note and efficiently find due items for scheduling, just as some Obsidian flashcard plugins do【29†L386-L393】.
+### 3.1 Manual Insert
 
-## 6. Implementation Plan & Project Structure
+From each Crashpad card, the app exposes copyable starter and ending comment text keyed to the card UID. The user manually pastes these comments at preferred locations in markdown notes, while the matching JSON card file is created or updated in the configured card store.
 
-- **Tech Stack:** We recommend **Electron** (Chromium + Node) with a React or Vue frontend in TypeScript. Electron provides cross-platform GUI with direct file system access. TypeScript ensures type safety for complex data models. Alternatively, a web-based PWA could be built, but as noted, only Chromium browsers fully support file I/O【46†L152-L161】. 
+### 3.2 Weaver Insert (LLM-Assisted)
 
-- **Directories:** A possible repo structure:
-  - `src/`: main source code  
-    - `electronMain.ts` – sets up the Electron app, menus, native dialogs.  
-    - `renderer/` – React components and views.  
-      - `DailyNoteEditor.tsx` – UI for entering daily knowledge.  
-      - `BlockViewer.tsx` – UI for reviewing blocks.  
-      - `Settings.tsx` – choose vault path, LLM settings.  
-    - `backend/` – Node modules for file/LLM logic.  
-      - `vault.ts` – functions to read/write Markdown in the vault (using Node FS or FileSystem API).  
-      - `parser.ts` – split daily note into blocks and merge into topic files.  
-      - `llmService.ts` – wrapper to call selected LLM (Ollama or API).  
-      - `srs.ts` – scheduling algorithm (e.g. FSRS implementation).  
-      - `dataModel.ts` – TypeScript interfaces for Block, Metadata, JSON index.  
-  - `public/` – static files, icons, etc.  
-  - `index.json` – the knowledge-index (could be auto-generated on first run).  
+The LLM insertion process is called weave. The LLM is referred to as Weaver.
 
-- **Workflow Summary:** On startup, prompt the user to **select the vault folder** (or load from settings). Then display the main screen (Daily Note) with date picker. The user inputs knowledge and uses AI refinement as needed. On save, the app processes the note, updates files and index. The user can then click “Review” to open the block viewer, practice the due items, and the app updates the schedule. 
+Weaver has context of the vault structure and markdown files, then proposes where and how to insert cards.
 
-- **Build/Deployment:** Package with Electron builder to create desktop installers. Include a simple updater. No server is needed; the app is offline-first except when using cloud LLMs. Ensure proper error handling if vault path is moved or LLM calls fail. 
+Weaver operation modes:
 
-- **Testing:** Automated tests for the parser (making sure blocks split correctly) and for the scheduling logic. Integration tests to verify that entering a daily note results in correct file updates.  
+1. plain insert: insert into an existing note, with or without selecting existing text
+2. insert plus edit: insert into an existing note and also improve note structure/content
+3. create new: create a new note in a coherent location and insert the card
+4. intelligent weaver: broader freedom to optimize vault organization, including possible restructure of folders and markdown files
 
-## 7. Additional Features
+Intelligent Weaver has three strength levels:
 
-Beyond the core functions, other useful features might include:
+- light
+- standard
+- go ham
 
-- **Search/Navigation:** Ability to search tags or topics within the app and jump to notes.  
-- **Markdown Preview:** A pane to preview the formatted note (like Obsidian’s preview).  
-- **Tag and File Management:** GUI to create new topic files or reorganize blocks between notes.  
-- **Analytics:** Simple stats (e.g. review streak, total cards learned).  
-- **Sync Integration:** If the vault is on Dropbox/Obsidian Sync, ensure file locking or merging is handled gracefully.  
-- **Customization:** Settings for the LLM model, review intervals, or themes (dark/light).  
+Users may also provide insertion intent, and Weaver should incorporate that guidance.
 
-These are optional extensions that enhance usability but can be added iteratively.
+### 3.3 Mandatory Approval Layer
 
-## 8. Sources
+All Weaver edits must pass an accept-reject review layer identical in spirit to VS Code Copilot edits:
 
-This outline uses Obsidian’s own documentation and community resources.  For instance, Obsidian’s help confirms that wrapping text in `%%…%%` creates hidden comments【8†L167-L170】, and tags are entered with a leading `#`【56†L1-L5】.  Details of the File System Access API (including storing directory handles in IndexedDB) come from MDN Web Docs【43†L259-L261】, and browser support concerns (Firefox stance) are documented in Mozilla discussion【46†L152-L161】.  LLM integration approaches are guided by tutorials and docs: Ollama’s local API example【19†L109-L118】, OpenAI’s Node SDK examples【16†L280-L289】, and Hugging Face’s JS inference library【21†L190-L199】. Finally, the spaced-repetition plugin ecosystem (e.g. *obsidian-spaced-repetition-recall*) shows that keeping a separate JSON for scheduling is a viable strategy【29†L386-L393】.
+- show proposed additions and removals clearly
+- do not execute changes until user approval
 
+## 4. Architecture Direction
+
+### 4.1 Platform Choice
+
+Electron remains the preferred runtime because it gives stable cross-platform local file access and avoids browser support gaps for filesystem APIs.
+
+### 4.2 System Layers
+
+- main process: native windowing, dialogs, and privileged filesystem operations
+- preload bridge: safe API exposure between renderer and Electron
+- renderer: UI for vault browsing, Crashpad, and review workflows
+
+### 4.3 Key Services
+
+- vault service: vault I/O, note parsing triggers, and reconciliation orchestration
+- card parser service: detects starter and ending comments, reconstructs card boundaries, and captures line positions
+- card store service: reads and writes per-card JSON files, including note references
+- crashpad service: card authoring workflows over the shared card store
+- weave service: plans and stages Weaver insert operations for user approval
+- review service: spaced-repetition updates
+
+## 5. Data Strategy
+
+### 5.1 Split Source Of Truth
+
+- markdown notes store readable note text plus boundary references to cards
+- per-card JSON files store the full structured payload and linked note locations
+
+### 5.2 Synchronization Support
+
+The app reconciles card files whenever relevant markdown notes are created, modified, or deleted.
+
+Synchronization responsibilities include:
+
+- add new note references when new card boundaries appear
+- update `start_line` and `end_line` values when boundary positions shift
+- remove note references when a note or boundary pair disappears
+
+### 5.3 Index Support
+
+The app maintains index.json for fast lookup and scheduling operations. During Stage 2 this index is note-level. Future stages can add card-store manifests or card-level index entries while preserving compatibility.
+
+## 6. UI/UX Direction
+
+### 6.1 Existing Stage 2 UI
+
+- vault explorer
+- source editor
+- markdown preview
+- card placeholder view
+
+### 6.2 Planned UI Additions
+
+- Crashpad canvas with card lifecycle controls
+- card-level inspector with linked-note references and boundary preview
+- copy buttons for starter and ending comment blocks
+- card store folder setting and sync status
+- weave workflow panel with mode selection and diff approval
+- review panel using card metadata and memory tricks
+
+## 7. Staged Delivery
+
+- Stage 1: shell and safe bridge foundation
+- Stage 2: vault open/read/write/index and editor shell
+- Stage 3: card boundary parsing, external card store, and vault-to-card sync
+- Stage 4: Crashpad workflows on top of the shared card store
+- Stage 5: Weaver mode implementations with mandatory approval gating
+- Stage 6: spaced-repetition refinement on card metadata
+
+## 8. Acceptance Principles For Upcoming Stages
+
+- card boundaries are parseable and round-trip safe
+- both boundary comments resolve to the same UID
+- full card payloads live in per-card JSON files, not in note comments
+- each note reference stores note path, start_line, and end_line
+- note create, modify, and delete events update the relevant card files
+- crashpad operations support create/edit/delete-confirm/undo/redo
+- weave proposals are never auto-applied
+- all Weaver-driven note modifications require explicit user acceptance

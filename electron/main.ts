@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { openVault, readNote, updateIndex, writeNote } from './vaultService';
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 
@@ -37,6 +38,18 @@ ipcMain.handle('vault:select-folder', async () => {
 
   return result.filePaths[0];
 });
+
+ipcMain.handle('vault:open', async (_event, rootPath: string) => openVault(rootPath));
+
+ipcMain.handle('vault:read-note', async (_event, rootPath: string, filePath: string) =>
+  readNote(rootPath, filePath),
+);
+
+ipcMain.handle('vault:write-note', async (_event, rootPath: string, input: { filePath: string; content: string }) =>
+  writeNote(rootPath, input),
+);
+
+ipcMain.handle('vault:update-index', async (_event, rootPath: string) => updateIndex(rootPath));
 
 app.whenReady().then(() => {
   createMainWindow();
