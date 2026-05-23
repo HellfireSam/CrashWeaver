@@ -7,13 +7,24 @@ CrashWeaver is an external desktop app that works with an Obsidian vault. The co
 The repository currently includes a complete Stage 2 Electron implementation with:
 
 - local vault open, read, write, and index refresh workflows through Electron IPC
-- generated index.json with note-level entries and review placeholders
+- generated `.crashweaver/index.json` with note-level entries and review placeholders
 - Obsidian-style editor shell with explorer, center editor, and inspector panes
 - markdown preview rendered through markdown-it with markdown-it-texmath and katex
 - explorer folders that initialize collapsed and toggle correctly on first click
 - modular renderer structure for maintainability
+- Stage 3 Crash Card parsing with strict UID boundary matching
+- configurable card-store persistence with a default of `{vaultRoot}/.crashweaver/cards`
+- note-reference sync on vault open, note save, index refresh, and external markdown file changes
+- Stage 4 crashpad canvas files in `{vaultRoot}/.crashweaver/crashpads`
+- crashpad workflows for open existing cards, create new cards, edit fields, and delete cards
+- crashpad files selectable directly from the explorer tree
+- card-store JSON files surfaced in the explorer tree when the configured card store sits inside the vault
+- directories under `.crashweaver` surfaced in the explorer tree for direct navigation context
+- daily Crashpad widget that opens or creates `{vaultRoot}/.crashweaver/crashpads/YYYY-MM-DD.crashpad.json`
+- `Source`, `Preview`, and `Cards` modes reserved for markdown notes, with crashpad rendered as a separate custom file type
+- crashpad delete snapshots and session undo/redo over crashpad actions
 
-Card-level parsing, external card-store synchronization, Crashpad, and Weaver are clarified in this document and are planned for upcoming stages.
+Weaver and card-level review flows are clarified in this document and remain planned for later stages.
 
 ## 1. Core Product Clarification
 
@@ -27,14 +38,12 @@ Card-level parsing, external card-store synchronization, Crashpad, and Weaver ar
 Each card has these attributes:
 
 1. type or tags: category labels for the knowledge
-2. UID: unique identifier
-3. topic or title
-4. raw content: factual text or explanation
-5. metadata: spaced-repetition fields (for example familiarity and next review date)
-6. memory tricks, with three subparts:
+2. title or ID: a single unique identifier stored in `uid`
+3. raw content: factual text or explanation
+4. metadata: spaced-repetition fields (for example familiarity and next review date)
+5. memory tricks, with two subparts:
    - memory technique: short mnemonic phrase or keyword
-   - Q and A pairs
-   - fill-in-the-blanks exercise
+   - Q and A pairs, including prompts that use blanks directly in the question text
 
 An LLM will assist users in filling these fields. Prompt design and implementation details will be defined in later stages.
 
@@ -65,7 +74,6 @@ Conceptual format:
 {
    "uid": "CW-001",
    "type": ["concept", "oop"],
-   "topic": "Polymorphism",
    "raw_content": "...",
    "metadata": {
       "familiarity": 0,
@@ -73,8 +81,7 @@ Conceptual format:
    },
    "memory_tricks": {
       "memory_technique": "...",
-      "qa_pairs": [],
-      "fill_in_the_blanks": []
+      "qa_pairs": []
    },
    "referenced_in": [
       {
@@ -104,6 +111,8 @@ Crashpad persistence:
 
 - card payloads are stored as individual JSON files in the designated card store folder
 - Crashpad opens existing cards from that store or creates new ones there
+- Crashpad canvas files live in `{vaultRoot}/.crashweaver/crashpads`
+- users can open Crashpad either from the explorer tree or from the daily Crashpad widget
 - the card store folder path is configurable in settings
 - Crashpad must preserve the shared card-file schema used by vault sync and review workflows
 
@@ -183,7 +192,7 @@ Synchronization responsibilities include:
 
 ### 5.3 Index Support
 
-The app maintains index.json for fast lookup and scheduling operations. During Stage 2 this index is note-level. Future stages can add card-store manifests or card-level index entries while preserving compatibility.
+The app maintains `.crashweaver/index.json` for fast lookup and scheduling operations. During Stage 2 this index is note-level. Future stages can add card-store manifests or card-level index entries while preserving compatibility.
 
 ## 6. UI/UX Direction
 
@@ -192,11 +201,11 @@ The app maintains index.json for fast lookup and scheduling operations. During S
 - vault explorer
 - source editor
 - markdown preview
-- card placeholder view
+- read-only card boundary inspector
 
 ### 6.2 Planned UI Additions
 
-- Crashpad canvas with card lifecycle controls
+- Crashpad canvas as a separate custom file type with card lifecycle controls
 - card-level inspector with linked-note references and boundary preview
 - copy buttons for starter and ending comment blocks
 - card store folder setting and sync status
@@ -208,7 +217,7 @@ The app maintains index.json for fast lookup and scheduling operations. During S
 - Stage 1: shell and safe bridge foundation
 - Stage 2: vault open/read/write/index and editor shell
 - Stage 3: card boundary parsing, external card store, and vault-to-card sync
-- Stage 4: Crashpad workflows on top of the shared card store
+- Stage 4: Crashpad canvas workflows on top of the shared card store
 - Stage 5: Weaver mode implementations with mandatory approval gating
 - Stage 6: spaced-repetition refinement on card metadata
 

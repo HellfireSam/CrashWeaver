@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-005",
+  "type": [],
+  "raw_content": "### 404 vs 500\n\nA 404 means the server is reachable but the requested resource was not found.\nA 500 means the server failed while trying to handle a valid request.\nClients should not retry a 404 without changing the URL, but may retry a 500 depending on idempotency and server guidance.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "web/http.md",
+      "start_line": 5,
+      "end_line": 13
+    }
+  ]
+}

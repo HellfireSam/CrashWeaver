@@ -1,0 +1,25 @@
+{
+  "uid": "test_for_embedding",
+  "type": [],
+  "raw_content": "this is a card that tests for embedding. ",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "remember this through a memory technique.",
+    "qa_pairs": [
+      {
+        "q": "Who is ian",
+        "a": "the most handsome guy in the world"
+      }
+    ]
+  },
+  "referenced_in": [
+    {
+      "note_path": "architecture/coupling - Copy.md",
+      "start_line": 12,
+      "end_line": 14
+    }
+  ]
+}

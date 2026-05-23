@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-009",
+  "type": [],
+  "raw_content": "## Idempotent Job Handler\n\nA handler is idempotent when repeating the same operation produces the same end state.\nIdempotency keys make retries safe when network acknowledgement is uncertain.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "programming/concurrency-patterns.md",
+      "start_line": 14,
+      "end_line": 21
+    }
+  ]
+}

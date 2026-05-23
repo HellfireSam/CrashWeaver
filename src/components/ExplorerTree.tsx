@@ -1,12 +1,24 @@
 import type { CSSProperties } from 'react';
 import type { ExplorerNode } from '../lib/explorerTree';
 
+function formatTreeFileLabel(node: ExplorerNode) {
+  if (node.fileKind === 'crashpad') {
+    return node.name.replace(/\.crashpad\.json$/i, '');
+  }
+
+  if (node.fileKind === 'card') {
+    return node.name.replace(/\.json$/i, '');
+  }
+
+  return node.name.replace(/\.md$/i, '');
+}
+
 type ExplorerTreeProps = {
   nodes: ExplorerNode[];
   depth?: number;
   expandedFolders: Record<string, boolean>;
   onToggleFolder: (folderPath: string) => void;
-  onSelectFile: (filePath: string) => void;
+  onSelectFile: (filePath: string, fileKind: 'markdown' | 'crashpad' | 'card') => void;
   selectedFilePath: string;
   isReading: boolean;
 };
@@ -59,12 +71,12 @@ export function ExplorerTree({
             <button
               type="button"
               className={`treeRow fileRow ${selectedFilePath === node.path ? 'active' : ''}`}
-              onClick={() => onSelectFile(node.path)}
+              onClick={() => onSelectFile(node.path, node.fileKind ?? 'markdown')}
               disabled={isReading}
               title={node.path}
             >
               <span className="treeGlyph">•</span>
-              <span className="treeName">{node.name.replace(/\.md$/i, '')}</span>
+              <span className="treeName">{formatTreeFileLabel(node)}</span>
             </button>
           </li>
         );

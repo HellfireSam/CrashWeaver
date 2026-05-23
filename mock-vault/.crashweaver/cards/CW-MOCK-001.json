@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-001",
+  "type": [],
+  "raw_content": "### Polymorphism\n\nPolymorphism lets one interface describe multiple concrete implementations.\nA caller can interact with a shared contract while runtime dispatch selects the right behavior.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "programming/oop.md",
+      "start_line": 5,
+      "end_line": 12
+    }
+  ]
+}

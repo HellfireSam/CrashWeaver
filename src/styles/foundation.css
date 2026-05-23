@@ -1,0 +1,129 @@
+:root {
+  --bg-base: #1e1f26;
+  --bg-card: #252730;
+  --bg-input: #171922;
+  --border-soft: #323743;
+  --border-strong: #464d5b;
+  --text-primary: #d9dee8;
+  --text-muted: #98a0af;
+  --text-subtle: #7b8393;
+  --accent: #7f9cf5;
+  --accent-soft: #566ab0;
+  --success: #72c6a1;
+  --error: #f28585;
+  --font-ui: 'Segoe UI', 'Noto Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(127, 156, 245, 0.1), transparent 36%),
+    radial-gradient(circle at right bottom, rgba(68, 82, 125, 0.16), transparent 32%),
+    linear-gradient(165deg, #1a1b21 0%, #1c1e25 52%, #17181f 100%);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  overflow: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.actionButton,
+.tabButton,
+.treeRow {
+  border: 1px solid transparent;
+  color: inherit;
+  background: transparent;
+}
+
+.actionButton {
+  border-radius: 0.45rem;
+  border-color: var(--border-soft);
+  background: #2a2d37;
+  color: var(--text-primary);
+  padding: 0.45rem 0.78rem;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.actionButton:hover:enabled {
+  border-color: var(--accent-soft);
+  background: #303443;
+}
+
+.actionButton.ghost {
+  background: transparent;
+}
+
+.actionButton:disabled,
+.treeRow:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.iconButton {
+  width: 2.1rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+}
+
+.iconButton.activePane {
+  border-color: var(--accent-soft);
+  background: #2f3442;
+}
+
+.notePathInput {
+  width: 100%;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  padding: 0.52rem 0.65rem;
+}
+
+.notePathInput:focus {
+  outline: 2px solid rgba(127, 156, 245, 0.2);
+  border-color: var(--accent-soft);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

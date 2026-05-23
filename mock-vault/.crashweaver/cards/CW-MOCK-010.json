@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-010",
+  "type": [],
+  "raw_content": "## Cache Aside\n\nCache-aside reads from cache first and falls back to source on miss, then populates cache.\nIt is simple to adopt but may create stale reads unless invalidation policy is explicit.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "web/caching-primitives.md",
+      "start_line": 5,
+      "end_line": 12
+    }
+  ]
+}

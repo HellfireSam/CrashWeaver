@@ -1,9 +1,25 @@
-import type { VaultDescriptor } from '../../electron/vault-contract';
+type BuildExplorerTreeOptions = {
+  showHiddenEntries?: boolean;
+};
+
+export type ExplorerFileKind = 'markdown' | 'crashpad' | 'card';
+
+export type ExplorerEntry =
+  | {
+      kind: 'file';
+      path: string;
+      fileKind: ExplorerFileKind;
+    }
+  | {
+      kind: 'folder';
+      path: string;
+    };
 
 export type ExplorerNode = {
   name: string;
   path: string;
   kind: 'folder' | 'file';
+  fileKind?: ExplorerFileKind;
   children: ExplorerNode[];
 };
 
@@ -16,11 +32,12 @@ function createFolderNode(name: string, path: string): ExplorerNode {
   };
 }
 
-function createFileNode(name: string, path: string): ExplorerNode {
+function createFileNode(name: string, path: string, fileKind: ExplorerFileKind): ExplorerNode {
   return {
     name,
     path,
     kind: 'file',
+    fileKind,
     children: [],
   };
 }
@@ -46,34 +63,60 @@ function sortNodes(nodes: ExplorerNode[]): ExplorerNode[] {
     });
 }
 
-export function buildExplorerTree(vault: VaultDescriptor | null): ExplorerNode[] {
-  if (!vault) {
+function shouldIncludePath(filePath: string, showHiddenEntries: boolean) {
+  if (filePath === '.crashweaver' || filePath.startsWith('.crashweaver/')) {
+    return true;
+  }
+
+  if (showHiddenEntries) {
+    return true;
+  }
+
+  return !filePath.split('/').some((part) => part.startsWith('.'));
+}
+
+function ensureFolderChild(parent: ExplorerNode, name: string, path: string) {
+  let next = parent.children.find((child) => child.kind === 'folder' && child.name === name);
+
+  if (!next) {
+    next = createFolderNode(name, path);
+    parent.children.push(next);
+  }
+
+  return next;
+}
+
+export function buildExplorerTree(entries: ExplorerEntry[], options: BuildExplorerTreeOptions = {}): ExplorerNode[] {
+  if (!entries.length) {
     return [];
   }
 
+  const showHiddenEntries = options.showHiddenEntries ?? false;
+
   const root = createFolderNode('root', '');
 
-  for (const note of vault.notes) {
-    const parts = note.filePath.split('/').filter(Boolean);
+  for (const entry of entries) {
+    if (!shouldIncludePath(entry.path, showHiddenEntries)) {
+      continue;
+    }
+
+    const parts = entry.path.split('/').filter(Boolean);
     let current = root;
     let currentPath = '';
 
     for (let index = 0; index < parts.length; index += 1) {
       const part = parts[index];
-      const isFile = index === parts.length - 1;
+      const isFile = entry.kind === 'file' && index === parts.length - 1;
       currentPath = currentPath ? `${currentPath}/${part}` : part;
 
       if (isFile) {
-        current.children.push(createFileNode(part, currentPath));
-      } else {
-        let next = current.children.find((child) => child.kind === 'folder' && child.name === part);
+        const existingFile = current.children.find((child) => child.kind === 'file' && child.path === currentPath);
 
-        if (!next) {
-          next = createFolderNode(part, currentPath);
-          current.children.push(next);
+        if (!existingFile) {
+          current.children.push(createFileNode(part, currentPath, entry.fileKind));
         }
-
-        current = next;
+      } else {
+        current = ensureFolderChild(current, part, currentPath);
       }
     }
   }

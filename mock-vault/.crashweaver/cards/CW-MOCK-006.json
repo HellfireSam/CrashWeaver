@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-006",
+  "type": [],
+  "raw_content": "## Retry Budget Guardrail\n\nA retry budget limits amplification during outages by capping total retries per request family.\nUse jitter and backoff so retries spread over time instead of forming synchronized spikes.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "architecture/reliability-playbook.md",
+      "start_line": 5,
+      "end_line": 12
+    }
+  ]
+}

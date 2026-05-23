@@ -15,14 +15,12 @@ CrashWeaver centers on Crash Cards (called cards).
 A card is a knowledge unit with these fields:
 
 1. type or tags
-2. UID
-3. topic or title
-4. raw content
-5. metadata for spaced repetition
-6. memory tricks:
+2. title or ID, stored as the card UID
+3. raw content
+4. metadata for spaced repetition
+5. memory tricks:
    - memory technique
-   - Q and A pairs
-   - fill-in-the-blanks exercise
+   - Q and A pairs, including prompts that use blanks directly in the question text
 
 Cards are represented in markdown notes by wrapping relevant note text with two lightweight comment boundaries:
 
@@ -55,6 +53,9 @@ Crashpad persistence:
 
 - card payloads live in the configurable card store folder
 - Crashpad can open existing cards or create new ones in that folder
+- crashpad canvas files live at `{vaultRoot}/.crashweaver/crashpads/*.crashpad.json`
+- crashpad files can be opened from the explorer tree or from the daily Crashpad widget
+- directories under `.crashweaver` are also visible in the explorer for navigation context
 - settings expose the card store folder path
 
 ## 3. Weave And Weaver
@@ -97,7 +98,7 @@ Current Stage 2 behavior:
 - open and validate vault paths
 - scan markdown files
 - read and write notes
-- generate note-level index.json
+- generate the note-level vault index at `.crashweaver/index.json`
 
 Planned extension:
 
@@ -125,7 +126,7 @@ Current Stage 2 UI includes:
 
 Future UI adds:
 
-- Crashpad canvas
+- Crashpad canvas as a separate custom file type
 - card copy-boundary actions
 - card store settings and sync status
 - weave mode controls
@@ -155,8 +156,8 @@ For card sync workflows:
 ## 6. Stage Status
 
 - Stage 1 and 2: implemented
-- card boundary parsing and card-store sync: planned
-- Crashpad workflows: planned
+- Stage 3 card boundary parsing and card-store sync: implemented
+- Stage 4 Crashpad workflows: implemented
 - Weaver modes and approval gate: planned
 
 ## 7. Short Version
@@ -168,6 +169,7 @@ Remember this split:
 - renderer is the visible app.
 - notes point to cards.
 - card files hold the full data and both boundary line numbers.
-- Crashpad drafts cards from the shared store.
+- markdown notes use `Source`, `Preview`, and `Cards` modes.
+- Crashpad drafts cards from the shared store through separate `.crashpad.json` files.
 - Weaver proposes insertion.
 - user approval is mandatory before any LLM-driven write.

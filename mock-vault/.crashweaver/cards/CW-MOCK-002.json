@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-002",
+  "type": [],
+  "raw_content": "### Rebase Checklist\n\n1. Fetch the latest remote branches.\n2. Rebase your feature branch onto the updated base branch.\n3. Resolve conflicts carefully and continue the rebase.\n4. Force-push with lease so you do not overwrite teammates unexpectedly.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "git/workflows.md",
+      "start_line": 5,
+      "end_line": 14
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-003",
+  "type": [],
+  "raw_content": "### Bayes' Theorem\n\nP(A|B) = P(B|A) * P(A) / P(B)\n\nUse it to update a prior belief after observing new evidence.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "math/probability.md",
+      "start_line": 5,
+      "end_line": 13
+    }
+  ]
+}

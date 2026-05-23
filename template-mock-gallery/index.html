@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CrashWeaver Universal Card Render Templates</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-a"></div>
+    <div class="bg-b"></div>
+
+    <main class="shell">
+      <section class="intro panel">
+        <p class="kicker">CrashWeaver Mock</p>
+        <h1>Universal Card Render Template Gallery</h1>
+        <p>
+          All templates below render the same full card data model. The only difference is layout style. Each template supports markdown raw content, hidden QnA/FIIB answers with reveal,
+          and focus context signals for a future LLM companion. Card views are Content, Memory Technique, QnA, Fill-in-the-blanks, and Meta data.
+        </p>
+      </section>
+
+      <section class="picker panel">
+        <div id="templatePicker" class="template-picker"></div>
+      </section>
+
+      <section class="workspace panel">
+        <div id="templateCanvas" class="template-canvas"></div>
+
+        <aside class="llm-panel">
+          <h2>LLM Context Panel</h2>
+          <p class="muted">This mock panel reflects current focus context.</p>
+
+          <div class="llm-block">
+            <p class="label">Active Template</p>
+            <p id="llmTemplate" class="value"></p>
+          </div>
+
+          <div class="llm-block">
+            <p class="label">Focused Scope</p>
+            <p id="llmScope" class="value">none</p>
+          </div>
+
+          <div class="llm-block">
+            <p class="label">Focused Element</p>
+            <p id="llmElement" class="value">none</p>
+          </div>
+
+          <div class="llm-block">
+            <p class="label">Companion Prompt Hint</p>
+            <p id="llmHint" class="value muted">Click card body or an exercise item.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "id": "2026-05-23",
+  "name": "2026-05-23",
+  "filePath": "D:\\Education_my\\OTHERS\\CrashWeaver\\mock-vault\\.crashweaver\\crashpads\\2026-05-23.crashpad.json",
+  "createdAt": "2026-05-23T09:00:00.000Z",
+  "updatedAt": "2026-05-23T14:44:23.924Z",
+  "cards": [
+    {
+      "uid": "CW-IMG-001",
+      "origin": "new",
+      "addedAt": "2026-05-23T09:00:00.000Z"
+    },
+    {
+      "uid": "CW-MOCK-010",
+      "origin": "existing",
+      "addedAt": "2026-05-23T09:01:00.000Z"
+    },
+    {
+      "uid": "test_for_embedding",
+      "origin": "new",
+      "addedAt": "2026-05-23T14:44:23.924Z"
+    }
+  ],
+  "deletedCards": [
+    {
+      "uid": "asdf",
+      "origin": "existing",
+      "deletedAt": "2026-05-23T10:18:33.580Z",
+      "removeNoteBoundaries": true,
+      "card": {
+        "uid": "asdf",
+        "type": [],
+        "raw_content": "",
+        "metadata": {
+          "familiarity": 0,
+          "next_review": null
+        },
+        "memory_tricks": {
+          "memory_technique": "",
+          "qa_pairs": []
+        },
+        "referenced_in": [
+          {
+            "note_path": "architecture/coupling - Copy.md",
+            "start_line": 13,
+            "end_line": 14
+          }
+        ]
+      }
+    }
+  ]
+}

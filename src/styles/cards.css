@@ -1,0 +1,1010 @@
+/* Crash Cards view */
+.blocksView {
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
+  padding: 1rem 1.15rem 1.25rem;
+}
+
+.blocksHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.cardsContextLine {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.cardsContextLine > * {
+  min-width: 0;
+}
+
+.blocksTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.blocksPills {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.vaultCardsHint {
+  margin-bottom: 1rem;
+  border: 1px dashed rgba(127, 156, 245, 0.24);
+  border-radius: 0.7rem;
+  background: rgba(127, 156, 245, 0.06);
+  padding: 0.75rem 0.85rem;
+}
+
+.cardsScopeSwitch {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: #20242f;
+}
+
+.scopeButton {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.32rem 0.8rem;
+  cursor: pointer;
+}
+
+.scopeButton.active,
+.scopeButton:hover {
+  background: #31384a;
+  color: var(--text-primary);
+  border-color: rgba(127, 156, 245, 0.3);
+}
+
+.blocksPill,
+.cardStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  padding: 0.24rem 0.6rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.blocksPill.ok,
+.cardStatusBadge.ok {
+  border-color: rgba(114, 198, 161, 0.28);
+  color: var(--success);
+}
+
+.blocksPill.warning,
+.cardStatusBadge.missing {
+  border-color: rgba(242, 133, 133, 0.28);
+  color: var(--error);
+}
+
+/* ===== Crashpad Workspace ===== */
+
+.cpCanvas {
+  display: grid;
+  gap: 0;
+  align-content: start;
+}
+
+.cpHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.cpHeaderMain {
+  min-width: 0;
+}
+
+.cpName {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.cpNameEmpty {
+  color: var(--text-muted);
+}
+
+.cpPath {
+  margin: 0.18rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.cpHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.cpMeta {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cpUndoRedo {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.cpPanelTabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 1.1rem;
+}
+
+.cpPanelTab {
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.48rem 1rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  margin-bottom: -1px;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.cpPanelTab:hover {
+  color: var(--text-primary);
+}
+
+.cpPanelTab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.cpAddCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.cpAddCardToggle {
+  align-self: flex-start;
+  font-size: 0.88rem;
+}
+
+.cpAddCardForm {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+  padding: 0.85rem 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cpAddCardModes {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 0.6rem;
+}
+
+.cpAddCardModes .cpPanelTab {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  margin-bottom: -1px;
+}
+
+.cpAddCardInput {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cpAddCardInput .notePathInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.cpEditor {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.9rem;
+  background: rgba(31, 34, 43, 0.9);
+  overflow: hidden;
+}
+
+.cpEditorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.cpEditorTitle {
+  min-width: 0;
+}
+
+.cpEditorTitle h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cpCardUid {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cpEditorActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.cpModeToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem 0;
+}
+
+.cpModeToolbarMeta,
+.cpModeToolbarActions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cpFeedbackBar {
+  padding: 0.75rem 1rem 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.cpFeedback {
+  border: 1px solid rgba(114, 198, 161, 0.24);
+  border-radius: 0.65rem;
+  background: rgba(114, 198, 161, 0.08);
+  color: var(--text-primary);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.cpFeedback.error {
+  border-color: rgba(242, 133, 133, 0.26);
+  background: rgba(242, 133, 133, 0.08);
+}
+
+.cpEditorFields {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+}
+
+.cpFieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cpField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cpFieldFullWidth {
+  grid-column: 1 / -1;
+}
+
+.cpField .editorTextArea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.cpContentTextarea {
+  min-height: 200px !important;
+}
+
+.cpCodeTextarea {
+  font-family: var(--font-mono) !important;
+  font-size: 0.81rem !important;
+  min-height: 130px;
+}
+
+/* Structured QnA / Fill form */
+.cpFieldLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cpArrayAddBtn {
+  font-size: 0.82rem !important;
+  padding: 0.2rem 0.55rem !important;
+}
+
+.cpArrayEmpty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cpArrayList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.cpArrayItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.cpArrayItemFill {
+  flex-direction: row;
+}
+
+.cpArrayIndex {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-top: 0.35rem;
+  min-width: 1rem;
+  flex-shrink: 0;
+}
+
+.cpArrayItemFields {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cpArrayAnswer {
+  min-height: 56px !important;
+  resize: vertical;
+}
+
+.cpArrayRemoveBtn {
+  font-size: 1rem !important;
+  padding: 0.1rem 0.45rem !important;
+  line-height: 1 !important;
+  color: var(--text-muted) !important;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.cpFillAnswers {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.2rem;
+}
+
+.cpFillAnswersLabel {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cpFillAnswerRow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.cpFillAnswerInput {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Copy embed button feedback */
+.cpCopyEmbedActive {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.cpEditorPreview {
+  padding: 0.9rem 1rem 0.5rem;
+}
+
+.cpEditorPreview .cardDetailHero h2 {
+  font-size: 1.25rem;
+}
+
+.cpDeleteSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.72rem 1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.cpDeleteToggle {
+  align-self: flex-start;
+  font-size: 0.87rem;
+  color: var(--text-muted);
+}
+
+.cpDeleteToggle.cpDeleteOpen {
+  color: var(--error);
+}
+
+.cpDeleteForm {
+  display: grid;
+  gap: 0.6rem;
+  border: 1px solid rgba(242, 133, 133, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.8rem 0.85rem;
+  background: rgba(242, 133, 133, 0.05);
+}
+
+.cpDeleteStrictRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cpDeleteInput {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono) !important;
+}
+
+.cpDeleteConfirm {
+  border-color: rgba(242, 133, 133, 0.4) !important;
+  background: rgba(242, 133, 133, 0.12) !important;
+}
+
+.cpDeleteConfirm:hover:enabled {
+  border-color: rgba(242, 133, 133, 0.6) !important;
+  background: rgba(242, 133, 133, 0.22) !important;
+}
+
+.cpHistoryPanel {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.cpHistoryItem {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  background: rgba(255, 255, 255, 0.025);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.cpHistoryItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cpHistoryItemMeta {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.cpHistoryRestoreNote {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+.cpHistoryRestoreChoices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.cpHistoryRestoreActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.cpHistoryRestoreBtn {
+  align-self: flex-start;
+  font-size: 0.84rem !important;
+}
+
+@media (max-width: 720px) {
+  .cpFieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .cpModeToolbarActions {
+    width: 100%;
+  }
+}
+
+.placeholderCard {
+  text-align: center;
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  padding: 2.5rem 2rem;
+}
+
+.placeholderIcon {
+  font-size: 2.5rem;
+  margin: 0 0 0.8rem;
+}
+
+.placeholderTitle {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.7rem;
+}
+
+.placeholderBody {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.placeholderCard.compact {
+  max-width: none;
+  text-align: left;
+  padding: 1rem 1.05rem;
+  margin-bottom: 1rem;
+}
+
+.cardList {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.cardsWorkspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 0;
+}
+
+.cardsRailHorizontal {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 0.12rem 0.08rem 0.72rem;
+  margin-bottom: 0.65rem;
+}
+
+.cardsRail,
+.cardDetailPanel {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+  background: rgba(31, 34, 43, 0.92);
+}
+
+.cardsRail {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 0.75rem;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.cardsRailItem {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background: rgba(43, 47, 59, 0.9);
+  color: inherit;
+  text-align: left;
+  padding: 0.68rem 0.75rem;
+  cursor: pointer;
+  min-width: 250px;
+  max-width: 285px;
+  flex: 0 0 auto;
+}
+
+.cardsRailItem:hover,
+.cardsRailItem.active {
+  border-color: rgba(127, 156, 245, 0.35);
+  background: rgba(51, 58, 75, 0.96);
+}
+
+.cardsRailTitle {
+  margin: 0.25rem 0 0;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.cardsRailMeta {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.45rem;
+}
+
+.cardDetailPanel {
+  padding: 1rem 1.05rem;
+  min-width: 0;
+  overflow: auto;
+}
+
+.cardDetailHero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.cardDetailHero > * {
+  min-width: 0;
+}
+
+.cardDetailHero h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.35rem;
+  overflow-wrap: anywhere;
+}
+
+.cardHeroMeta {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cardTagRow {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.cardTag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.24rem 0.6rem;
+  border: 1px solid rgba(127, 156, 245, 0.24);
+  background: rgba(127, 156, 245, 0.1);
+  color: #dbe4ff;
+  font-size: 0.78rem;
+}
+
+.cardTag.muted {
+  border-color: var(--border-soft);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+}
+
+.cardMetaGrid.wide {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.cardDetailSection {
+  border-top: 1px dashed var(--border-soft);
+  padding-top: 0.95rem;
+  margin-top: 0.95rem;
+}
+
+.cardTemplatePanel {
+  border-top-style: solid;
+  border-top-color: rgba(127, 156, 245, 0.2);
+  background: rgba(22, 26, 35, 0.65);
+  border-radius: 0.75rem;
+  padding: 0.95rem;
+}
+
+.cardSegmentedTabs {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background: #222734;
+  padding: 0.25rem;
+}
+
+.cardSegmentTab {
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.cardSegmentTab.active,
+.cardSegmentTab:hover {
+  border-color: rgba(127, 156, 245, 0.36);
+  background: #333a4c;
+  color: var(--text-primary);
+}
+
+.cardSectionToggle {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.55rem;
+  background: #242936;
+  color: var(--text-primary);
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+
+.cardSectionToggle:hover {
+  border-color: rgba(127, 156, 245, 0.35);
+}
+
+.cardDetailText {
+  margin: 0.8rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.68;
+}
+
+.cardContentMarkdown {
+  margin-top: 0.65rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background: #171b25;
+  padding: 0.85rem 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.72;
+}
+
+.cardContentMarkdown h1,
+.cardContentMarkdown h2,
+.cardContentMarkdown h3,
+.cardContentMarkdown h4,
+.cardContentMarkdown h5,
+.cardContentMarkdown h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.cardContentMarkdown p {
+  margin: 0.55rem 0;
+}
+
+.cardContentMarkdown a {
+  color: #adc0ff;
+}
+
+.cardContentMarkdown img {
+  max-width: min(520px, 100%);
+  height: auto;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(127, 156, 245, 0.24);
+}
+
+.cardContentMarkdown code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: #10131b;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.35rem;
+  padding: 0.08rem 0.32rem;
+}
+
+.cardContentMarkdown pre {
+  overflow-x: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.6rem;
+  background: #10131b;
+  padding: 0.8rem;
+}
+
+.concealedAnswer {
+  filter: blur(5px);
+  user-select: none;
+}
+
+.inlineRevealButton {
+  margin-top: 0.6rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.45rem;
+  background: #2b3040;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.36rem 0.58rem;
+}
+
+@media (max-width: 1280px) {
+  .crashpadStudioLayout {
+    grid-template-columns: minmax(250px, 290px) minmax(0, 1fr);
+  }
+
+  .crashpadStudioActivity {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .crashpadStudioLayout,
+  .crashpadStudioActivity,
+  .crashpadStudioFieldGrid,
+  .crashpadStudioSplitGrid,
+  .crashpadStudioInfoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inlineRevealButton:hover {
+  border-color: rgba(127, 156, 245, 0.4);
+}
+
+.focusOutline {
+  outline: 1px solid rgba(114, 198, 161, 0.55);
+  outline-offset: 2px;
+}
+
+.cardQuestionList,
+.cardReferenceList {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.cardQuestionItem,
+.cardReferenceItem {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.75rem 0.8rem;
+}
+
+.cardReferenceItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cardReferenceItem > * {
+  min-width: 0;
+}
+
+.referenceLinkButton {
+  border: none;
+  background: transparent;
+  color: #dce5ff;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.referenceLinkButton:hover:enabled {
+  color: var(--accent);
+}
+
+.referenceLinkButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cardTile,
+.diagnosticPanel {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background: rgba(37, 39, 48, 0.82);
+  padding: 0.95rem 1rem;
+}
+
+.cardTileHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.cardUid {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.cardMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.diagnosticPanel {
+  margin-top: 1rem;
+}
+
+.diagnosticList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.diagnosticItem {
+  display: grid;
+  gap: 0.18rem;
+  border-left: 2px solid rgba(242, 133, 133, 0.35);
+  padding-left: 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.diagnosticLine {
+  color: var(--error);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.assistantPlaceholderActions {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}

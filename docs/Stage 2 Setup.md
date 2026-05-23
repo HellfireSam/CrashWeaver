@@ -20,7 +20,7 @@
 4. Confirm markdown notes are listed.
 5. Confirm explorer starts with folders collapsed and toggles correctly.
 6. Open a note, edit content, and save.
-7. Confirm index.json refresh works.
+7. Confirm `.crashweaver/index.json` refresh works.
 8. Switch source and preview modes and verify markdown plus math rendering.
 9. Open card mode and confirm placeholder behavior for future stages.
 

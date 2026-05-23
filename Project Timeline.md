@@ -24,12 +24,18 @@ Implemented now:
 - note-level index generation
 - source and preview workflows with math rendering
 - explorer behavior and layout stabilization
+- Stage 3 parser for `%%CW_CARD_START uid:<UID>%%` and `%%CW_CARD_END uid:<UID>%%`
+- per-card JSON storage with configurable path and default vault-local fallback
+- note-reference synchronization on vault open, note save, index refresh, and external markdown changes
+- Stage 4 crashpad canvas files with create/open workflows and editable card authoring
+- card create/edit/delete flows over shared card store with configurable delete behavior
+- crashpad files selectable from explorer and daily Crashpad widget entry
+- `.crashweaver` internal directories surfaced in the explorer tree
+- markdown `Source`, `Preview`, and `Cards` tabs now reserved for markdown notes only
+- crashpad deletion snapshots with session undo/redo support
 
 Not yet implemented:
 
-- card boundary parsing
-- external card store and note-reference sync
-- Crashpad workflows over the shared card store
 - Weaver insertion modes
 - card-level review execution
 
@@ -39,7 +45,7 @@ Not yet implemented:
 |---|---:|---|---|
 | 1. Shell Foundation | complete | - | Electron shell, preload bridge, initial renderer |
 | 2. Vault Backend and Editor Shell | complete | 1 | Vault open/read/write/index, Stage 2 UI shell |
-| 3. Crash Card Parser and Card Store Sync | 2-3 | 2 | Parse paired UID boundaries; write per-card JSON files in configurable folder; track start and end lines; reconcile note create, modify, and delete changes |
+| 3. Crash Card Parser and Card Store Sync | complete | 2 | Parse paired UID boundaries; write per-card JSON files in configurable folder; track start and end lines; reconcile note create, modify, and delete changes |
 | 4. Crashpad Canvas and Card Authoring | 2-3 | 3 | Create, edit, and organize cards in shared store; card create/edit/delete-confirm/undo/redo; boundary copy helpers |
 | 5. Weaver Planning and Insert Modes | 3-4 | 3,4 | Plain insert, insert+edit, create new, intelligent weaver levels |
 | 6. Approval Layer and Diff UX | 2-3 | 5 | Accept-reject layer for all Weaver proposals, no auto-apply |
@@ -69,6 +75,8 @@ Acceptance criteria:
 Deliverables:
 
 - Crashpad canvas operating on the shared card store
+- Crashpad rendered as a separate custom file type
+- explorer access to crashpad files plus daily Crashpad shortcut
 - card store folder setting
 - open existing cards and create new card flows
 - canvas actions: create, edit, delete (confirm), undo, redo

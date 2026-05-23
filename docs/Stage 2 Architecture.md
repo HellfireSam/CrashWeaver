@@ -7,7 +7,7 @@ Stage 2 implements the first complete vault workflow and editor shell:
 - open selected vault
 - read markdown notes
 - write markdown notes
-- refresh index.json
+- refresh `.crashweaver/index.json`
 - show explorer and center-pane editor modes
 - render markdown and math preview
 
@@ -29,7 +29,7 @@ The project now defines Crash Card as the core knowledge unit and introduces an 
 - recursively scans markdown files
 - reads note documents
 - writes note documents
-- rebuilds note-level index.json
+- rebuilds the note-level vault index at `.crashweaver/index.json`
 
 Planned extension:
 
@@ -84,7 +84,7 @@ Current index:
 
 Planned data model:
 
-- card-level identity by UID
+- card-level identity by a single unique title / ID stored in `uid`
 - per-card JSON files in a configurable card store folder
 - note reference entries with `note_path`, `start_line`, and `end_line`
 - metadata updates from card-level review events written back to card files
@@ -96,7 +96,7 @@ Each card is enclosed by two lightweight comments in markdown:
 - start comment: opening boundary with UID
 - end comment: closing boundary with the same UID
 
-The note itself does not carry the full structured payload. The matching card JSON file is the canonical store for type or tags, topic or title, raw content, metadata, memory tricks, and linked note references.
+The note itself does not carry the full structured payload. The matching card JSON file is the canonical store for type or tags, the single card title / ID stored in `uid`, raw content, metadata, memory tricks, and linked note references.
 
 ## Card Store Sync Model (Planned Stage 3)
 
