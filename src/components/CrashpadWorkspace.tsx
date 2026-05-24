@@ -1,43 +1,42 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import type {
-  CardRestoreMode,
   CardDocument,
-  CardQaPair,
+  CardRestoreMode,
   CrashpadDeletePreferences,
   CrashpadDocument,
 } from '../../electron/vault-contract';
 import type { CardViewRecord } from '../lib/cards';
 import { CardMetadataPanel } from './CardMetadataPanel';
+import { useCrashpadCardEditor } from '../hooks/useCrashpadCardEditor';
 import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll';
+import { useStoredScrollSync } from '../hooks/useStoredScrollSync';
 import { renderMarkdownPreview } from '../lib/markdownPreview';
 
 type CrashpadWorkspaceProps = {
   activeCrashpad: CrashpadDocument | null;
-  activePanel: CpPanel;
+  activePanel: CrashpadPanel;
   canRedo: boolean;
   canUndo: boolean;
   crashpadDeletePreferences: CrashpadDeletePreferences;
-  editorMode: EditorMode;
+  editorMode: CrashpadEditorMode;
   focusedCard: CardViewRecord | null;
   statusMessage: string | null;
   errorMessage: string | null;
   imageDirectories: string[];
-  previewTab: PreviewTab;
+  previewTab: CrashpadPreviewTab;
   revealedQa: Record<string, boolean>;
   scrollTop: number;
   vaultPath: string | null;
   visibleCards: CardViewRecord[];
-  onActivePanelChange: (panel: CpPanel) => void;
+  onActivePanelChange: (panel: CrashpadPanel) => void;
   onAttachExistingCard: (uid: string) => Promise<boolean>;
   onCreateNewCard: (uid: string) => Promise<boolean>;
   onDeleteFocusedCard: (request: {
-    strictConfirmationText: string;
     confirmed: boolean;
-    removeNoteBoundaries: boolean;
   }) => Promise<boolean>;
-  onEditorModeChange: (mode: EditorMode) => void;
+  onEditorModeChange: (mode: CrashpadEditorMode) => void;
   onOpenNote: (filePath: string) => Promise<void>;
-  onPreviewTabChange: (tab: PreviewTab) => void;
+  onPreviewTabChange: (tab: CrashpadPreviewTab) => void;
   onRestoreDeletedCard: (uid: string, deletedAt: string, mode: CardRestoreMode) => Promise<void>;
   onSaveFocusedCard: (card: CardDocument) => Promise<void>;
   onSelectCard: (uid: string) => void;
@@ -47,14 +46,13 @@ type CrashpadWorkspaceProps = {
   onUndo: () => Promise<void>;
 };
 
-type CpPanel = 'cards' | 'history';
-type EditorMode = 'edit' | 'preview';
-type PreviewTab = 'content' | 'memory-technique' | 'qna' | 'metadata';
-type AddCardMode = 'attach' | 'create';
+type CrashpadPanel = 'cards' | 'history';
+type CrashpadEditorMode = 'edit' | 'preview';
+type CrashpadPreviewTab = 'content' | 'memory-technique' | 'qna' | 'metadata';
 
-const PREVIEW_TABS: PreviewTab[] = ['content', 'memory-technique', 'qna', 'metadata'];
+const PREVIEW_TABS: CrashpadPreviewTab[] = ['content', 'memory-technique', 'qna', 'metadata'];
 
-function getPreviewTabLabel(tab: PreviewTab) {
+function getPreviewTabLabel(tab: CrashpadPreviewTab) {
   if (tab === 'content') {
     return 'Content';
   }
@@ -68,17 +66,6 @@ function getPreviewTabLabel(tab: PreviewTab) {
   }
 
   return 'Metadata';
-}
-
-function buildEditableCard(record: CardViewRecord): CardDocument {
-  return {
-    uid: record.uid,
-    type: record.type,
-    raw_content: record.rawContent,
-    metadata: record.metadata,
-    memory_tricks: record.memoryTricks,
-    referenced_in: record.references,
-  };
 }
 
 function formatCrashpadTimestamp(value: string | null | undefined) {
@@ -121,85 +108,48 @@ export function CrashpadWorkspace({
 }: CrashpadWorkspaceProps) {
   const cardsRailRef = useHorizontalWheelScroll<HTMLDivElement>();
   const rootScrollRef = useRef<HTMLDivElement>(null);
-  const isLocallyScrollingRef = useRef(false);
-  const localScrollTimerRef = useRef<number | null>(null);
-
-  // Editor form state
-  const [cardUid, setCardUid] = useState('');
-  const [rawContent, setRawContent] = useState('');
-  const [typeCsv, setTypeCsv] = useState('');
-  const [familiarity, setFamiliarity] = useState('0');
-  const [nextReview, setNextReview] = useState('');
-  const [memoryTechnique, setMemoryTechnique] = useState('');
-  const [qaPairs, setQaPairs] = useState<CardQaPair[]>([]);
-  const [copyEmbedFeedback, setCopyEmbedFeedback] = useState(false);
-
-  // Add card state
-  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
-  const [addCardMode, setAddCardMode] = useState<AddCardMode>('attach');
-  const [addCardUid, setAddCardUid] = useState('');
-
-  // Delete state
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [removeNoteBoundaries, setRemoveNoteBoundaries] = useState(
-    crashpadDeletePreferences.removeNoteBoundariesByDefault,
-  );
-  const [strictDeleteText, setStrictDeleteText] = useState('');
-  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
-
-  // Feedback
-  const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (localScrollTimerRef.current !== null) {
-        window.clearTimeout(localScrollTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      if (!rootScrollRef.current) {
-        return;
-      }
-
-      if (isLocallyScrollingRef.current) {
-        return;
-      }
-
-      if (Math.abs(rootScrollRef.current.scrollTop - scrollTop) > 1) {
-        rootScrollRef.current.scrollTop = scrollTop;
-      }
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [scrollTop]);
-
-  // Sync editor fields when focused card changes
-  useEffect(() => {
-    if (!focusedCard) {
-      resetEditorForm();
-      return;
-    }
-
-    setCardUid(focusedCard.uid);
-    setRawContent(focusedCard.rawContent);
-    setTypeCsv(focusedCard.type.join(', '));
-    setFamiliarity(String(focusedCard.metadata.familiarity));
-    setNextReview(focusedCard.metadata.next_review ?? '');
-    setMemoryTechnique(focusedCard.memoryTricks.memory_technique);
-    setQaPairs(focusedCard.memoryTricks.qa_pairs.map((p) => ({ ...p })));
-    setIsDeleteOpen(false);
-    resetDeleteConfirmation();
-    setFormError(null);
-  }, [focusedCard?.uid]);
-
-  useEffect(() => {
-    setRemoveNoteBoundaries(crashpadDeletePreferences.removeNoteBoundariesByDefault);
-  }, [crashpadDeletePreferences.removeNoteBoundariesByDefault, focusedCard?.uid]);
+  const { markLocallyScrolling } = useStoredScrollSync(rootScrollRef, scrollTop);
+  const {
+    cardUid,
+    setCardUid,
+    rawContent,
+    setRawContent,
+    typeCsv,
+    setTypeCsv,
+    familiarity,
+    setFamiliarity,
+    nextReview,
+    setNextReview,
+    memoryTechnique,
+    setMemoryTechnique,
+    qaPairs,
+    setQaPairs,
+    copyEmbedFeedback,
+    isAddCardOpen,
+    setIsAddCardOpen,
+    addCardMode,
+    addCardUid,
+    setAddCardUid,
+    isDeleteOpen,
+    setIsDeleteOpen,
+    deleteConfirmed,
+    setDeleteConfirmed,
+    formError,
+    resetDeleteConfirmation,
+    setAddMode,
+    updateQaPair,
+    removeQaPair,
+    handleSave,
+    handleCopyEmbed,
+    handleAddCard,
+    handleDelete,
+  } = useCrashpadCardEditor({
+    focusedCard,
+    onAttachExistingCard,
+    onCreateNewCard,
+    onDeleteFocusedCard,
+    onSaveFocusedCard,
+  });
 
   const previewTags = useMemo(
     () => typeCsv.split(',').map((t) => t.trim()).filter(Boolean),
@@ -214,148 +164,8 @@ export function CrashpadWorkspace({
     [editorMode, imageDirectories, previewTab, rawContent, vaultPath],
   );
 
-  function resetEditorForm() {
-    setCardUid('');
-    setRawContent('');
-    setTypeCsv('');
-    setFamiliarity('0');
-    setNextReview('');
-    setMemoryTechnique('');
-    setQaPairs([]);
-    setIsDeleteOpen(false);
-    setStrictDeleteText('');
-    setDeleteConfirmed(false);
-    setFormError(null);
-  }
-
-  function resetDeleteConfirmation() {
-    setStrictDeleteText('');
-    setDeleteConfirmed(false);
-  }
-
-  function updateQaPair(index: number, updates: Partial<CardQaPair>) {
-    setQaPairs((previous) =>
-      previous.map((pair, pairIndex) => (pairIndex === index ? { ...pair, ...updates } : pair)),
-    );
-  }
-
-  function removeQaPair(index: number) {
-    setQaPairs((previous) => previous.filter((_, pairIndex) => pairIndex !== index));
-  }
-
-  function setAddMode(mode: AddCardMode) {
-    setAddCardMode(mode);
-    setAddCardUid('');
-  }
-
-  async function handleSave() {
-    if (!focusedCard) return;
-    setFormError(null);
-
-    try {
-      const normalizedType = typeCsv.split(',').map((t) => t.trim()).filter(Boolean);
-
-      const nextCard: CardDocument = {
-        ...buildEditableCard(focusedCard),
-        uid: cardUid.trim() || focusedCard.uid,
-        type: normalizedType,
-        raw_content: rawContent,
-        metadata: {
-          familiarity: Number.isFinite(Number(familiarity)) ? Number(familiarity) : 0,
-          next_review: nextReview.trim() || null,
-        },
-        memory_tricks: {
-          memory_technique: memoryTechnique,
-          qa_pairs: qaPairs,
-        },
-      };
-
-      await onSaveFocusedCard(nextCard);
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Unable to save card.');
-    }
-  }
-
-  async function handleCopyEmbed() {
-    if (!focusedCard) return;
-    const embedUid = cardUid.trim() || focusedCard.uid;
-    const embed = `%%CW_CARD_START uid:${embedUid}%%\n\n%%CW_CARD_END uid:${embedUid}%%`;
-    await navigator.clipboard.writeText(embed);
-    setCopyEmbedFeedback(true);
-    setTimeout(() => setCopyEmbedFeedback(false), 2000);
-  }
-
-  async function handleAddCard() {
-    setFormError(null);
-    if (addCardMode === 'attach') {
-      const didAttach = await onAttachExistingCard(addCardUid);
-      if (didAttach) {
-        setAddCardUid('');
-        setIsAddCardOpen(false);
-      }
-    } else {
-      const didCreate = await onCreateNewCard(addCardUid);
-      if (didCreate) {
-        setAddCardUid('');
-        setIsAddCardOpen(false);
-      }
-    }
-  }
-
-  async function handleDelete() {
-    setFormError(null);
-    const didDelete = await onDeleteFocusedCard({
-      strictConfirmationText: strictDeleteText,
-      confirmed: deleteConfirmed,
-      removeNoteBoundaries,
-    });
-    if (didDelete) {
-      setIsDeleteOpen(false);
-      resetDeleteConfirmation();
-    }
-  }
-
   function renderDeleteForm() {
     if (!focusedCard) return null;
-
-    if (focusedCard.origin === 'existing') {
-      return (
-        <div className="cpDeleteForm">
-          <label className="toggleRow" htmlFor="cpRemoveBoundaries">
-            <input
-              id="cpRemoveBoundaries"
-              type="checkbox"
-              checked={removeNoteBoundaries}
-              onChange={(e) => setRemoveNoteBoundaries(e.target.checked)}
-            />
-            <span>Remove note boundaries on deletion</span>
-          </label>
-          {crashpadDeletePreferences.requireStrictConfirmationForExistingCards ? (
-            <div className="cpDeleteStrictRow">
-              <input
-                className="notePathInput cpDeleteInput"
-                value={strictDeleteText}
-                onChange={(e) => setStrictDeleteText(e.target.value)}
-                placeholder={`DELETE ${focusedCard.uid}`}
-                aria-label="Type DELETE uid to confirm"
-              />
-              <button
-                type="button"
-                className="actionButton cpDeleteConfirm"
-                onClick={() => void handleDelete()}
-                disabled={strictDeleteText !== `DELETE ${focusedCard.uid}`}
-              >
-                Confirm delete
-              </button>
-            </div>
-          ) : (
-            <button type="button" className="actionButton cpDeleteConfirm" onClick={() => void handleDelete()}>
-              Confirm delete
-            </button>
-          )}
-        </div>
-      );
-    }
 
     if (crashpadDeletePreferences.requireConfirmationForNewCards) {
       return (
@@ -367,7 +177,7 @@ export function CrashpadWorkspace({
               checked={deleteConfirmed}
               onChange={(e) => setDeleteConfirmed(e.target.checked)}
             />
-            <span>Confirm deletion of this new card from the store</span>
+            <span>Confirm deletion of this card from the store</span>
           </label>
           <button
             type="button"
@@ -395,17 +205,7 @@ export function CrashpadWorkspace({
       className="blocksView"
       ref={rootScrollRef}
       onScroll={(event) => {
-        isLocallyScrollingRef.current = true;
-
-        if (localScrollTimerRef.current !== null) {
-          window.clearTimeout(localScrollTimerRef.current);
-        }
-
-        localScrollTimerRef.current = window.setTimeout(() => {
-          isLocallyScrollingRef.current = false;
-          localScrollTimerRef.current = null;
-        }, 120);
-
+        markLocallyScrolling();
         onScrollTopChange(event.currentTarget.scrollTop);
       }}
     >

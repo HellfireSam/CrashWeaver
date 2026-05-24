@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { toPosixPath } from '../utils/paths';
@@ -38,4 +39,27 @@ export function dedupeNoteReferencesByPath<T extends { note_path: string }>(refe
   }
 
   return deduped;
+}
+
+export async function readReferenceNoteContent(rootPath: string, notePath: string) {
+  const resolvedNotePath = resolveReferenceNotePath(rootPath, notePath);
+
+  if (!resolvedNotePath) {
+    return null;
+  }
+
+  try {
+    const content = await fs.readFile(resolvedNotePath.absolutePath, 'utf8');
+
+    return {
+      ...resolvedNotePath,
+      content,
+    };
+  } catch (error) {
+    if (isMissingReferenceNoteError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }

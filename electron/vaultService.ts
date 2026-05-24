@@ -1,11 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { enrichParsedCardsWithStoreState, parseCrashCardsNote, rebuildCardStoreFromNotes, syncNoteToCardStore } from './cardSyncService';
-import { removeCardBoundaryLines, replaceCardBoundaryUids, restoreCardBoundaryLines } from './services/cardBoundaryService';
+import { renameCardUidAcrossCrashpads } from './services/crashpadCardMutationService';
+import {
+  removeCardBoundariesAcrossReferences,
+  renameCardBoundariesAcrossReferences,
+} from './services/cardReferenceMutationService';
+import { reinsertCardBoundariesForReferences } from './services/cardRestoreMutationService';
 import {
   dedupeNoteReferencesByPath,
-  isMissingReferenceNoteError,
-  resolveReferenceNotePath,
 } from './services/noteReferenceMutationService';
 import { writeVaultIndex } from './services/vaultIndexService';
 import {
@@ -108,6 +111,30 @@ async function assertVaultRoot(rootPath: string) {
   }
 
   return resolvedRoot;
+}
+
+async function resolveVaultCardStoreContext(rootPath: string) {
+  const resolvedRoot = await assertVaultRoot(rootPath);
+  const cardStore = await getCardStoreConfig(resolvedRoot);
+
+  return {
+    resolvedRoot,
+    cardStore,
+  };
+}
+
+async function resolveVaultDescriptorContext(rootPath: string) {
+  const resolvedRoot = await assertVaultRoot(rootPath);
+  const [cardStore, imageDirectories] = await Promise.all([
+    getCardStoreConfig(resolvedRoot),
+    getImageDirectories(resolvedRoot),
+  ]);
+
+  return {
+    resolvedRoot,
+    cardStore,
+    imageDirectories,
+  };
 }
 
 function resolveNotePath(rootPath: string, filePath: string) {
@@ -231,11 +258,7 @@ function toDescriptor(
 }
 
 export async function updateIndex(rootPath: string): Promise<VaultDescriptor> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const [cardStore, imageDirectories] = await Promise.all([
-    getCardStoreConfig(resolvedRoot),
-    getImageDirectories(resolvedRoot),
-  ]);
+  const { resolvedRoot, cardStore, imageDirectories } = await resolveVaultDescriptorContext(rootPath);
   const notes = await listVaultNotes(resolvedRoot, cardStore.cardStorePath);
   const rebuild = await rebuildCardStoreFromNotes(
     cardStore.cardStorePath,
@@ -251,19 +274,17 @@ export async function openVault(rootPath: string) {
 }
 
 export async function getVaultCardStore(rootPath: string) {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  return getCardStoreConfig(resolvedRoot);
+  const { cardStore } = await resolveVaultCardStoreContext(rootPath);
+  return cardStore;
 }
 
 export async function listCards(rootPath: string): Promise<CardDocument[]> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
+  const { cardStore } = await resolveVaultCardStoreContext(rootPath);
   return listCardDocuments(cardStore.cardStorePath);
 }
 
 export async function createCard(rootPath: string, uid: string): Promise<CardDocument> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
+  const { cardStore } = await resolveVaultCardStoreContext(rootPath);
   const normalizedUid = assertValidCardUid(uid);
 
   if (await readCardDocument(cardStore.cardStorePath, normalizedUid)) {
@@ -274,68 +295,12 @@ export async function createCard(rootPath: string, uid: string): Promise<CardDoc
 }
 
 export async function saveCard(rootPath: string, card: CardDocument): Promise<CardDocument> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
+  const { cardStore } = await resolveVaultCardStoreContext(rootPath);
   return writeCardDocument(cardStore.cardStorePath, card);
 }
 
-async function renameCardAcrossCrashpads(rootPath: string, previousUid: string, nextUid: string) {
-  const crashpadSummaries = await listCrashpads(rootPath);
-  let updatedCrashpads = 0;
-
-  for (const summary of crashpadSummaries) {
-    const crashpad = await readCrashpad(rootPath, summary.id);
-
-    if (!crashpad) {
-      continue;
-    }
-
-    let didChange = false;
-    const nextCards = crashpad.cards.map((entry) => {
-      if (entry.uid !== previousUid) {
-        return entry;
-      }
-
-      didChange = true;
-      return {
-        ...entry,
-        uid: nextUid,
-      };
-    });
-    const nextDeletedCards = crashpad.deletedCards.map((snapshot) => {
-      if (snapshot.uid !== previousUid && snapshot.card.uid !== previousUid) {
-        return snapshot;
-      }
-
-      didChange = true;
-      return {
-        ...snapshot,
-        uid: nextUid,
-        card: {
-          ...snapshot.card,
-          uid: nextUid,
-        },
-      };
-    });
-
-    if (!didChange) {
-      continue;
-    }
-
-    await writeCrashpad(rootPath, {
-      ...crashpad,
-      cards: nextCards,
-      deletedCards: nextDeletedCards,
-    });
-    updatedCrashpads += 1;
-  }
-
-  return updatedCrashpads;
-}
-
 export async function renameCard(rootPath: string, previousUid: string, card: CardDocument): Promise<CardRenameResult> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
+  const { resolvedRoot, cardStore } = await resolveVaultCardStoreContext(rootPath);
   const normalizedPreviousUid = assertValidCardUid(previousUid);
   const normalizedNextUid = assertValidCardUid(card.uid);
   const existingCard = await readCardDocument(cardStore.cardStorePath, normalizedPreviousUid);
@@ -366,38 +331,17 @@ export async function renameCard(rootPath: string, previousUid: string, card: Ca
     ...card,
     uid: normalizedNextUid,
   });
-  const updatedNotePaths: string[] = [];
   const referencedNotePaths = [...new Set(existingCard.referenced_in.map((reference) => reference.note_path))];
-
-  for (const notePath of referencedNotePaths) {
-    const resolvedNotePath = resolveReferenceNotePath(resolvedRoot, notePath);
-
-    if (!resolvedNotePath) {
-      continue;
-    }
-
-    try {
-      const existingContent = await fs.readFile(resolvedNotePath.absolutePath, 'utf8');
-      const result = replaceCardBoundaryUids(existingContent, normalizedPreviousUid, normalizedNextUid);
-
-      if (!result.replaced) {
-        continue;
-      }
-
-      await writeTextAtomically(resolvedNotePath.absolutePath, result.content);
-      await syncNoteToCardStore(cardStore.cardStorePath, resolvedNotePath.relativePath, result.content);
-      updatedNotePaths.push(resolvedNotePath.relativePath);
-    } catch (error) {
-      if (isMissingReferenceNoteError(error)) {
-        continue;
-      }
-
-      throw error;
-    }
-  }
+  const updatedNotePaths = await renameCardBoundariesAcrossReferences({
+    rootPath: resolvedRoot,
+    cardStorePath: cardStore.cardStorePath,
+    previousUid: normalizedPreviousUid,
+    nextUid: normalizedNextUid,
+    notePaths: referencedNotePaths,
+  });
 
   await deleteCardDocument(cardStore.cardStorePath, normalizedPreviousUid);
-  const updatedCrashpads = await renameCardAcrossCrashpads(resolvedRoot, normalizedPreviousUid, normalizedNextUid);
+  const updatedCrashpads = await renameCardUidAcrossCrashpads(resolvedRoot, normalizedPreviousUid, normalizedNextUid);
 
   return {
     previousUid: normalizedPreviousUid,
@@ -412,41 +356,21 @@ export async function deleteCard(
   uid: string,
   options: CardDeleteOptions,
 ): Promise<CardDeleteResult> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
+  const { resolvedRoot, cardStore } = await resolveVaultCardStoreContext(rootPath);
   const normalizedUid = assertValidCardUid(uid);
   const existingCard = await readCardDocument(cardStore.cardStorePath, normalizedUid);
   let removedBoundariesFrom = 0;
   let removedBoundaryLines = 0;
 
   if (existingCard && options.removeNoteBoundaries) {
-    for (const reference of existingCard.referenced_in) {
-      const resolvedNotePath = resolveReferenceNotePath(resolvedRoot, reference.note_path);
-
-      if (!resolvedNotePath) {
-        continue;
-      }
-
-      try {
-        const existingContent = await fs.readFile(resolvedNotePath.absolutePath, 'utf8');
-        const result = removeCardBoundaryLines(existingContent, normalizedUid);
-
-        if (result.removedBoundaryLines === 0) {
-          continue;
-        }
-
-        await writeTextAtomically(resolvedNotePath.absolutePath, result.content);
-        await syncNoteToCardStore(cardStore.cardStorePath, resolvedNotePath.relativePath, result.content);
-        removedBoundariesFrom += 1;
-        removedBoundaryLines += result.removedBoundaryLines;
-      } catch (error) {
-        if (isMissingReferenceNoteError(error)) {
-          continue;
-        }
-
-        throw error;
-      }
-    }
+    const removalResult = await removeCardBoundariesAcrossReferences({
+      rootPath: resolvedRoot,
+      cardStorePath: cardStore.cardStorePath,
+      uid: normalizedUid,
+      references: existingCard.referenced_in,
+    });
+    removedBoundariesFrom = removalResult.removedBoundariesFrom;
+    removedBoundaryLines = removalResult.removedBoundaryLines;
   }
 
   const removedCardFile = await deleteCardDocument(cardStore.cardStorePath, normalizedUid);
@@ -464,8 +388,7 @@ export async function restoreDeletedCard(
   snapshot: CrashpadDeletedCardSnapshot,
   options: CardRestoreOptions,
 ): Promise<CardRestoreResult> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
+  const { resolvedRoot, cardStore } = await resolveVaultCardStoreContext(rootPath);
   const normalizedUid = assertValidCardUid(snapshot.card.uid);
   const normalizedSnapshotUid = assertValidCardUid(snapshot.uid);
 
@@ -482,54 +405,22 @@ export async function restoreDeletedCard(
 
   await writeCardDocument(cardStore.cardStorePath, restoredCard);
 
-  let reinsertedInto = 0;
-  let alreadyPresentIn = 0;
   const skippedNotePaths: string[] = [];
   const uniqueReferences = dedupeNoteReferencesByPath(snapshot.card.referenced_in);
+  let reinsertedInto = 0;
+  let alreadyPresentIn = 0;
 
   if (shouldReinsertBoundaries) {
-    for (const reference of uniqueReferences) {
-      const resolvedNotePath = resolveReferenceNotePath(resolvedRoot, reference.note_path);
-
-      if (!resolvedNotePath) {
-        skippedNotePaths.push(reference.note_path);
-        continue;
-      }
-
-      try {
-        const existingContent = await fs.readFile(resolvedNotePath.absolutePath, 'utf8');
-        const result = restoreCardBoundaryLines(
-          existingContent,
-          normalizedUid,
-          snapshot.card.raw_content,
-          reference.start_line,
-          reference.end_line,
-        );
-        const normalizedNotePath = resolvedNotePath.relativePath;
-
-        if (result.alreadyPresent) {
-          await syncNoteToCardStore(cardStore.cardStorePath, normalizedNotePath, existingContent);
-          alreadyPresentIn += 1;
-          continue;
-        }
-
-        if (!result.inserted) {
-          skippedNotePaths.push(normalizedNotePath);
-          continue;
-        }
-
-        await writeTextAtomically(resolvedNotePath.absolutePath, result.content);
-        await syncNoteToCardStore(cardStore.cardStorePath, normalizedNotePath, result.content);
-        reinsertedInto += 1;
-      } catch (error) {
-        if (isMissingReferenceNoteError(error)) {
-          skippedNotePaths.push(resolvedNotePath.relativePath);
-          continue;
-        }
-
-        throw error;
-      }
-    }
+    const reinsertionResult = await reinsertCardBoundariesForReferences({
+      rootPath: resolvedRoot,
+      cardStorePath: cardStore.cardStorePath,
+      uid: normalizedUid,
+      rawContent: snapshot.card.raw_content,
+      references: uniqueReferences,
+    });
+    reinsertedInto = reinsertionResult.reinsertedInto;
+    alreadyPresentIn = reinsertionResult.alreadyPresentIn;
+    skippedNotePaths.push(...reinsertionResult.skippedNotePaths);
   }
 
   return {
@@ -617,19 +508,14 @@ export async function updateVaultImageDirectories(rootPath: string, imageDirecto
 }
 
 export async function readNote(rootPath: string, filePath: string) {
-  const resolvedRoot = await assertVaultRoot(rootPath);
+  const { resolvedRoot, cardStore } = await resolveVaultCardStoreContext(rootPath);
   const notePath = resolveNotePath(resolvedRoot, filePath);
-  const cardStore = await getCardStoreConfig(resolvedRoot);
   return readNoteDocument(resolvedRoot, notePath.absolutePath, cardStore.cardStorePath);
 }
 
 export async function writeNote(rootPath: string, input: VaultWriteNoteInput): Promise<VaultWriteNoteResult> {
-  const resolvedRoot = await assertVaultRoot(rootPath);
+  const { resolvedRoot, cardStore, imageDirectories } = await resolveVaultDescriptorContext(rootPath);
   const notePath = resolveNotePath(resolvedRoot, input.filePath);
-  const [cardStore, imageDirectories] = await Promise.all([
-    getCardStoreConfig(resolvedRoot),
-    getImageDirectories(resolvedRoot),
-  ]);
   await fs.mkdir(path.dirname(notePath.absolutePath), { recursive: true });
   await writeTextAtomically(notePath.absolutePath, input.content);
 

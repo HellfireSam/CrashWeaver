@@ -183,21 +183,6 @@ export function SettingsModal({
                 <span>Remove note boundaries by default when deleting cards</span>
               </label>
 
-              <label className="toggleRow" htmlFor="cpRequireStrictConfirmation">
-                <input
-                  id="cpRequireStrictConfirmation"
-                  type="checkbox"
-                  checked={crashpadDeletePreferences.requireStrictConfirmationForExistingCards}
-                  onChange={(event) =>
-                    onSetDeletePreferences({
-                      ...crashpadDeletePreferences,
-                      requireStrictConfirmationForExistingCards: event.target.checked,
-                    })
-                  }
-                />
-                <span>Require strict text confirmation when deleting attached cards</span>
-              </label>
-
               <label className="toggleRow" htmlFor="cpRequireConfirmationForNew">
                 <input
                   id="cpRequireConfirmationForNew"
@@ -210,7 +195,7 @@ export function SettingsModal({
                     })
                   }
                 />
-                <span>Require confirmation when deleting new cards</span>
+                <span>Require confirmation when deleting cards</span>
               </label>
             </div>
           )}

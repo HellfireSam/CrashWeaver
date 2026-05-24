@@ -3,7 +3,7 @@
   "name": "2026-05-23",
   "filePath": "D:\\Education_my\\OTHERS\\CrashWeaver\\mock-vault\\.crashweaver\\crashpads\\2026-05-23.crashpad.json",
   "createdAt": "2026-05-23T09:00:00.000Z",
-  "updatedAt": "2026-05-23T14:44:23.924Z",
+  "updatedAt": "2026-05-24T06:41:43.899Z",
   "cards": [
     {
       "uid": "CW-IMG-001",
@@ -11,17 +11,37 @@
       "addedAt": "2026-05-23T09:00:00.000Z"
     },
     {
-      "uid": "CW-MOCK-010",
-      "origin": "existing",
-      "addedAt": "2026-05-23T09:01:00.000Z"
-    },
-    {
       "uid": "test_for_embedding",
       "origin": "new",
-      "addedAt": "2026-05-23T14:44:23.924Z"
+      "addedAt": "2026-05-23T15:42:02.683Z"
+    },
+    {
+      "uid": "CW-MOCK-010",
+      "origin": "existing",
+      "addedAt": "2026-05-24T06:41:43.899Z"
     }
   ],
   "deletedCards": [
+    {
+      "uid": "dfgh",
+      "origin": "existing",
+      "deletedAt": "2026-05-23T15:20:33.850Z",
+      "removeNoteBoundaries": true,
+      "card": {
+        "uid": "dfgh",
+        "type": [],
+        "raw_content": "",
+        "metadata": {
+          "familiarity": 0,
+          "next_review": null
+        },
+        "memory_tricks": {
+          "memory_technique": "",
+          "qa_pairs": []
+        },
+        "referenced_in": []
+      }
+    },
     {
       "uid": "asdf",
       "origin": "existing",

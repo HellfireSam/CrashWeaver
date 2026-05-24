@@ -11,7 +11,7 @@
     "dev:electron": "wait-on tcp:5173 dist-electron/main.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
     "test": "npm run test:electron && npm run test:renderer",
     "test:electron": "npm run build:main && node --test tests/electron/**/*.test.cjs",
-    "test:renderer": "vitest run src/lib/markdownPreview.test.ts",
+    "test:renderer": "vitest run src/lib/markdownPreview.test.ts src/lib/editorPaths.test.ts src/lib/crashpadStatus.test.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.electron.json",

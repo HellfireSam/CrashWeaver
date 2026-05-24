@@ -1,26 +1,12 @@
 # Stage 1 Setup
 
-This document captures baseline setup for the Stage 1 shell. Stage 2 features are already in the repository and are validated in the Stage 2 setup guide.
+Canonical setup commands:
+- docs/01-Development-Setup.md
 
-## Development Environment
+## Stage 1 Validation Focus
 
-1. Install Node.js 20 LTS or newer on Windows.
-2. Open the project root in a terminal.
-3. Run npm install.
-4. Run npm run dev.
+Use this stage guide only to confirm Stage 1 outcomes:
+- app launches as Electron shell
+- renderer boots successfully
+- preload bridge is active and isolation pattern is in place
 
-## Build Validation
-
-- Run npm run build.
-- Run npm start to launch from built assets.
-
-## Stage 1 Deliverables
-
-- Electron app shell
-- React renderer shell
-- preload bridge architecture
-- project scripts for local development and build
-
-## Relationship To Clarified Product Direction
-
-Stage 1 does not implement Crash Cards, card-store synchronization, Crashpad, or Weaver behavior. It provides the runtime and safety foundation required for those future stages.
