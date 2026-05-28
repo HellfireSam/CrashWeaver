@@ -16,6 +16,9 @@ Supporting docs:
 - docs/Stage 3 Setup.md
 - docs/Stage 4 Architecture.md
 - docs/Stage 4 Setup.md
+- docs/Stage 5 Architecture.md
+- docs/Stage 5 Setup.md
+- docs/LLM Layer - OpenRouter Implementation.md
 - docs/Card Insert Templates.md
 - docs/Card Workspace Template Options.md
 

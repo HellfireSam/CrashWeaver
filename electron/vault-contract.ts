@@ -219,3 +219,222 @@ export interface VaultWriteNoteResult {
   note: VaultNoteDocument;
   vault: VaultDescriptor;
 }
+
+export type WeaveKind = 'guided-insert' | 'intelligent';
+
+export type WeaveStrength = 'light' | 'standard' | 'go-ham';
+
+export interface GuidedInsertPermissions {
+  editContent: boolean;
+  createNote: boolean;
+}
+
+export type WeavePlanOperationKind =
+  | 'insert-boundary-pair'
+  | 'edit-note-content'
+  | 'create-note'
+  | 'rename-note'
+  | 'move-note'
+  | 'delete-note'
+  | 'create-directory'
+  | 'rename-directory'
+  | 'move-directory'
+  | 'delete-directory';
+
+export type WeaveErrorCategory =
+  | 'config-error'
+  | 'auth-error'
+  | 'rate-limit'
+  | 'provider-timeout'
+  | 'provider-error'
+  | 'schema-error'
+  | 'safety-error';
+
+export type WeaveProviderName = 'stub' | 'openrouter';
+
+export type WeaveInsertPlacement =
+  | 'append-to-note'
+  | 'prepend-to-note'
+  | 'after-heading'
+  | 'before-heading'
+  | 'after-selection';
+
+export type WeaveNoteEditAction =
+  | 'replace-selection'
+  | 'replace-heading-section'
+  | 'insert-before-heading'
+  | 'insert-after-heading';
+
+export interface InsertBoundaryPairPayload {
+  cardUid: string;
+  placement: WeaveInsertPlacement;
+  boundaryBlock: string;
+  headingText?: string;
+  selectedText?: string;
+}
+
+export interface EditNoteContentPayload {
+  action: WeaveNoteEditAction;
+  targetText: string;
+  replacementMarkdown: string;
+}
+
+export interface CreateNotePayload {
+  cardUid: string;
+  title: string;
+  content: string;
+}
+
+export interface RenameNotePayload {
+  fromPath: string;
+  toPath: string;
+  renameReason: string;
+}
+
+export interface MoveNotePayload {
+  fromPath: string;
+  toPath: string;
+  moveReason: string;
+}
+
+export interface DeleteNotePayload {
+  deleteReason: string;
+}
+
+export interface CreateDirectoryPayload {
+  purpose: string;
+}
+
+export interface RenameDirectoryPayload {
+  fromPath: string;
+  toPath: string;
+  renameReason: string;
+}
+
+export interface MoveDirectoryPayload {
+  fromPath: string;
+  toPath: string;
+  moveReason: string;
+}
+
+export interface DeleteDirectoryPayload {
+  deleteReason: string;
+}
+
+interface WeavePlanRequestBase {
+  rootPath: string;
+  kind: WeaveKind;
+  preferredModel?: string;
+  intent: string;
+  cardUid: string;
+  activeNotePath?: string;
+  activeCrashpadId?: string;
+  activeCrashpadPath?: string;
+  selectedText?: string;
+  maxOperations?: number;
+}
+
+export interface GuidedInsertWeavePlanRequest extends WeavePlanRequestBase {
+  kind: 'guided-insert';
+  permissions: GuidedInsertPermissions;
+}
+
+export interface IntelligentWeavePlanRequest extends WeavePlanRequestBase {
+  kind: 'intelligent';
+  strength: WeaveStrength;
+}
+
+export type WeavePlanRequest = GuidedInsertWeavePlanRequest | IntelligentWeavePlanRequest;
+
+interface WeavePlanOperationBase<K extends WeavePlanOperationKind, P> {
+  kind: K;
+  targetPath: string;
+  payload: P;
+  rationale: string;
+}
+
+export type InsertBoundaryPairOperation = WeavePlanOperationBase<'insert-boundary-pair', InsertBoundaryPairPayload>;
+export type EditNoteContentOperation = WeavePlanOperationBase<'edit-note-content', EditNoteContentPayload>;
+export type CreateNoteOperation = WeavePlanOperationBase<'create-note', CreateNotePayload>;
+export type RenameNoteOperation = WeavePlanOperationBase<'rename-note', RenameNotePayload>;
+export type MoveNoteOperation = WeavePlanOperationBase<'move-note', MoveNotePayload>;
+export type DeleteNoteOperation = WeavePlanOperationBase<'delete-note', DeleteNotePayload>;
+export type CreateDirectoryOperation = WeavePlanOperationBase<'create-directory', CreateDirectoryPayload>;
+export type RenameDirectoryOperation = WeavePlanOperationBase<'rename-directory', RenameDirectoryPayload>;
+export type MoveDirectoryOperation = WeavePlanOperationBase<'move-directory', MoveDirectoryPayload>;
+export type DeleteDirectoryOperation = WeavePlanOperationBase<'delete-directory', DeleteDirectoryPayload>;
+
+export type WeavePlanOperation =
+  | InsertBoundaryPairOperation
+  | EditNoteContentOperation
+  | CreateNoteOperation
+  | RenameNoteOperation
+  | MoveNoteOperation
+  | DeleteNoteOperation
+  | CreateDirectoryOperation
+  | RenameDirectoryOperation
+  | MoveDirectoryOperation
+  | DeleteDirectoryOperation;
+
+interface WeavePlanBase {
+  summary: string;
+  operations: WeavePlanOperation[];
+  warnings: string[];
+  referencedCards: string[];
+}
+
+export interface GuidedInsertWeavePlan extends WeavePlanBase {
+  kind: 'guided-insert';
+  permissions: GuidedInsertPermissions;
+}
+
+export interface IntelligentWeavePlan extends WeavePlanBase {
+  kind: 'intelligent';
+  strength: WeaveStrength;
+}
+
+export type WeavePlan = GuidedInsertWeavePlan | IntelligentWeavePlan;
+
+export interface WeavePlanResult {
+  plan: WeavePlan;
+  model: string;
+  provider: WeaveProviderName;
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+  latencyMs: number;
+}
+
+export interface WeaveProviderHealth {
+  ok: boolean;
+  provider: WeaveProviderName;
+  configured: boolean;
+  model: string;
+  message: string;
+  errorCategory?: WeaveErrorCategory;
+}
+
+export interface WeaveModelInfo {
+  id: string;
+  name: string;
+  costLabel: string;
+  isFree: boolean;
+  contextLength?: number;
+}
+
+export interface WeaveModelProvider {
+  generatePlan(request: WeavePlanRequest): Promise<WeavePlanResult>;
+  healthCheck(): Promise<WeaveProviderHealth>;
+  listModels(): Promise<WeaveModelInfo[]>;
+}
+
+export interface WeaverSettings {
+  configured: boolean;
+  preferredModel: string | null;
+}
+
+export interface WeaverKeyStatus {
+  configured: boolean;
+}

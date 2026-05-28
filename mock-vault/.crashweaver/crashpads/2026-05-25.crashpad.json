@@ -1,0 +1,20 @@
+{
+  "id": "2026-05-25",
+  "name": "2026-05-25",
+  "filePath": "D:\\Education_my\\OTHERS\\CrashWeaver\\mock-vault\\.crashweaver\\crashpads\\2026-05-25.crashpad.json",
+  "createdAt": "2026-05-25T06:54:41.089Z",
+  "updatedAt": "2026-05-25T06:55:42.575Z",
+  "cards": [
+    {
+      "uid": "weaver_test",
+      "origin": "new",
+      "addedAt": "2026-05-25T06:54:58.514Z"
+    },
+    {
+      "uid": "weaver_test2",
+      "origin": "new",
+      "addedAt": "2026-05-25T06:55:42.571Z"
+    }
+  ],
+  "deletedCards": []
+}

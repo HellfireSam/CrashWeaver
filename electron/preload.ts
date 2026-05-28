@@ -13,6 +13,12 @@ import type {
   CrashpadSummary,
   VaultDescriptor,
   VaultNoteDocument,
+  WeavePlanRequest,
+  WeavePlanResult,
+  WeaveModelInfo,
+  WeaveProviderHealth,
+  WeaverKeyStatus,
+  WeaverSettings,
   VaultWriteNoteInput,
   VaultWriteNoteResult,
 } from './vault-contract';
@@ -59,4 +65,16 @@ contextBridge.exposeInMainWorld('crashWeaver', {
     ipcRenderer.invoke('crashpad:get-delete-preferences', rootPath) as Promise<CrashpadDeletePreferences>,
   setCrashpadDeletePreferences: (rootPath: string, preferences: CrashpadDeletePreferences) =>
     ipcRenderer.invoke('crashpad:set-delete-preferences', rootPath, preferences) as Promise<CrashpadDeletePreferences>,
+  generateWeavePlan: (request: WeavePlanRequest) =>
+    ipcRenderer.invoke('weave:generate-plan', request) as Promise<WeavePlanResult>,
+  checkWeaveProvider: () => ipcRenderer.invoke('weave:health-check') as Promise<WeaveProviderHealth>,
+  listWeaveModels: () => ipcRenderer.invoke('weave:list-models') as Promise<WeaveModelInfo[]>,
+  getWeaverSettings: () => ipcRenderer.invoke('weave:get-settings') as Promise<WeaverSettings>,
+  setWeaverPreferredModel: (preferredModel: string | null) =>
+    ipcRenderer.invoke('weave:set-preferred-model', preferredModel) as Promise<WeaverSettings>,
+  getWeaverRequestLogsDirectory: () => ipcRenderer.invoke('weave:get-request-logs-directory') as Promise<string | null>,
+  setWeaverRequestLogsDirectory: (directoryPath: string | null) =>
+    ipcRenderer.invoke('weave:set-request-logs-directory', directoryPath) as Promise<string | null>,
+  setWeaverApiKey: (key: string) => ipcRenderer.invoke('weave:set-api-key', key) as Promise<void>,
+  clearWeaverApiKey: () => ipcRenderer.invoke('weave:clear-api-key') as Promise<void>,
 });

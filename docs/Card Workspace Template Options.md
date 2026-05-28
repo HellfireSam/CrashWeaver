@@ -22,3 +22,5 @@ This file is a future UX idea catalog only. It does not define behavior contract
 
 Any future template must remain compatible with the canonical card model and workflow boundaries described in docs/00-Single-Source-of-Truth.md.
 
+Future Weaver or review surfaces may borrow from these layout ideas, but proposal staging and approval behavior must still follow the canonical rules.
+

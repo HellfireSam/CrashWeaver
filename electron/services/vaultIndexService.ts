@@ -71,6 +71,10 @@ async function readStoredIndex(indexFilePath: string, legacyIndexFilePath: strin
   return readStoredIndexFile(legacyIndexFilePath);
 }
 
+export async function readVaultIndex(indexFilePath: string, legacyIndexFilePath: string): Promise<VaultIndex | null> {
+  return readStoredIndex(indexFilePath, legacyIndexFilePath);
+}
+
 function buildIndex(notes: VaultNoteDocument[], existingIndex: VaultIndex | null): VaultIndex {
   const previousEntries = new Map(existingIndex?.entries.map((entry) => [entry.filePath, entry]));
   const entries = notes

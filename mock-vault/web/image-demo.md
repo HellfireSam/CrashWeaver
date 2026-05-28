@@ -3,7 +3,7 @@
 This note demonstrates how to embed a local image inside a CrashWeaver card's `raw_content`.
 The vault-root-relative path is used — the same way Obsidian resolves attachments.
 
-%%CW_CARD_START uid:CW-IMG-001%%
+%%CW_CARD_START uid:Cat_card%%
 
 ### Embedding a Local Image
 
@@ -27,4 +27,4 @@ Images stored in sub-folders are referenced the same way:
 ![Diagram](/architecture/diagram.png)
 ```
 
-%%CW_CARD_END uid:CW-IMG-001%%
+%%CW_CARD_END uid:Cat_card%%

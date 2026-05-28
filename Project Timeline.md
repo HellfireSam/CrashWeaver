@@ -14,8 +14,8 @@ Completed:
 - Stage 4: crashpad canvas and card authoring workflows
 
 Planned:
-- Stage 5: Weaver planning and insert modes
-- Stage 6: accept/reject diff gate for LLM changes
+- Stage 5: Weaver planning, guided insert permissions, intelligent strengths, and staged proposal contracts
+- Stage 6: accept/reject diff gate and apply or reject UX for Weaver changes
 - Stage 7: card-level scheduling and review
 - Stage 8: hardening and release preparation
 
@@ -27,8 +27,8 @@ Planned:
 | 2. Vault Backend and Editor Shell | complete | Vault open/read/write/index and editor shell |
 | 3. Crash Card Parser and Card Store Sync | complete | Strict UID parser and reference sync |
 | 4. Crashpad Canvas and Card Authoring | complete | Crashpad files, card CRUD flows, undo/redo |
-| 5. Weaver Planning and Insert Modes | planned | Plain/plus-edit/create-new/intelligent |
-| 6. Approval Layer and Diff UX | planned | No LLM auto-apply; explicit approval gate |
+| 5. Weaver Planning and Guided Insert | planned | Single-card guided insert with optional `edit-content` / `create-note` permissions, plus intelligent light/standard/go ham restructuring; read-only proposal staging |
+| 6. Approval Layer and Diff UX | planned | Explicit accept/reject diff review before any Weaver writes |
 | 7. Card-Level Scheduling and Review | planned | Familiarity and next-review loop |
 | 8. Test Hardening and Release Prep | planned | Integration coverage and release checks |
 

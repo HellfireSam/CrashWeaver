@@ -4,6 +4,18 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron';
 import { removeNoteReferencesFromCardStore, syncNoteToCardStore } from './cardSyncService';
+import {
+  checkWeaveProvider,
+  generateWeavePlan,
+  initializeWeaveProvider,
+  listWeaveModels,
+  setWeaveApiKey,
+  clearWeaveApiKey,
+  getWeaverSettings,
+  setWeaverPreferredModel,
+  getConfiguredWeaverRequestLogsDirectory,
+  setConfiguredWeaverRequestLogsDirectory,
+} from './weaver/weaveService';
 import { getFsErrorCode } from './utils/fsErrors';
 import { toPosixPath } from './utils/paths';
 import type {
@@ -13,6 +25,7 @@ import type {
   CrashpadDeletePreferences,
   CrashpadDeletedCardSnapshot,
   CrashpadDocument,
+  WeavePlanRequest,
 } from './vault-contract';
 import {
   createCard,
@@ -428,6 +441,27 @@ ipcMain.handle('crashpad:save', async (_event, rootPath: string, crashpad: Crash
   saveCrashpad(rootPath, crashpad),
 );
 
+ipcMain.handle('weave:generate-plan', async (_event, request: WeavePlanRequest) => generateWeavePlan(request));
+
+ipcMain.handle('weave:health-check', async () => checkWeaveProvider());
+ipcMain.handle('weave:list-models', async () => listWeaveModels());
+
+ipcMain.handle('weave:get-settings', async () => getWeaverSettings());
+
+ipcMain.handle('weave:set-preferred-model', async (_event, preferredModel: string | null) =>
+  setWeaverPreferredModel(preferredModel),
+);
+
+ipcMain.handle('weave:get-request-logs-directory', async () => getConfiguredWeaverRequestLogsDirectory());
+
+ipcMain.handle('weave:set-request-logs-directory', async (_event, directoryPath: string | null) =>
+  setConfiguredWeaverRequestLogsDirectory(directoryPath),
+);
+
+ipcMain.handle('weave:set-api-key', async (_event, key: string) => setWeaveApiKey(key));
+
+ipcMain.handle('weave:clear-api-key', async () => clearWeaveApiKey());
+
 ipcMain.handle('crashpad:get-delete-preferences', async (_event, rootPath: string) =>
   getVaultCrashpadDeletePreferences(rootPath),
 );
@@ -439,6 +473,7 @@ ipcMain.handle('crashpad:set-delete-preferences', async (_event, rootPath: strin
 app.whenReady().then(() => {
   registerLocalAssetProtocol();
   createMainWindow();
+  void initializeWeaveProvider();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

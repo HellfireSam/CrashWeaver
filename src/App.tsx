@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import 'katex/dist/katex.min.css';
 import type {
@@ -8,6 +8,11 @@ import type {
   CrashpadSummary,
   VaultDescriptor,
   VaultNoteDocument,
+  WeaveKind,
+  WeavePlanResult,
+  WeaveProviderHealth,
+  WeaverSettings,
+  WeaveStrength,
 } from '../electron/vault-contract';
 import { CardsWorkspace } from './components/CardsWorkspace';
 import { CrashpadWorkspace } from './components/CrashpadWorkspace';
@@ -55,6 +60,7 @@ import { usePaneLayout } from './hooks/usePaneLayout';
 import { useStoredScrollSync } from './hooks/useStoredScrollSync';
 
 const defaultDraftPath = 'Inbox/Stage-2-scratch.md';
+const defaultWeaveModel = 'openai/gpt-4o';
 const defaultDraftContent = [
   '# Stage 2 Scratch Note',
   '',
@@ -65,6 +71,30 @@ const defaultDraftContent = [
 type WidgetTool = 'explorer' | 'daily-crashpad' | 'extensions';
 type EditorDocumentKind = 'markdown' | 'crashpad' | 'card';
 type MarkdownViewMode = 'source' | 'preview' | 'cards';
+
+function getDefaultWeaveCardUid(cards: CardViewRecord[], focusedUid: string | null) {
+  if (focusedUid && cards.some((card) => card.uid === focusedUid)) {
+    return focusedUid;
+  }
+
+  return cards[0]?.uid ?? null;
+}
+
+function getSelectedTextareaText(element: HTMLTextAreaElement | null) {
+  if (!element) {
+    return undefined;
+  }
+
+  const start = element.selectionStart ?? 0;
+  const end = element.selectionEnd ?? 0;
+
+  if (end <= start) {
+    return undefined;
+  }
+
+  const selectedText = element.value.slice(start, end);
+  return selectedText.trim() ? selectedText : undefined;
+}
 
 export default function App() {
   const [vaultPath, setVaultPath] = useState<string | null>(null);
@@ -83,6 +113,17 @@ export default function App() {
   const [isRefreshingIndex, setIsRefreshingIndex] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [weaveModel, setWeaveModel] = useState(defaultWeaveModel);
+  const [weaveKind, setWeaveKind] = useState<WeaveKind>('guided-insert');
+  const [weaveEditContent, setWeaveEditContent] = useState(false);
+  const [weaveCreateNote, setWeaveCreateNote] = useState(false);
+  const [weaveStrength, setWeaveStrength] = useState<WeaveStrength>('standard');
+  const [weaveIntent, setWeaveIntent] = useState('');
+  const [weavePlanResult, setWeavePlanResult] = useState<WeavePlanResult | null>(null);
+  const [weaveProviderHealth, setWeaveProviderHealth] = useState<WeaveProviderHealth | null>(null);
+  const [isCheckingWeaveProvider, setIsCheckingWeaveProvider] = useState(false);
+  const [isGeneratingWeavePlan, setIsGeneratingWeavePlan] = useState(false);
+  const [weaveEvaluatingCardUid, setWeaveEvaluatingCardUid] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [activeSidebarTab, setActiveSidebarTab] = useState<'explorer' | 'search'>('explorer');
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
@@ -104,6 +145,7 @@ export default function App() {
     requireConfirmationForNewCards: true,
     requireStrictConfirmationForExistingCards: true,
   });
+  const [weaverSettings, setWeaverSettings] = useState<WeaverSettings | undefined>(undefined);
   const [crashpadPast, setCrashpadPast] = useState<CrashpadHistoryEntry[]>([]);
   const [crashpadFuture, setCrashpadFuture] = useState<CrashpadHistoryEntry[]>([]);
   const [focusedCardUid, setFocusedCardUid] = useState<string | null>(null);
@@ -279,6 +321,10 @@ export default function App() {
   const focusedCard = useMemo(
     () => visibleCards.find((card) => card.uid === focusedCardUid) ?? visibleCards[0] ?? null,
     [focusedCardUid, visibleCards],
+  );
+  const crashpadWeaveCardUid = useMemo(
+    () => getDefaultWeaveCardUid(crashpadCards, focusedCardUid),
+    [crashpadCards, focusedCardUid],
   );
   const isCardsSurfaceActive = isCrashpadEditor || isCardEditor || (isMarkdownEditor && viewMode === 'cards');
 
@@ -616,14 +662,187 @@ export default function App() {
     setStatusMessage,
     setErrorMessage,
   });
+  const layoutStyle = {
+    '--widgets-width': '56px',
+    '--sidebar-width': isSidebarVisible ? `${sidebarWidth}px` : '0px',
+    '--left-splitter-width': isSidebarVisible ? '8px' : '0px',
+    '--inspector-width': isInspectorVisible ? `${inspectorWidth}px` : '0px',
+    '--right-splitter-width': isInspectorVisible ? '8px' : '0px',
+    '--editor-font-size': `${editorFontSize}px`,
+  } as CSSProperties;
+
+  useEffect(() => {
+    setWeavePlanResult(null);
+    setWeaveProviderHealth(null);
+    setWeaveIntent('');
+    setWeaveModel(weaverSettings?.preferredModel ?? defaultWeaveModel);
+    setWeaveKind('guided-insert');
+    setWeaveEditContent(false);
+    setWeaveCreateNote(false);
+    setWeaveStrength('standard');
+  }, [activeCrashpad?.id, activeEditorKind, weaverSettings?.preferredModel]);
+
+  const refreshWeaveProviderHealth = useCallback(async () => {
+    setIsCheckingWeaveProvider(true);
+
+    try {
+      const health = await window.crashWeaver.checkWeaveProvider();
+      setWeaveProviderHealth(health);
+      return health;
+    } catch (error) {
+      setWeaveProviderHealth(null);
+      throw error;
+    } finally {
+      setIsCheckingWeaveProvider(false);
+    }
+  }, []);
+
+  const handlePrepareWeavePanel = useCallback(async () => {
+    if (!vaultPath || !isCrashpadEditor || !activeCrashpad) {
+      setWeaveProviderHealth(null);
+      return;
+    }
+
+    try {
+      await refreshWeaveProviderHealth();
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to check Weaver provider health.');
+    }
+  }, [activeCrashpad, isCrashpadEditor, refreshWeaveProviderHealth, vaultPath]);
+
+  const handleGenerateWeavePlan = useCallback(async () => {
+    if (!vaultPath || !isCrashpadEditor || !activeCrashpad) {
+      setErrorMessage('Open an active crashpad before using Weaver.');
+      return;
+    }
+
+    if (!crashpadWeaveCardUid) {
+      setErrorMessage('Attach or focus a crashpad card before generating a Weaver proposal.');
+      return;
+    }
+
+    setIsGeneratingWeavePlan(true);
+    setWeaveEvaluatingCardUid(crashpadWeaveCardUid);
+    setErrorMessage(null);
+
+    try {
+      const health = await refreshWeaveProviderHealth();
+
+      if (health && !health.ok && health.errorCategory === 'auth-error') {
+        setErrorMessage('Invalid or expired OpenRouter API key. Update your key in Settings → Weaver.');
+        return;
+      }
+
+      const baseRequest = {
+        rootPath: vaultPath,
+        preferredModel: weaveModel,
+        intent: weaveIntent,
+        cardUid: crashpadWeaveCardUid,
+        activeNotePath: activeNote?.filePath,
+        selectedText: getSelectedTextareaText(textareaRef.current),
+        activeCrashpadId: activeCrashpad.id,
+        activeCrashpadPath: activeCrashpad.filePath,
+      };
+
+      const result = await window.crashWeaver.generateWeavePlan(
+        weaveKind === 'guided-insert'
+          ? {
+              ...baseRequest,
+              kind: 'guided-insert',
+              permissions: {
+                editContent: weaveEditContent,
+                createNote: weaveCreateNote,
+              },
+            }
+          : {
+              ...baseRequest,
+              kind: 'intelligent',
+              strength: weaveStrength,
+            },
+      );
+      setWeavePlanResult(result);
+      setStatusMessage(`Generated Weaver proposal with ${result.plan.operations.length} staged operations.`);
+    } catch (error) {
+      setWeavePlanResult(null);
+      // Strip Electron's "Error invoking remote method '...': Error: " IPC wrapper from the message
+      const raw = error instanceof Error ? error.message : 'Failed to generate Weaver proposal.';
+      const ipcMatch = raw.match(/^Error invoking remote method '[^']+':\s*Error:\s*(.+)$/s);
+      setErrorMessage(ipcMatch ? ipcMatch[1] : raw);
+    } finally {
+      setIsGeneratingWeavePlan(false);
+      setWeaveEvaluatingCardUid(null);
+    }
+  }, [
+    activeCrashpad,
+    activeNote?.filePath,
+    crashpadWeaveCardUid,
+    isCrashpadEditor,
+    refreshWeaveProviderHealth,
+    setErrorMessage,
+    setStatusMessage,
+    vaultPath,
+    weaveCreateNote,
+    weaveEditContent,
+    weaveKind,
+    weaveIntent,
+    weaveModel,
+    weaveStrength,
+  ]);
+
+  useEffect(() => {
+    void window.crashWeaver.getWeaverSettings().then((settings) => {
+      setWeaverSettings(settings);
+      if (settings.preferredModel) {
+        setWeaveModel(settings.preferredModel);
+      } else {
+        setWeaveModel(defaultWeaveModel);
+      }
+    }).catch(() => undefined);
+  }, []);
+
+  const handleWeaveModelChange = useCallback((nextModel: string) => {
+    const previousModel = weaveModel;
+    setWeaveModel(nextModel);
+    setErrorMessage(null);
+
+    void window.crashWeaver.setWeaverPreferredModel(nextModel)
+      .then((updated) => {
+        setWeaverSettings(updated);
+      })
+      .catch((error) => {
+        setWeaveModel(previousModel);
+        setErrorMessage(error instanceof Error ? error.message : 'Failed to save Weaver preferred model.');
+      });
+  }, [weaveModel]);
+
+  const handleSetWeaverApiKey = useCallback(async (key: string) => {
+    await window.crashWeaver.setWeaverApiKey(key);
+    const updated = await window.crashWeaver.getWeaverSettings();
+    setWeaverSettings(updated);
+    const health = await refreshWeaveProviderHealth().catch(() => undefined);
+    if (health && !health.ok && health.errorCategory === 'auth-error') {
+      setErrorMessage('API key saved, but OpenRouter rejected it as invalid or expired. Please check your key.');
+    } else {
+      setStatusMessage('OpenRouter API key saved. Weaver will now use the live provider.');
+    }
+  }, [refreshWeaveProviderHealth]);
+
+  const handleClearWeaverApiKey = useCallback(async () => {
+    await window.crashWeaver.clearWeaverApiKey();
+    const updated = await window.crashWeaver.getWeaverSettings();
+    setWeaverSettings(updated);
+    await refreshWeaveProviderHealth().catch(() => undefined);
+    setStatusMessage('OpenRouter API key removed. Weaver is using the stub provider.');
+  }, [refreshWeaveProviderHealth]);
 
   return (
-    <main className="appShell">
-      <div className="windowUtilityStrip">
+    <main className="appShell" style={layoutStyle}>
+      <div className={`windowUtilityStrip ${isInspectorVisible ? 'inspectorAware' : ''}`}>
         <button
           className={`windowUtilityButton ${isInspectorVisible ? 'active' : ''}`}
           onClick={() => setIsInspectorVisible((current) => !current)}
-          title="Toggle properties pane"
+          title="Toggle right panel"
         >
           ≣
         </button>
@@ -635,16 +854,7 @@ export default function App() {
       <section
         className="layoutGrid"
         ref={layoutRef}
-        style={
-          {
-            '--widgets-width': '56px',
-            '--sidebar-width': isSidebarVisible ? `${sidebarWidth}px` : '0px',
-            '--left-splitter-width': isSidebarVisible ? '8px' : '0px',
-            '--inspector-width': isInspectorVisible ? `${inspectorWidth}px` : '0px',
-            '--right-splitter-width': isInspectorVisible ? '8px' : '0px',
-            '--editor-font-size': `${editorFontSize}px`,
-          } as CSSProperties
-        }
+        style={layoutStyle}
       >
         <aside className="widgetRail">
           <button
@@ -995,14 +1205,36 @@ export default function App() {
         />
 
         <InspectorPane
+          activeCrashpad={activeCrashpad}
           activeNote={activeNote}
           focusedCard={focusedCard}
           focusedCardElement={focusedCardElement}
           focusedWindow={focusedWindow}
           isCardsView={isCardsSurfaceActive}
+          isCrashpadEditor={isCrashpadEditor}
+          isCheckingWeaveProvider={isCheckingWeaveProvider}
+          isGeneratingWeavePlan={isGeneratingWeavePlan}
           isVisible={isInspectorVisible}
           vault={vault}
+          weaveCardUid={crashpadWeaveCardUid}
+          weaveEvaluatingCardUid={weaveEvaluatingCardUid}
+          weaveIntent={weaveIntent}
+          weaveModel={weaveModel}
+          weaveKind={weaveKind}
+          weaveEditContent={weaveEditContent}
+          weaveCreateNote={weaveCreateNote}
+          weavePlanResult={weavePlanResult}
+          weaveProviderHealth={weaveProviderHealth}
+          weaveStrength={weaveStrength}
+          onGenerateWeavePlan={handleGenerateWeavePlan}
+          onPrepareWeavePanel={handlePrepareWeavePanel}
           onSetFocusedWindow={setFocusedWindow}
+          onWeaveIntentChange={setWeaveIntent}
+          onWeaveModelChange={handleWeaveModelChange}
+          onWeaveKindChange={setWeaveKind}
+          onWeaveEditContentChange={setWeaveEditContent}
+          onWeaveCreateNoteChange={setWeaveCreateNote}
+          onWeaveStrengthChange={setWeaveStrength}
         />
       </section>
 
@@ -1029,6 +1261,9 @@ export default function App() {
         onVaultAliasChange={setVaultAlias}
         crashpadDeletePreferences={crashpadDeletePreferences}
         onSetDeletePreferences={handleUpdateCrashpadDeletePreferences}
+        weaverSettings={weaverSettings}
+        onSetWeaverApiKey={handleSetWeaverApiKey}
+        onClearWeaverApiKey={handleClearWeaverApiKey}
       />
     </main>
   );

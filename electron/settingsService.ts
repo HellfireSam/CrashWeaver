@@ -1,13 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { app } from 'electron';
+import { app, safeStorage } from 'electron';
 import { getFsErrorCode } from './utils/fsErrors';
 import { writeJsonAtomically } from './utils/jsonFile';
-import type { CardStoreConfig, CrashpadDeletePreferences } from './vault-contract';
+import type { CardStoreConfig, CrashpadDeletePreferences, WeaverSettings } from './vault-contract';
 
 interface PersistedSettings {
   version: 1;
   cardStoreByVault: Record<string, string>;
+  openrouterApiKeyEncrypted?: string;
+  weaverPreferredModel?: string;
+  weaverRequestLogsDirectory?: string;
   imageDirectoriesByVault: Record<string, string[]>;
   crashpadDeletePreferences: CrashpadDeletePreferences;
 }
@@ -38,6 +41,18 @@ function normalizeDirectoryList(directories: string[]) {
   }
 
   return normalizedDirectories;
+}
+
+function normalizePreferredModel(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeLogDirectory(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return undefined;
+  }
+
+  return path.resolve(value.trim());
 }
 
 const SETTINGS_FILE_NAME = 'crashweaver-settings.json';
@@ -96,6 +111,10 @@ async function readSettings(): Promise<PersistedSettings> {
               ),
             )
           : {},
+      openrouterApiKeyEncrypted:
+        typeof parsed.openrouterApiKeyEncrypted === 'string' ? parsed.openrouterApiKeyEncrypted : undefined,
+      weaverPreferredModel: normalizePreferredModel((parsed as { weaverPreferredModel?: unknown }).weaverPreferredModel),
+      weaverRequestLogsDirectory: normalizeLogDirectory((parsed as { weaverRequestLogsDirectory?: unknown }).weaverRequestLogsDirectory),
       imageDirectoriesByVault:
         parsed.imageDirectoriesByVault && typeof parsed.imageDirectoriesByVault === 'object'
           ? Object.fromEntries(
@@ -213,5 +232,102 @@ export async function setCrashpadDeletePreferences(
   return mutateSettings((settings) => {
     settings.crashpadDeletePreferences = nextValue;
     return nextValue;
+  });
+}
+
+// ----- Weaver API key management (main-process only) -----
+
+function encryptApiKey(key: string): string {
+  if (!safeStorage.isEncryptionAvailable()) {
+    // safeStorage unavailable (rare on Electron 35+); store as-is with a prefix so we can detect it
+    return `plain:${key}`;
+  }
+
+  return safeStorage.encryptString(key).toString('base64');
+}
+
+function decryptApiKey(encrypted: string): string {
+  if (encrypted.startsWith('plain:')) {
+    return encrypted.slice('plain:'.length);
+  }
+
+  return safeStorage.decryptString(Buffer.from(encrypted, 'base64'));
+}
+
+export async function setOpenRouterApiKey(key: string): Promise<void> {
+  const trimmed = key.trim();
+
+  if (!trimmed) {
+    return clearOpenRouterApiKey();
+  }
+
+  return mutateSettings((settings) => {
+    settings.openrouterApiKeyEncrypted = encryptApiKey(trimmed);
+  });
+}
+
+export async function clearOpenRouterApiKey(): Promise<void> {
+  return mutateSettings((settings) => {
+    delete settings.openrouterApiKeyEncrypted;
+  });
+}
+
+export async function getOpenRouterApiKeyDecrypted(): Promise<string | null> {
+  const settings = await readSettings();
+
+  if (!settings.openrouterApiKeyEncrypted) {
+    return null;
+  }
+
+  try {
+    return decryptApiKey(settings.openrouterApiKeyEncrypted);
+  } catch (error) {
+    console.warn('CrashWeaver: failed to decrypt OpenRouter API key.', error);
+    return null;
+  }
+}
+
+export async function getWeaverSettings(): Promise<WeaverSettings> {
+  const settings = await readSettings();
+
+  return {
+    configured: Boolean(settings.openrouterApiKeyEncrypted),
+    preferredModel: settings.weaverPreferredModel ?? null,
+  };
+}
+
+export async function setWeaverPreferredModel(preferredModel: string | null): Promise<WeaverSettings> {
+  const normalizedPreferredModel = normalizePreferredModel(preferredModel);
+
+  return mutateSettings((settings) => {
+    if (normalizedPreferredModel) {
+      settings.weaverPreferredModel = normalizedPreferredModel;
+    } else {
+      delete settings.weaverPreferredModel;
+    }
+
+    return {
+      configured: Boolean(settings.openrouterApiKeyEncrypted),
+      preferredModel: settings.weaverPreferredModel ?? null,
+    };
+  });
+}
+
+export async function getWeaverRequestLogsDirectory(): Promise<string | null> {
+  const settings = await readSettings();
+  return settings.weaverRequestLogsDirectory ?? null;
+}
+
+export async function setWeaverRequestLogsDirectory(directoryPath: string | null): Promise<string | null> {
+  const normalizedDirectoryPath = normalizeLogDirectory(directoryPath);
+
+  return mutateSettings((settings) => {
+    if (normalizedDirectoryPath) {
+      settings.weaverRequestLogsDirectory = normalizedDirectoryPath;
+    } else {
+      delete settings.weaverRequestLogsDirectory;
+    }
+
+    return settings.weaverRequestLogsDirectory ?? null;
   });
 }

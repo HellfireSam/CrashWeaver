@@ -32,5 +32,6 @@ Use for fast capture with minimal fields before later enrichment.
 ## Notes
 
 - Keep UID stable across note boundaries and card JSON.
+- Future Weaver planning may use these template families as prompt or proposal hints, but they do not define insert behavior or approval rules.
 - Keep this file as examples only; update docs/00-Single-Source-of-Truth.md when schema changes.
 

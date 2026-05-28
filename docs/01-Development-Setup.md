@@ -60,4 +60,5 @@ Use these files for manual validation flows:
 - `docs/Stage 2 Setup.md`
 - `docs/Stage 3 Setup.md`
 - `docs/Stage 4 Setup.md`
+- `docs/Stage 5 Setup.md`
 

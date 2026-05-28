@@ -14,6 +14,12 @@ import type {
   CrashpadSummary,
   VaultDescriptor,
   VaultNoteDocument,
+  WeavePlanRequest,
+  WeavePlanResult,
+  WeaveModelInfo,
+  WeaveProviderHealth,
+  WeaverKeyStatus,
+  WeaverSettings,
   VaultWriteNoteInput,
   VaultWriteNoteResult,
 } from '../electron/vault-contract';
@@ -51,6 +57,15 @@ declare global {
         rootPath: string,
         preferences: CrashpadDeletePreferences,
       ) => Promise<CrashpadDeletePreferences>;
+      generateWeavePlan: (request: WeavePlanRequest) => Promise<WeavePlanResult>;
+      checkWeaveProvider: () => Promise<WeaveProviderHealth>;
+      listWeaveModels: () => Promise<WeaveModelInfo[]>;
+      getWeaverSettings: () => Promise<WeaverSettings>;
+      setWeaverPreferredModel: (preferredModel: string | null) => Promise<WeaverSettings>;
+      getWeaverRequestLogsDirectory: () => Promise<string | null>;
+      setWeaverRequestLogsDirectory: (directoryPath: string | null) => Promise<string | null>;
+      setWeaverApiKey: (key: string) => Promise<void>;
+      clearWeaverApiKey: () => Promise<void>;
     };
   }
 }

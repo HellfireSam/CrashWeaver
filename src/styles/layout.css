@@ -13,6 +13,10 @@
   gap: 0.4rem;
 }
 
+.windowUtilityStrip.inspectorAware {
+  right: calc(var(--inspector-width, 0px) + var(--right-splitter-width, 0px) + 0.75rem);
+}
+
 .windowUtilityButton {
   width: 2rem;
   height: 2rem;
@@ -126,8 +130,150 @@
 .inspectorPane {
   border-right: 0;
   border-left: 1px solid var(--border-soft);
-  padding: 1rem 0.85rem;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.inspectorTopBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+  background: rgba(27, 30, 38, 0.96);
+}
+
+.inspectorTopBarLabel {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inspectorWidgetRow {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.inspectorWidgetButton {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5rem;
+  background: #252934;
+  color: var(--text-muted);
+  padding: 0.28rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.inspectorWidgetButton:hover,
+.inspectorWidgetButton.active {
+  border-color: var(--accent-soft);
+  color: var(--text-primary);
+  background: #303545;
+}
+
+.inspectorPanels {
+  min-height: 0;
+  display: grid;
+}
+
+.inspectorPanels.split {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.inspectorPanels.single {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.inspectorSubpanel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border-bottom: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.inspectorSubpanel:last-child {
+  border-bottom: 0;
+}
+
+.inspectorSubpanelWeaver {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.inspectorSubpanelSplitter {
+  position: relative;
+  cursor: row-resize;
+  background: transparent;
+}
+
+.inspectorSubpanelSplitter::before {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: 4px;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.inspectorSubpanelSplitter:hover::before,
+.inspectorSubpanelSplitter.active::before {
+  background: var(--accent);
+}
+
+.inspectorSubpanelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.75rem 0.65rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.inspectorSubpanelTitle {
+  min-width: 0;
+}
+
+.inspectorSubpanelTitle h3 {
+  margin: 0.12rem 0 0;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+}
+
+.inspectorPanelClose {
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.45rem;
+  background: #232733;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.inspectorPanelClose:hover:enabled {
+  border-color: rgba(242, 133, 133, 0.3);
+  color: var(--text-primary);
+}
+
+.inspectorPanelClose:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.inspectorSubpanelBody {
+  min-height: 0;
   overflow: auto;
+  padding: 0 0.75rem 0.8rem;
+}
+
+.inspectorSubpanelWeaver {
+  padding: 0;
 }
 
 .paneHidden {
@@ -248,6 +394,13 @@
 body.columnResizeActive,
 body.columnResizeActive * {
   cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.rowResizeActive,
+body.rowResizeActive * {
+  cursor: row-resize !important;
   user-select: none !important;
   -webkit-user-select: none !important;
 }

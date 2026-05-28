@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import type {
   CrashpadDeletePreferences,
   VaultDescriptor,
   VaultNoteDocument,
+  WeaverSettings,
 } from '../../electron/vault-contract';
 import { formatCardRebuildSummary } from '../lib/cards';
 
@@ -28,6 +30,9 @@ type SettingsModalProps = {
   onVaultAliasChange: (value: string) => void;
   crashpadDeletePreferences?: CrashpadDeletePreferences;
   onSetDeletePreferences?: (value: CrashpadDeletePreferences) => Promise<void>;
+  weaverSettings?: WeaverSettings;
+  onSetWeaverApiKey?: (key: string) => Promise<void>;
+  onClearWeaverApiKey?: () => Promise<void>;
 };
 
 export function SettingsModal({
@@ -53,7 +58,40 @@ export function SettingsModal({
   onVaultAliasChange,
   crashpadDeletePreferences,
   onSetDeletePreferences,
+  weaverSettings,
+  onSetWeaverApiKey,
+  onClearWeaverApiKey,
 }: SettingsModalProps) {
+  const [apiKeyDraft, setApiKeyDraft] = useState('');
+  const [isKeyBusy, setIsKeyBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setApiKeyDraft('');
+    }
+  }, [isOpen]);
+
+  async function handleSaveApiKey() {
+    if (!onSetWeaverApiKey || !apiKeyDraft.trim()) return;
+    setIsKeyBusy(true);
+    try {
+      await onSetWeaverApiKey(apiKeyDraft.trim());
+      setApiKeyDraft('');
+    } finally {
+      setIsKeyBusy(false);
+    }
+  }
+
+  async function handleClearApiKey() {
+    if (!onClearWeaverApiKey) return;
+    setIsKeyBusy(true);
+    try {
+      await onClearWeaverApiKey();
+    } finally {
+      setIsKeyBusy(false);
+    }
+  }
+
   if (!isOpen) {
     return null;
   }
@@ -197,6 +235,59 @@ export function SettingsModal({
                 />
                 <span>Require confirmation when deleting cards</span>
               </label>
+            </div>
+          )}
+
+          {(weaverSettings || onSetWeaverApiKey) && (
+            <div className="settingSection">
+              <p className="panelTitle">Weaver</p>
+
+              <p className="detailKey">Provider status</p>
+              <p className="detailValue">
+                {weaverSettings?.configured ? 'OpenRouter API key configured.' : 'No API key — using stub provider.'}
+              </p>
+
+              <p className="detailKey">OpenRouter API key</p>
+              <p className="detailValue" style={{ marginBottom: '6px' }}>
+                {weaverSettings?.configured
+                  ? 'A key is stored. Enter a new key below to replace it.'
+                  : 'Enter your OpenRouter API key. It is stored encrypted on this device only.'}
+              </p>
+              <input
+                className="notePathInput"
+                type="password"
+                placeholder="sk-or-…"
+                value={apiKeyDraft}
+                autoComplete="off"
+                onChange={(event) => setApiKeyDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void handleSaveApiKey();
+                }}
+              />
+              <div className="settingsActionRow" style={{ marginTop: '6px' }}>
+                <button
+                  className="actionButton"
+                  type="button"
+                  onClick={() => void handleSaveApiKey()}
+                  disabled={isKeyBusy || !apiKeyDraft.trim()}
+                >
+                  {isKeyBusy ? 'Saving…' : 'Save Key'}
+                </button>
+                {weaverSettings?.configured && (
+                  <button
+                    className="actionButton ghost"
+                    type="button"
+                    onClick={() => void handleClearApiKey()}
+                    disabled={isKeyBusy}
+                  >
+                    {isKeyBusy ? 'Clearing…' : 'Remove Key'}
+                  </button>
+                )}
+              </div>
+
+              <p className="detailValue" style={{ marginTop: '8px', opacity: 0.6, fontSize: '0.8em' }}>
+                Cloud mode sends selected vault context to OpenRouter. Do not enable if your vault contains sensitive information.
+              </p>
             </div>
           )}
 
