@@ -731,6 +731,47 @@ export function WeaverProposalPanel({
             </div>
           ) : null}
 
+          {planResult.trace && planResult.trace.length > 0 ? (
+            <div className="weaverTraceList">
+              <h3 className="weaverTraceHeading">ReAct Loop Trace</h3>
+              {planResult.trace.map((step, idx) => (
+                <details key={`trace-step-${idx}`} className="weaverTraceItem">
+                  <summary className="weaverTraceSummary">
+                    <span className="weaverTraceHeader">
+                      <span className="weaverTraceStepBadge">Step {idx + 1}</span>
+                      <span className="weaverTraceStepActionBrief">
+                        {step.thought ? (step.thought.length > 55 ? step.thought.substring(0, 55) + '...' : step.thought) : step.action ? (step.action.length > 55 ? step.action.substring(0, 55) + '...' : step.action) : 'Reasoning...'}
+                      </span>
+                    </span>
+                    <span className="weaverOperationChevron">
+                      <WeaverIcon name="chevron" />
+                    </span>
+                  </summary>
+                  <div className="weaverTraceBody">
+                    {step.thought ? (
+                      <div className="weaverTraceField">
+                        <span className="weaverTraceFieldLabel">Thought</span>
+                        <p className="weaverTraceFieldText italic">{step.thought}</p>
+                      </div>
+                    ) : null}
+                    {step.action ? (
+                      <div className="weaverTraceField">
+                        <span className="weaverTraceFieldLabel">Action</span>
+                        <pre className="weaverTracePre">{step.action}</pre>
+                      </div>
+                    ) : null}
+                    {step.observation ? (
+                      <div className="weaverTraceField">
+                        <span className="weaverTraceFieldLabel">Observation</span>
+                        <pre className="weaverTracePre">{step.observation}</pre>
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
+              ))}
+            </div>
+          ) : null}
+
           <div className="weaverOperationList">
             {planResult.plan.operations.map((operation, index) => {
               const operationMeta = WEAVE_OPERATION_META[operation.kind];

@@ -177,12 +177,36 @@ export interface WeavePlanResult {
   plan: WeavePlan;
   model: string;
   provider: 'openrouter';
+  trace?: WeaveReActStep[];
   usage?: {
     promptTokens?: number;
     completionTokens?: number;
     totalTokens?: number;
   };
   latencyMs: number;
+}
+
+export type WeaveReActStepKind =
+  | 'thought'
+  | 'action'
+  | 'observation'
+  | 'validation'
+  | 'repair'
+  | 'error';
+
+export interface WeaveReActStep {
+  kind: WeaveReActStepKind;
+  message: string;
+  details?: Record<string, unknown>;
+  ts?: string;
+}
+
+export interface WeaverSettings {
+  preferredModel?: string;
+  disableBudgetRestrictions?: boolean;
+  budgetMaxTokens?: number;
+  budgetTimeoutMs?: number;
+  budgetIterationLimit?: number;
 }
 ```
 
@@ -214,6 +238,10 @@ Instead of a single brittle run, orchestration utilizes:
 4. **Semantic Schema Repair**: If a generated plan violates our strict [WeavePlanResult](electron/vault-contract.ts) rules, the loop returns structural error details to the model to correct properties of operations on-the-fly.
 5. **Retrieval Limit Graceful Fallback**: If tool calls reach the maximum iteration limit, the system appends a final warning requiring the model to finalize from partial evidence, ensuring a high-quality best-guess proposal is returned rather than a loop exhaustion error.
 
+Trace visibility:
+- Each major step can be emitted as a typed ReAct trace item and returned with the final plan result.
+- Renderer panels can show these steps as expandable rows for debugging and confidence review.
+
 Important:
 - Never trust the agent's final payload blindly.
 - Parse then validate tool parameters and output against the local schema.
@@ -237,6 +265,7 @@ Context minimization:
 Add IPC channels in main process:
 - `weave:generate-plan`
 - `weave:health-check`
+- `weave:update-settings`
 
 Optional for streaming status:
 - `weave:generate-plan-stream-start`
@@ -246,6 +275,7 @@ Optional for streaming status:
 Preload additions should mirror existing style:
 - `generateWeavePlan(request)`
 - `checkWeaveProvider()`
+- `updateWeaverSettings(partialSettings)`
 
 Renderer should consume typed responses only.
 
@@ -286,11 +316,14 @@ Recommended starter policy:
 - Let the user explicitly select the model used for a Weaver request.
 - Keep one safe default model when no explicit selection exists.
 - Use strength to control prompt autonomy and request budgets, not model routing.
+- Allow user-level budget overrides for max tokens, timeout, and iteration limits.
+- Support an explicit "disable budget restrictions" switch for lenient runs.
 
 Policy should be data-driven:
 - Store the preferred model selection in settings, not hardcoded in renderer.
 - Support live model listing from the provider.
 - Add per-request max token and timeout caps.
+- Persist optional budget override settings in the same settings service used by preferred model selection.
 
 ## 14. Observability And Cost Control
 
@@ -306,6 +339,7 @@ Add guardrails:
 - request concurrency cap
 - circuit breaker for repeated provider failures
 - retry with backoff for retryable failures only
+- when budget restrictions are disabled, continue enforcing non-destructive Stage 5 safety validation and output schema constraints
 
 Never log:
 - API keys

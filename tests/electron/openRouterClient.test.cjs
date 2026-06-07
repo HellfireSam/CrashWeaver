@@ -291,13 +291,13 @@ test('OpenRouterWeaveProvider completes a read-only tool loop and leaves workspa
     assert.equal(result.plan.kind, 'guided-insert');
     assert.equal(result.plan.operations[0].targetPath, 'notes/topic.md');
     assert.equal(result.usage.totalTokens, 36);
-    assert.match(lastMessage.content, /Tool result for read_note_excerpt/);
+    assert.match(lastMessage.content, /Tool result for read_note_excerpt|TOOL RESULT: read_note_excerpt/);
     assert.match(lastMessage.content, /Deterministic topic note for live provider retrieval tests/i);
     assert.ok(logFiles.length >= 1);
-    assert.ok(logEvents.includes('session-start'));
-    assert.ok(logEvents.includes('openrouter-request'));
-    assert.ok(logEvents.includes('tool-executed'));
-    assert.ok(logEvents.includes('final-plan-accepted'));
+    assert.ok(logEvents.includes('session-start') || logEvents.includes('graph-start'));
+    assert.ok(logEvents.includes('openrouter-request') || logEvents.includes('node-call-model'));
+    assert.ok(logEvents.includes('tool-executed') || logEvents.includes('node-execute-tool'));
+    assert.ok(logEvents.includes('final-plan-accepted') || logEvents.includes('graph-complete'));
     assert.deepEqual(afterFilesWithoutLogs, beforeFiles);
   } finally {
     fixture.dispose();

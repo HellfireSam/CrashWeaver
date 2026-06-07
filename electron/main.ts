@@ -12,6 +12,7 @@ import {
   setWeaveApiKey,
   clearWeaveApiKey,
   getWeaverSettings,
+  updateWeaverSettings,
   setWeaverPreferredModel,
   getConfiguredWeaverRequestLogsDirectory,
   setConfiguredWeaverRequestLogsDirectory,
@@ -26,6 +27,7 @@ import type {
   CrashpadDeletedCardSnapshot,
   CrashpadDocument,
   WeavePlanRequest,
+  WeaverSettings,
 } from './vault-contract';
 import {
   createCard,
@@ -447,6 +449,10 @@ ipcMain.handle('weave:health-check', async () => checkWeaveProvider());
 ipcMain.handle('weave:list-models', async () => listWeaveModels());
 
 ipcMain.handle('weave:get-settings', async () => getWeaverSettings());
+
+ipcMain.handle('weave:update-settings', async (_event, updates: Partial<WeaverSettings>) =>
+  updateWeaverSettings(updates),
+);
 
 ipcMain.handle('weave:set-preferred-model', async (_event, preferredModel: string | null) =>
   setWeaverPreferredModel(preferredModel),

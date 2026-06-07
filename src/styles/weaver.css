@@ -699,3 +699,136 @@
 .weaverModelOtherToggle:hover {
   color: var(--text-primary);
 }
+
+/* ─── ReAct Trace Logs ─────────────────────────────────────────────────────── */
+
+.weaverTraceList {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.55rem;
+}
+
+.weaverTraceHeading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0.4rem 0 0.2rem;
+  padding-left: 0.15rem;
+}
+
+.weaverTraceItem {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.55rem;
+  background: #171a22;
+  overflow: hidden;
+}
+
+.weaverTraceItem summary {
+  list-style: none;
+}
+
+.weaverTraceItem summary::-webkit-details-marker {
+  display: none;
+}
+
+.weaverTraceSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.weaverTraceSummary:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.weaverTraceHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.weaverTraceStepBadge {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(127, 156, 245, 0.15);
+  color: #adb0ff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.weaverTraceStepActionBrief {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+}
+
+.weaverTraceBody {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0 0.6rem 0.6rem;
+  border-top: 1px dashed var(--border-soft);
+  background: #151821;
+}
+
+.weaverTraceItem[open] .weaverTraceSummary {
+  border-bottom: 1px dashed transparent;
+}
+
+.weaverTraceItem[open] .weaverOperationChevron {
+  transform: rotate(180deg);
+}
+
+.weaverTraceField {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.45rem;
+}
+
+.weaverTraceFieldLabel {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.weaverTraceFieldText {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+  padding: 0.15rem 0.25rem;
+}
+
+.weaverTraceFieldText.italic {
+  font-style: italic;
+  color: #adc0ff;
+}
+
+.weaverTracePre {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.4rem;
+  background: #0f111a;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+}

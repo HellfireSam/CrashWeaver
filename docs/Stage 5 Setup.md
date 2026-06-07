@@ -30,6 +30,10 @@ Part 2 and later: live provider validation
 3. Confirm the live provider starts from compact vault context and only performs bounded read-only retrieval before finalizing the proposal. It may inspect ranked candidate notes, bounded note excerpts or full-note reads, and compact directory summaries, but it must not perform any write-capable action in Stage 5.
 4. Change the explicit model picker selection, reopen the Weaver panel or restart the app, and confirm the selected model persists as the preferred model.
 5. Confirm the generated proposal still uses the same staged contract, including guided insert permissions and intelligent restructuring semantics, and remains non-destructive before Stage 6 exists.
+6. Open the proposal panel after a live run and confirm ReAct trace entries render in sequence and remain expandable for inspection.
+7. Trigger at least one schema-repair path (for example, with intentionally difficult intent wording) and confirm trace includes validation or repair events rather than silently failing.
+8. In settings, adjust Weaver budget controls (token cap, timeout, and iteration limits), run a new request, and confirm the next session log records updated resolved budget values.
+9. Toggle the disable budget restrictions setting, run a new request, and confirm resolved budget handling reflects unrestricted mode while still preserving Stage 5 non-destructive behavior.
 
 ## OpenRouter Interaction Logs
 
@@ -44,6 +48,7 @@ What each session log includes:
 - raw OpenRouter chat request bodies (without API key headers)
 - raw OpenRouter chat responses
 - model tool actions
+- ReAct node lifecycle events (model-call, tool-call, validation, repair, and fail/success termination)
 - local tool execution results
 - final accepted plan summary or terminal error category
 

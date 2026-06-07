@@ -13,6 +13,20 @@ interface PersistedSettings {
   weaverRequestLogsDirectory?: string;
   imageDirectoriesByVault: Record<string, string[]>;
   crashpadDeletePreferences: CrashpadDeletePreferences;
+  weaverDisableBudgetRestrictions?: boolean;
+  weaverGuidedInsertBaseMaxTokens?: number;
+  weaverGuidedInsertBaseTimeoutMs?: number;
+  weaverGuidedInsertExpandedMaxTokens?: number;
+  weaverGuidedInsertExpandedTimeoutMs?: number;
+  weaverIntelligentLightMaxTokens?: number;
+  weaverIntelligentLightTimeoutMs?: number;
+  weaverIntelligentLightIterationLimit?: number;
+  weaverIntelligentStandardMaxTokens?: number;
+  weaverIntelligentStandardTimeoutMs?: number;
+  weaverIntelligentStandardIterationLimit?: number;
+  weaverIntelligentGoHamMaxTokens?: number;
+  weaverIntelligentGoHamTimeoutMs?: number;
+  weaverIntelligentGoHamIterationLimit?: number;
 }
 
 function toStringArray(value: unknown) {
@@ -133,6 +147,34 @@ async function readSettings(): Promise<PersistedSettings> {
                 false,
             }
           : createDefaultSettings().crashpadDeletePreferences,
+      weaverDisableBudgetRestrictions:
+        typeof parsed.weaverDisableBudgetRestrictions === 'boolean' ? parsed.weaverDisableBudgetRestrictions : undefined,
+      weaverGuidedInsertBaseMaxTokens:
+        typeof parsed.weaverGuidedInsertBaseMaxTokens === 'number' ? parsed.weaverGuidedInsertBaseMaxTokens : undefined,
+      weaverGuidedInsertBaseTimeoutMs:
+        typeof parsed.weaverGuidedInsertBaseTimeoutMs === 'number' ? parsed.weaverGuidedInsertBaseTimeoutMs : undefined,
+      weaverGuidedInsertExpandedMaxTokens:
+        typeof parsed.weaverGuidedInsertExpandedMaxTokens === 'number' ? parsed.weaverGuidedInsertExpandedMaxTokens : undefined,
+      weaverGuidedInsertExpandedTimeoutMs:
+        typeof parsed.weaverGuidedInsertExpandedTimeoutMs === 'number' ? parsed.weaverGuidedInsertExpandedTimeoutMs : undefined,
+      weaverIntelligentLightMaxTokens:
+        typeof parsed.weaverIntelligentLightMaxTokens === 'number' ? parsed.weaverIntelligentLightMaxTokens : undefined,
+      weaverIntelligentLightTimeoutMs:
+        typeof parsed.weaverIntelligentLightTimeoutMs === 'number' ? parsed.weaverIntelligentLightTimeoutMs : undefined,
+      weaverIntelligentLightIterationLimit:
+        typeof parsed.weaverIntelligentLightIterationLimit === 'number' ? parsed.weaverIntelligentLightIterationLimit : undefined,
+      weaverIntelligentStandardMaxTokens:
+        typeof parsed.weaverIntelligentStandardMaxTokens === 'number' ? parsed.weaverIntelligentStandardMaxTokens : undefined,
+      weaverIntelligentStandardTimeoutMs:
+        typeof parsed.weaverIntelligentStandardTimeoutMs === 'number' ? parsed.weaverIntelligentStandardTimeoutMs : undefined,
+      weaverIntelligentStandardIterationLimit:
+        typeof parsed.weaverIntelligentStandardIterationLimit === 'number' ? parsed.weaverIntelligentStandardIterationLimit : undefined,
+      weaverIntelligentGoHamMaxTokens:
+        typeof parsed.weaverIntelligentGoHamMaxTokens === 'number' ? parsed.weaverIntelligentGoHamMaxTokens : undefined,
+      weaverIntelligentGoHamTimeoutMs:
+        typeof parsed.weaverIntelligentGoHamTimeoutMs === 'number' ? parsed.weaverIntelligentGoHamTimeoutMs : undefined,
+      weaverIntelligentGoHamIterationLimit:
+        typeof parsed.weaverIntelligentGoHamIterationLimit === 'number' ? parsed.weaverIntelligentGoHamIterationLimit : undefined,
     };
   } catch (error) {
     const code = getFsErrorCode(error);
@@ -287,13 +329,61 @@ export async function getOpenRouterApiKeyDecrypted(): Promise<string | null> {
   }
 }
 
-export async function getWeaverSettings(): Promise<WeaverSettings> {
-  const settings = await readSettings();
-
-  return {
+function buildWeaverSettingsResponse(settings: PersistedSettings): WeaverSettings {
+  const result: any = {
     configured: Boolean(settings.openrouterApiKeyEncrypted),
     preferredModel: settings.weaverPreferredModel ?? null,
   };
+
+  if (settings.weaverDisableBudgetRestrictions !== undefined) {
+    result.disableBudgetRestrictions = settings.weaverDisableBudgetRestrictions;
+  }
+  if (settings.weaverGuidedInsertBaseMaxTokens !== undefined) {
+    result.guidedInsertBaseMaxTokens = settings.weaverGuidedInsertBaseMaxTokens;
+  }
+  if (settings.weaverGuidedInsertBaseTimeoutMs !== undefined) {
+    result.guidedInsertBaseTimeoutMs = settings.weaverGuidedInsertBaseTimeoutMs;
+  }
+  if (settings.weaverGuidedInsertExpandedMaxTokens !== undefined) {
+    result.guidedInsertExpandedMaxTokens = settings.weaverGuidedInsertExpandedMaxTokens;
+  }
+  if (settings.weaverGuidedInsertExpandedTimeoutMs !== undefined) {
+    result.guidedInsertExpandedTimeoutMs = settings.weaverGuidedInsertExpandedTimeoutMs;
+  }
+  if (settings.weaverIntelligentLightMaxTokens !== undefined) {
+    result.intelligentLightMaxTokens = settings.weaverIntelligentLightMaxTokens;
+  }
+  if (settings.weaverIntelligentLightTimeoutMs !== undefined) {
+    result.intelligentLightTimeoutMs = settings.weaverIntelligentLightTimeoutMs;
+  }
+  if (settings.weaverIntelligentLightIterationLimit !== undefined) {
+    result.intelligentLightIterationLimit = settings.weaverIntelligentLightIterationLimit;
+  }
+  if (settings.weaverIntelligentStandardMaxTokens !== undefined) {
+    result.intelligentStandardMaxTokens = settings.weaverIntelligentStandardMaxTokens;
+  }
+  if (settings.weaverIntelligentStandardTimeoutMs !== undefined) {
+    result.intelligentStandardTimeoutMs = settings.weaverIntelligentStandardTimeoutMs;
+  }
+  if (settings.weaverIntelligentStandardIterationLimit !== undefined) {
+    result.intelligentStandardIterationLimit = settings.weaverIntelligentStandardIterationLimit;
+  }
+  if (settings.weaverIntelligentGoHamMaxTokens !== undefined) {
+    result.intelligentGoHamMaxTokens = settings.weaverIntelligentGoHamMaxTokens;
+  }
+  if (settings.weaverIntelligentGoHamTimeoutMs !== undefined) {
+    result.intelligentGoHamTimeoutMs = settings.weaverIntelligentGoHamTimeoutMs;
+  }
+  if (settings.weaverIntelligentGoHamIterationLimit !== undefined) {
+    result.intelligentGoHamIterationLimit = settings.weaverIntelligentGoHamIterationLimit;
+  }
+
+  return result;
+}
+
+export async function getWeaverSettings(): Promise<WeaverSettings> {
+  const settings = await readSettings();
+  return buildWeaverSettingsResponse(settings);
 }
 
 export async function setWeaverPreferredModel(preferredModel: string | null): Promise<WeaverSettings> {
@@ -306,10 +396,56 @@ export async function setWeaverPreferredModel(preferredModel: string | null): Pr
       delete settings.weaverPreferredModel;
     }
 
-    return {
-      configured: Boolean(settings.openrouterApiKeyEncrypted),
-      preferredModel: settings.weaverPreferredModel ?? null,
-    };
+    return buildWeaverSettingsResponse(settings);
+  });
+}
+
+export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Promise<WeaverSettings> {
+  return mutateSettings((settings) => {
+    if (updates.disableBudgetRestrictions !== undefined) {
+      settings.weaverDisableBudgetRestrictions = updates.disableBudgetRestrictions;
+    }
+    if (updates.guidedInsertBaseMaxTokens !== undefined) {
+      settings.weaverGuidedInsertBaseMaxTokens = updates.guidedInsertBaseMaxTokens;
+    }
+    if (updates.guidedInsertBaseTimeoutMs !== undefined) {
+      settings.weaverGuidedInsertBaseTimeoutMs = updates.guidedInsertBaseTimeoutMs;
+    }
+    if (updates.guidedInsertExpandedMaxTokens !== undefined) {
+      settings.weaverGuidedInsertExpandedMaxTokens = updates.guidedInsertExpandedMaxTokens;
+    }
+    if (updates.guidedInsertExpandedTimeoutMs !== undefined) {
+      settings.weaverGuidedInsertExpandedTimeoutMs = updates.guidedInsertExpandedTimeoutMs;
+    }
+    if (updates.intelligentLightMaxTokens !== undefined) {
+      settings.weaverIntelligentLightMaxTokens = updates.intelligentLightMaxTokens;
+    }
+    if (updates.intelligentLightTimeoutMs !== undefined) {
+      settings.weaverIntelligentLightTimeoutMs = updates.intelligentLightTimeoutMs;
+    }
+    if (updates.intelligentLightIterationLimit !== undefined) {
+      settings.weaverIntelligentLightIterationLimit = updates.intelligentLightIterationLimit;
+    }
+    if (updates.intelligentStandardMaxTokens !== undefined) {
+      settings.weaverIntelligentStandardMaxTokens = updates.intelligentStandardMaxTokens;
+    }
+    if (updates.intelligentStandardTimeoutMs !== undefined) {
+      settings.weaverIntelligentStandardTimeoutMs = updates.intelligentStandardTimeoutMs;
+    }
+    if (updates.intelligentStandardIterationLimit !== undefined) {
+      settings.weaverIntelligentStandardIterationLimit = updates.intelligentStandardIterationLimit;
+    }
+    if (updates.intelligentGoHamMaxTokens !== undefined) {
+      settings.weaverIntelligentGoHamMaxTokens = updates.intelligentGoHamMaxTokens;
+    }
+    if (updates.intelligentGoHamTimeoutMs !== undefined) {
+      settings.weaverIntelligentGoHamTimeoutMs = updates.intelligentGoHamTimeoutMs;
+    }
+    if (updates.intelligentGoHamIterationLimit !== undefined) {
+      settings.weaverIntelligentGoHamIterationLimit = updates.intelligentGoHamIterationLimit;
+    }
+
+    return buildWeaverSettingsResponse(settings);
   });
 }
 

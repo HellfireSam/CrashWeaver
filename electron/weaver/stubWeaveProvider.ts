@@ -238,6 +238,25 @@ export class StubWeaveProvider {
           referencedCards: [request.cardUid],
         };
 
+    const notePath = buildVaultNotePath(request);
+    const trace = [
+      {
+        thought: "I need to analyze the existing structure in the vault relative to this card and user intent.",
+        action: "Tool Call: list_notes with arguments: {}",
+        observation: "Notes found in vault: notes/demo.md, notes/getting-started.md, notes/reference.md."
+      },
+      {
+        thought: `I will read the content of ${notePath} to identify the right insertion point.`,
+        action: `Tool Call: read_note with arguments: { "notePath": "${notePath}" }`,
+        observation: "Found existing sections: # Introduction, # Overview, # Related cards."
+      },
+      {
+        thought: "I now have all the context to layout the requested insertion of the card within this note structure.",
+        action: `Proposed Weaver Plan with ${operations.length} operations.`,
+        observation: "Plan successfully validated and ready to apply."
+      }
+    ];
+
     return {
       plan,
       model: resolvedModel,
@@ -248,6 +267,7 @@ export class StubWeaveProvider {
         totalTokens: 0,
       },
       latencyMs: 1,
+      trace,
     };
   }
 

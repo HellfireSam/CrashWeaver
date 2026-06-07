@@ -836,6 +836,11 @@ export default function App() {
     setStatusMessage('OpenRouter API key removed. Weaver is using the stub provider.');
   }, [refreshWeaveProviderHealth]);
 
+  const handleUpdateWeaverSettings = useCallback(async (updates: Partial<WeaverSettings>) => {
+    const updated = await window.crashWeaver.updateWeaverSettings(updates);
+    setWeaverSettings(updated);
+  }, []);
+
   return (
     <main className="appShell" style={layoutStyle}>
       <div className={`windowUtilityStrip ${isInspectorVisible ? 'inspectorAware' : ''}`}>
@@ -1264,6 +1269,7 @@ export default function App() {
         weaverSettings={weaverSettings}
         onSetWeaverApiKey={handleSetWeaverApiKey}
         onClearWeaverApiKey={handleClearWeaverApiKey}
+        onUpdateWeaverSettings={handleUpdateWeaverSettings}
       />
     </main>
   );

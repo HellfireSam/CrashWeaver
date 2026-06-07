@@ -709,5 +709,6 @@ export function validateWeavePlanResult(result: WeavePlanResult, request: WeaveP
     provider: result.provider,
     usage: result.usage,
     latencyMs: result.latencyMs,
+    trace: result.trace,
   };
 }

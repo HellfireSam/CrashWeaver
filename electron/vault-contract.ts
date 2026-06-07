@@ -395,6 +395,12 @@ export interface IntelligentWeavePlan extends WeavePlanBase {
 
 export type WeavePlan = GuidedInsertWeavePlan | IntelligentWeavePlan;
 
+export interface WeaveReActStep {
+  thought?: string;
+  action?: string;
+  observation?: string;
+}
+
 export interface WeavePlanResult {
   plan: WeavePlan;
   model: string;
@@ -405,6 +411,7 @@ export interface WeavePlanResult {
     totalTokens?: number;
   };
   latencyMs: number;
+  trace?: WeaveReActStep[];
 }
 
 export interface WeaveProviderHealth {
@@ -433,6 +440,20 @@ export interface WeaveModelProvider {
 export interface WeaverSettings {
   configured: boolean;
   preferredModel: string | null;
+  disableBudgetRestrictions?: boolean;
+  guidedInsertBaseMaxTokens?: number;
+  guidedInsertBaseTimeoutMs?: number;
+  guidedInsertExpandedMaxTokens?: number;
+  guidedInsertExpandedTimeoutMs?: number;
+  intelligentLightMaxTokens?: number;
+  intelligentLightTimeoutMs?: number;
+  intelligentLightIterationLimit?: number;
+  intelligentStandardMaxTokens?: number;
+  intelligentStandardTimeoutMs?: number;
+  intelligentStandardIterationLimit?: number;
+  intelligentGoHamMaxTokens?: number;
+  intelligentGoHamTimeoutMs?: number;
+  intelligentGoHamIterationLimit?: number;
 }
 
 export interface WeaverKeyStatus {

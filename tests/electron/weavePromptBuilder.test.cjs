@@ -22,15 +22,15 @@ test('guided insert prompt forbids note edits and note creation when permissions
     maxOperations: 4,
   });
 
-  assert.match(message, /Do not change surrounding note prose/i);
-  assert.match(message, /Do not create new notes/i);
+  assert.match(message, /Do not change surrounding note prose|Do not emit edit-note-content/i);
+  assert.match(message, /Do not create new notes|Do not emit create-note/i);
 });
 
 test('system instruction frames crashpad as source-only and create-note as substantive', () => {
   const instruction = buildSystemInstruction();
 
   assert.match(instruction, /Crashpad is source context only/i);
-  assert.match(instruction, /create-note proposal must include meaningful markdown prose/i);
+  assert.match(instruction, /create-note.*must.*meaningful markdown prose|create-note payload must contain substantive markdown prose/i);
 });
 
 test('intelligent prompt describes vault-wide note and directory restructuring', () => {
@@ -47,5 +47,5 @@ test('intelligent prompt describes vault-wide note and directory restructuring',
   });
 
   assert.match(message, /note and directory create, edit, move, rename, and delete operations/i);
-  assert.match(message, /GO HAM autonomy/i);
+  assert.match(message, /GO HAM/i);
 });

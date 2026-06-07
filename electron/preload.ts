@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('crashWeaver', {
   checkWeaveProvider: () => ipcRenderer.invoke('weave:health-check') as Promise<WeaveProviderHealth>,
   listWeaveModels: () => ipcRenderer.invoke('weave:list-models') as Promise<WeaveModelInfo[]>,
   getWeaverSettings: () => ipcRenderer.invoke('weave:get-settings') as Promise<WeaverSettings>,
+  updateWeaverSettings: (updates: Partial<WeaverSettings>) =>
+    ipcRenderer.invoke('weave:update-settings', updates) as Promise<WeaverSettings>,
   setWeaverPreferredModel: (preferredModel: string | null) =>
     ipcRenderer.invoke('weave:set-preferred-model', preferredModel) as Promise<WeaverSettings>,
   getWeaverRequestLogsDirectory: () => ipcRenderer.invoke('weave:get-request-logs-directory') as Promise<string | null>,

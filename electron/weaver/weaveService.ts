@@ -10,6 +10,7 @@ import {
   clearOpenRouterApiKey,
   getWeaverSettings,
   setWeaverPreferredModel as persistWeaverPreferredModel,
+  updateWeaverSettings as persistUpdateWeaverSettings,
   getWeaverRequestLogsDirectory,
   setWeaverRequestLogsDirectory as persistWeaverRequestLogsDirectory,
 } from '../settingsService';
@@ -78,6 +79,12 @@ export async function clearWeaveApiKey(): Promise<void> {
 
 export async function setWeaverPreferredModel(preferredModel: string | null): Promise<WeaverSettings> {
   const settings = await persistWeaverPreferredModel(preferredModel);
+  await initializeWeaveProvider();
+  return settings;
+}
+
+export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Promise<WeaverSettings> {
+  const settings = await persistUpdateWeaverSettings(updates);
   await initializeWeaveProvider();
   return settings;
 }

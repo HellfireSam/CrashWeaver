@@ -105,3 +105,34 @@ test('setWeaverRequestLogsDirectory persists and clears the configured log direc
     settingsService.__resetSettingsMutationQueueForTests();
   }
 });
+
+test('updateWeaverSettings persists user-defined budget and limits settings', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-settings-budgets-'));
+  const settingsPath = path.join(tempDir, 'crashweaver-settings.json');
+
+  settingsService.__resetSettingsMutationQueueForTests();
+  settingsService.__setSettingsFilePathForTests(settingsPath);
+
+  try {
+    const originalSettings = await settingsService.getWeaverSettings();
+    assert.equal(originalSettings.disableBudgetRestrictions, undefined);
+
+    const updated = await settingsService.updateWeaverSettings({
+      disableBudgetRestrictions: true,
+      intelligentLightMaxTokens: 2500,
+      intelligentStandardTimeoutMs: 90000,
+    });
+
+    assert.equal(updated.disableBudgetRestrictions, true);
+    assert.equal(updated.intelligentLightMaxTokens, 2500);
+    assert.equal(updated.intelligentStandardTimeoutMs, 90000);
+
+    const parsed = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
+    assert.equal(parsed.weaverDisableBudgetRestrictions, true);
+    assert.equal(parsed.weaverIntelligentLightMaxTokens, 2500);
+    assert.equal(parsed.weaverIntelligentStandardTimeoutMs, 90000);
+  } finally {
+    settingsService.__setSettingsFilePathForTests(null);
+    settingsService.__resetSettingsMutationQueueForTests();
+  }
+});
