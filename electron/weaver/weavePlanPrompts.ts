@@ -20,6 +20,7 @@
 import type { WeavePlanRequest, WeaveStrength } from '../vault-contract';
 import type { WeaveContextSnapshot } from './weaveContextService';
 import type { WeaveFullModelProfile } from './weaveModelProfiles';
+import type { WeaveEffectiveBudget } from './weaveGraph';
 
 // ── LAYER 1: TASK CONTRACT ────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ These rules are absolute. Violating any one of them makes the entire plan invali
 - Crashpad is source context only. Never emit crashpad-mutating operations.
 - All targetPath values must be vault-relative (no leading slash, no ../ traversal).
 - insert-boundary-pair and create-note MUST use the exact focused card UID from the request.
-- Boundary comments contain only the card UID. Do NOT embed full card JSON in boundary markers.
+- Boundary comments contain only the card UID using EXACT markers: %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%%. Do NOT embed full card JSON or extra text in boundary markers.
 - If guided insert disallows editContent: do NOT emit edit-note-content operations.
 - If guided insert disallows createNote: do NOT emit create-note; target only existing notes.
 - A create-note payload must contain substantive markdown prose, not just a boundary wrapper.
@@ -80,6 +81,52 @@ Each operation object shape:
   "targetPath": "<vault-relative path, no leading slash, no ..>",
   "payload": { <operation-specific fields> },
   "rationale": "<one-sentence justification>"
+}
+
+# OPERATION INVARIANTS & SCHEMA GOTCHAS
+
+These invariants prevent avoidable repair loops:
+- For move-note and move-directory: targetPath MUST EQUAL payload.toPath. Both must be absolute vault-relative paths normalizing to the same location.
+- For insert-boundary-pair: boundaryBlock field must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers with no extra text.
+- For create-note: content field must include the boundary pair markers PLUS substantive markdown (at least 20 chars of prose after removing markers).
+- For rename-note and rename-directory: targetPath should point to the destination path; payload.toPath must match targetPath; payload.fromPath must match the source.
+
+# CANONICAL EXAMPLES
+
+**Example 1: insert-boundary-pair to append into existing note**
+{
+  "kind": "insert-boundary-pair",
+  "targetPath": "notes/learning.md",
+  "payload": {
+    "cardUid": "CW-001",
+    "placement": "append-to-note",
+    "boundaryBlock": "%%CW_CARD_START uid:CW-001%%\nKey learning point about relational databases\n%%CW_CARD_END uid:CW-001%%"
+  },
+  "rationale": "Appends the focused card to the existing learning note for reference."
+}
+
+**Example 2: create-note with boundary pair and substance**
+{
+  "kind": "create-note",
+  "targetPath": "notes/design-patterns/observer.md",
+  "payload": {
+    "cardUid": "CW-002",
+    "title": "Observer Pattern",
+    "content": "# Observer Pattern\n\n%%CW_CARD_START uid:CW-002%%\nStructural pattern that defines a one-to-many dependency between objects so that when one object changes state, all its dependents are notified automatically.\n%%CW_CARD_END uid:CW-002%%\n\n## Use Cases\n- Event handling systems\n- Model-view architecture"
+  },
+  "rationale": "Creates a new design-patterns section with the observer card as the focal point."
+}
+
+**Example 3: move-note with matching targetPath and toPath**
+{
+  "kind": "move-note",
+  "targetPath": "concepts/networking/tcp-handshake.md",
+  "payload": {
+    "fromPath": "notes/networking.md",
+    "toPath": "concepts/networking/tcp-handshake.md",
+    "moveReason": "Reorganizes networking notes into a dedicated concepts/networking directory with focused topic files."
+  },
+  "rationale": "Moves networking content to a more discoverable location."
 }`.trim();
 
 // ── LAYER 4: OUTPUT FORMAT SCHEMA ─────────────────────────────────────────────
@@ -91,17 +138,30 @@ Respond with exactly this JSON shape (no extra keys, no markdown, no code fences
   "permissions": { "editContent": <bool>, "createNote": <bool> },  // guided-insert only
   "strength": "<light|standard|go-ham>",                           // intelligent only
   "summary": "<1-2 sentence description of what this proposal does>",
-  "operations": [ <array of operation objects> ],
+  "operations": [ <array of operation objects; MUST contain at least 1 item> ],
   "warnings": [ <array of warning strings, or empty array if none> ],
   "referencedCards": [ "<focused card UID>" ]
 }`.trim();
 
 // ── LAYER 5: TOOL LOOP PROTOCOL (dynamic) ─────────────────────────────────────
 
-export function buildToolLoopLayer(maxToolCalls: number): string {
+export function buildToolLoopLayer(
+  maxToolCalls: number,
+  maxNoteReads?: number,
+  maxRetrievedChars?: number,
+): string {
+  const noteReadLine = typeof maxNoteReads === 'number'
+    ? `Note-read budget: at most ${maxNoteReads} note read${maxNoteReads === 1 ? '' : 's'} via read_note_excerpt/read_note_full/read_note_span.`
+    : '';
+  const charsLine = typeof maxRetrievedChars === 'number'
+    ? `Total retrieval character budget: up to ${maxRetrievedChars} chars across all note reads.`
+    : '';
+
   return `# READ-ONLY RETRIEVAL TOOL LOOP
 You may use a bounded read-only retrieval loop before returning the final plan.
 You have at most ${maxToolCalls} tool call${maxToolCalls === 1 ? '' : 's'} available.
+${noteReadLine}
+${charsLine}
 
 Each assistant turn must be exactly ONE of these JSON shapes:
 
@@ -122,9 +182,11 @@ Final plan (when ready):
 
 Available tools for toolName:
   - list_candidate_notes (arguments: { limit?, directoryPath? })
+  - search_notes (arguments: { query, limit?, directoryPath? })
   - list_directory_summary (arguments: { limit? })
   - read_note_excerpt (arguments: { filePath, maxChars? })
   - read_note_full (arguments: { filePath, maxChars? })
+  - read_note_span (arguments: { filePath, startAnchor, endAnchor, maxChars? })
 
 Tool constraints:
 - Tools are strictly read-only. Never request write-capable tools.
@@ -146,13 +208,18 @@ export function buildModelOverlayLayer(profile: WeaveFullModelProfile): string {
  * Composes the full system prompt from all layers for a given model profile
  * and maximum tool call count.
  */
-export function buildSystemPrompt(profile: WeaveFullModelProfile, maxToolCalls: number): string {
+export function buildSystemPrompt(
+  profile: WeaveFullModelProfile,
+  maxToolCalls: number,
+  maxNoteReads?: number,
+  maxRetrievedChars?: number,
+): string {
   const layers: string[] = [
     TASK_CONTRACT_LAYER,
     SAFETY_POLICY_LAYER,
     OPERATION_SCHEMA_LAYER,
     OUTPUT_FORMAT_LAYER,
-    buildToolLoopLayer(maxToolCalls),
+    buildToolLoopLayer(maxToolCalls, maxNoteReads, maxRetrievedChars),
   ];
 
   const overlay = buildModelOverlayLayer(profile);
@@ -273,7 +340,7 @@ export function buildContextLayer(snapshot: WeaveContextSnapshot): string {
   lines.push(
     `Pre-loaded candidate notes: ${snapshot.candidateNotes.length} of max ${snapshot.retrievalBudget.maxCandidateNotes}`,
   );
-  lines.push(`Available read-only tool calls: ${snapshot.retrievalBudget.maxNoteReads}`);
+  lines.push(`Runtime note-read budget: ${snapshot.retrievalBudget.maxNoteReads}`);
   lines.push(`Max chars per note excerpt: ${snapshot.retrievalBudget.maxExcerptChars}`);
 
   // Candidate notes with inclusion rationale
@@ -329,13 +396,18 @@ export function buildContextLayer(snapshot: WeaveContextSnapshot): string {
 export function buildInitialUserTurn(
   request: WeavePlanRequest,
   snapshot: WeaveContextSnapshot,
-  maxToolCalls: number,
+  effectiveBudget: WeaveEffectiveBudget,
 ): string {
   const sections = [buildRequestSpecification(request), buildContextLayer(snapshot)];
+  const maxNoteReads = effectiveBudget.runtimeNoteReads;
+  const maxToolCalls = effectiveBudget.promptToolCalls;
+  const maxRetrievedChars = effectiveBudget.maxRetrievedChars;
 
   sections.push(
     maxToolCalls > 0
       ? `You have ${maxToolCalls} read-only tool call${maxToolCalls === 1 ? '' : 's'} available. ` +
+          `Runtime note-read budget is ${maxNoteReads} for note-reading tools. ` +
+          `Total retrieval budget is ${maxRetrievedChars} chars across note reads. ` +
           'Start with a tool request if you need more context, or respond with type="final" immediately if sufficient.'
       : 'No tool calls are available for this request. Respond with type="final" using only the context above.',
   );

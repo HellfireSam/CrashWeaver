@@ -112,6 +112,12 @@
   opacity: 0.62;
 }
 
+.weaverInlineMeta.warn {
+  color: #f5b9b4;
+  border-color: rgba(235, 121, 108, 0.42);
+  background: rgba(96, 34, 30, 0.42);
+}
+
 .weaverStatusDot {
   width: 0.42rem;
   height: 0.42rem;
@@ -762,6 +768,19 @@
   border-radius: 0.25rem;
   background: rgba(127, 156, 245, 0.15);
   color: #adb0ff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.weaverTraceDiagnosticBadge {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 0.12rem 0.34rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(235, 121, 108, 0.42);
+  background: rgba(96, 34, 30, 0.42);
+  color: #f5b9b4;
   white-space: nowrap;
   flex-shrink: 0;
 }

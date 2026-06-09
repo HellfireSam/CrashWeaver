@@ -249,6 +249,29 @@ function getCompactContextLabel(contextLabel: string) {
   return normalizedPath.split('/').filter(Boolean).pop() ?? contextLabel;
 }
 
+function getTraceDiagnosticCode(step: NonNullable<WeavePlanResult['trace']>[number]): string | null {
+  return step.diagnostics?.code ?? null;
+}
+
+function getDiagnosticLabel(code: string): string {
+  switch (code) {
+    case 'budget-note-reads-exhausted':
+      return 'Reads exhausted';
+    case 'budget-chars-exhausted':
+      return 'Chars exhausted';
+    case 'invalid-arguments':
+      return 'Tool args invalid';
+    case 'runtime-error':
+      return 'Tool error';
+    case 'unsupported-tool':
+      return 'Unsupported tool';
+    case 'note-outside-candidates':
+      return 'Note out of scope';
+    default:
+      return code;
+  }
+}
+
 export function WeaverProposalPanel({
   canGenerate,
   cardUid,
@@ -298,6 +321,12 @@ export function WeaverProposalPanel({
     ? selectedStrength.label
     : [editContentEnabled ? 'Edit content' : null, createNoteEnabled ? 'Create note' : null].filter(Boolean).join(' · ') || 'Insert only';
   const compactContextLabel = getCompactContextLabel(contextLabel);
+  const latestDiagnosticCode = planResult?.trace
+    ? [...planResult.trace]
+      .reverse()
+      .map((step) => getTraceDiagnosticCode(step))
+      .find((code) => Boolean(code)) ?? null
+    : null;
   const providerStatusLabel = isCheckingHealth ? 'Checking' : providerHealth ? providerHealth.provider : 'Unavailable';
   const providerStatusTitle = isCheckingHealth
     ? 'Checking provider status.'
@@ -696,6 +725,11 @@ export function WeaverProposalPanel({
           <div className="weaverInlineMetaRow">
             {planResult ? <span className="weaverInlineMeta">{planResult.plan.operations.length} ops</span> : null}
             {planResult ? <span className="weaverInlineMeta">{planResult.latencyMs}ms</span> : null}
+            {latestDiagnosticCode ? (
+              <span className="weaverInlineMeta warn" title={latestDiagnosticCode}>
+                {getDiagnosticLabel(latestDiagnosticCode)}
+              </span>
+            ) : null}
           </div>
 
           <button
@@ -734,41 +768,50 @@ export function WeaverProposalPanel({
           {planResult.trace && planResult.trace.length > 0 ? (
             <div className="weaverTraceList">
               <h3 className="weaverTraceHeading">ReAct Loop Trace</h3>
-              {planResult.trace.map((step, idx) => (
-                <details key={`trace-step-${idx}`} className="weaverTraceItem">
-                  <summary className="weaverTraceSummary">
-                    <span className="weaverTraceHeader">
-                      <span className="weaverTraceStepBadge">Step {idx + 1}</span>
-                      <span className="weaverTraceStepActionBrief">
-                        {step.thought ? (step.thought.length > 55 ? step.thought.substring(0, 55) + '...' : step.thought) : step.action ? (step.action.length > 55 ? step.action.substring(0, 55) + '...' : step.action) : 'Reasoning...'}
+              {planResult.trace.map((step, idx) => {
+                const diagnosticCode = getTraceDiagnosticCode(step);
+
+                return (
+                  <details key={`trace-step-${idx}`} className="weaverTraceItem">
+                    <summary className="weaverTraceSummary">
+                      <span className="weaverTraceHeader">
+                        <span className="weaverTraceStepBadge">Step {idx + 1}</span>
+                        {diagnosticCode ? (
+                          <span className="weaverTraceDiagnosticBadge" title={diagnosticCode}>
+                            {getDiagnosticLabel(diagnosticCode)}
+                          </span>
+                        ) : null}
+                        <span className="weaverTraceStepActionBrief">
+                          {step.thought ? (step.thought.length > 55 ? step.thought.substring(0, 55) + '...' : step.thought) : step.action ? (step.action.length > 55 ? step.action.substring(0, 55) + '...' : step.action) : 'Reasoning...'}
+                        </span>
                       </span>
-                    </span>
-                    <span className="weaverOperationChevron">
-                      <WeaverIcon name="chevron" />
-                    </span>
-                  </summary>
-                  <div className="weaverTraceBody">
-                    {step.thought ? (
-                      <div className="weaverTraceField">
-                        <span className="weaverTraceFieldLabel">Thought</span>
-                        <p className="weaverTraceFieldText italic">{step.thought}</p>
-                      </div>
-                    ) : null}
-                    {step.action ? (
-                      <div className="weaverTraceField">
-                        <span className="weaverTraceFieldLabel">Action</span>
-                        <pre className="weaverTracePre">{step.action}</pre>
-                      </div>
-                    ) : null}
-                    {step.observation ? (
-                      <div className="weaverTraceField">
-                        <span className="weaverTraceFieldLabel">Observation</span>
-                        <pre className="weaverTracePre">{step.observation}</pre>
-                      </div>
-                    ) : null}
-                  </div>
-                </details>
-              ))}
+                      <span className="weaverOperationChevron">
+                        <WeaverIcon name="chevron" />
+                      </span>
+                    </summary>
+                    <div className="weaverTraceBody">
+                      {step.thought ? (
+                        <div className="weaverTraceField">
+                          <span className="weaverTraceFieldLabel">Thought</span>
+                          <p className="weaverTraceFieldText italic">{step.thought}</p>
+                        </div>
+                      ) : null}
+                      {step.action ? (
+                        <div className="weaverTraceField">
+                          <span className="weaverTraceFieldLabel">Action</span>
+                          <pre className="weaverTracePre">{step.action}</pre>
+                        </div>
+                      ) : null}
+                      {step.observation ? (
+                        <div className="weaverTraceField">
+                          <span className="weaverTraceFieldLabel">Observation</span>
+                          <pre className="weaverTracePre">{step.observation}</pre>
+                        </div>
+                      ) : null}
+                    </div>
+                  </details>
+                );
+              })}
             </div>
           ) : null}
 

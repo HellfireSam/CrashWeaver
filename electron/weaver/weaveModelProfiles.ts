@@ -40,6 +40,54 @@ export interface WeaveFullModelProfile {
   responseFormatParams?: Record<string, unknown>;
 }
 
+// ── Budget Validation Bounds ──────────────────────────────────────────────────
+
+/**
+ * Hard limits for budget override settings to prevent system instability.
+ * Enforced server-side to protect against UI or network manipulation.
+ */
+export const BUDGET_VALIDATION_BOUNDS = {
+  // Token budgets
+  minTokens: 100,
+  maxTokens: 32_000,
+  
+  // Timeout budgets
+  minTimeoutMs: 5_000,     // 5 seconds minimum
+  maxTimeoutMs: 600_000,   // 10 minutes maximum
+  
+  // Iteration limits
+  minIterations: 1,
+  maxIterations: 20,
+} as const;
+
+/**
+ * Validates and clamps a numeric budget value to safe bounds.
+ */
+export function validateAndClampBudgetValue(
+  value: unknown,
+  fieldName: string,
+  bounds: { min: number; max: number },
+): number {
+  if (value === null || value === undefined) {
+    return bounds.min; // Use minimum as default
+  }
+
+  const num = Number(value);
+
+  if (!Number.isFinite(num)) {
+    throw new Error(`${fieldName} must be a finite number, got ${String(value)}`);
+  }
+
+  if (num < bounds.min || num > bounds.max) {
+    console.warn(
+      `CrashWeaver: ${fieldName} clamped from ${num} to [${bounds.min}, ${bounds.max}]`,
+    );
+    return Math.max(bounds.min, Math.min(bounds.max, num));
+  }
+
+  return num;
+}
+
 // ── Model pattern matching ────────────────────────────────────────────────────
 
 function isOpenAiGpt(id: string): boolean {
@@ -122,26 +170,46 @@ const INTELLIGENT_BUDGETS: Record<
 function resolveBudget(request: WeavePlanRequest, settings?: WeaverSettings | null) {
   if (settings?.disableBudgetRestrictions) {
     return {
-      maxTokens: 100000,
-      timeoutMs: 600000,
+      maxTokens: BUDGET_VALIDATION_BOUNDS.maxTokens,
+      timeoutMs: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs,
       temperature: request.kind === 'guided-insert' ? 0.15 : (request.strength === 'go-ham' ? 0.5 : request.strength === 'standard' ? 0.3 : 0.18),
-      iterationLimit: 100,
+      iterationLimit: BUDGET_VALIDATION_BOUNDS.maxIterations,
     };
   }
 
   if (request.kind === 'guided-insert') {
     const expanded = request.permissions.editContent || request.permissions.createNote;
     if (expanded) {
+      const maxTokens = validateAndClampBudgetValue(
+        settings?.guidedInsertExpandedMaxTokens ?? GUIDED_INSERT_EXPANDED.maxTokens,
+        'guidedInsertExpandedMaxTokens',
+        { min: BUDGET_VALIDATION_BOUNDS.minTokens, max: BUDGET_VALIDATION_BOUNDS.maxTokens },
+      );
+      const timeoutMs = validateAndClampBudgetValue(
+        settings?.guidedInsertExpandedTimeoutMs ?? GUIDED_INSERT_EXPANDED.timeoutMs,
+        'guidedInsertExpandedTimeoutMs',
+        { min: BUDGET_VALIDATION_BOUNDS.minTimeoutMs, max: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs },
+      );
       return {
-        maxTokens: settings?.guidedInsertExpandedMaxTokens ?? GUIDED_INSERT_EXPANDED.maxTokens,
-        timeoutMs: settings?.guidedInsertExpandedTimeoutMs ?? GUIDED_INSERT_EXPANDED.timeoutMs,
+        maxTokens,
+        timeoutMs,
         temperature: GUIDED_INSERT_EXPANDED.temperature,
         iterationLimit: GUIDED_INSERT_EXPANDED.iterationLimit,
       };
     } else {
+      const maxTokens = validateAndClampBudgetValue(
+        settings?.guidedInsertBaseMaxTokens ?? GUIDED_INSERT_BASE.maxTokens,
+        'guidedInsertBaseMaxTokens',
+        { min: BUDGET_VALIDATION_BOUNDS.minTokens, max: BUDGET_VALIDATION_BOUNDS.maxTokens },
+      );
+      const timeoutMs = validateAndClampBudgetValue(
+        settings?.guidedInsertBaseTimeoutMs ?? GUIDED_INSERT_BASE.timeoutMs,
+        'guidedInsertBaseTimeoutMs',
+        { min: BUDGET_VALIDATION_BOUNDS.minTimeoutMs, max: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs },
+      );
       return {
-        maxTokens: settings?.guidedInsertBaseMaxTokens ?? GUIDED_INSERT_BASE.maxTokens,
-        timeoutMs: settings?.guidedInsertBaseTimeoutMs ?? GUIDED_INSERT_BASE.timeoutMs,
+        maxTokens,
+        timeoutMs,
         temperature: GUIDED_INSERT_BASE.temperature,
         iterationLimit: GUIDED_INSERT_BASE.iterationLimit,
       };
@@ -151,23 +219,35 @@ function resolveBudget(request: WeavePlanRequest, settings?: WeaverSettings | nu
   const s = request.strength;
   const defaults = INTELLIGENT_BUDGETS[s];
 
-  let maxTokens = defaults.maxTokens;
-  let timeoutMs = defaults.timeoutMs;
-  let iterationLimit = defaults.iterationLimit;
+  const maxTokens = validateAndClampBudgetValue(
+    s === 'light'
+      ? settings?.intelligentLightMaxTokens ?? defaults.maxTokens
+      : s === 'standard'
+        ? settings?.intelligentStandardMaxTokens ?? defaults.maxTokens
+        : settings?.intelligentGoHamMaxTokens ?? defaults.maxTokens,
+    `intelligent${s}MaxTokens`,
+    { min: BUDGET_VALIDATION_BOUNDS.minTokens, max: BUDGET_VALIDATION_BOUNDS.maxTokens },
+  );
 
-  if (s === 'light') {
-    maxTokens = settings?.intelligentLightMaxTokens ?? defaults.maxTokens;
-    timeoutMs = settings?.intelligentLightTimeoutMs ?? defaults.timeoutMs;
-    iterationLimit = settings?.intelligentLightIterationLimit ?? defaults.iterationLimit;
-  } else if (s === 'standard') {
-    maxTokens = settings?.intelligentStandardMaxTokens ?? defaults.maxTokens;
-    timeoutMs = settings?.intelligentStandardTimeoutMs ?? defaults.timeoutMs;
-    iterationLimit = settings?.intelligentStandardIterationLimit ?? defaults.iterationLimit;
-  } else if (s === 'go-ham') {
-    maxTokens = settings?.intelligentGoHamMaxTokens ?? defaults.maxTokens;
-    timeoutMs = settings?.intelligentGoHamTimeoutMs ?? defaults.timeoutMs;
-    iterationLimit = settings?.intelligentGoHamIterationLimit ?? defaults.iterationLimit;
-  }
+  const timeoutMs = validateAndClampBudgetValue(
+    s === 'light'
+      ? settings?.intelligentLightTimeoutMs ?? defaults.timeoutMs
+      : s === 'standard'
+        ? settings?.intelligentStandardTimeoutMs ?? defaults.timeoutMs
+        : settings?.intelligentGoHamTimeoutMs ?? defaults.timeoutMs,
+    `intelligent${s}TimeoutMs`,
+    { min: BUDGET_VALIDATION_BOUNDS.minTimeoutMs, max: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs },
+  );
+
+  const iterationLimit = validateAndClampBudgetValue(
+    s === 'light'
+      ? settings?.intelligentLightIterationLimit ?? defaults.iterationLimit
+      : s === 'standard'
+        ? settings?.intelligentStandardIterationLimit ?? defaults.iterationLimit
+        : settings?.intelligentGoHamIterationLimit ?? defaults.iterationLimit,
+    `intelligent${s}IterationLimit`,
+    { min: BUDGET_VALIDATION_BOUNDS.minIterations, max: BUDGET_VALIDATION_BOUNDS.maxIterations },
+  );
 
   return {
     maxTokens,

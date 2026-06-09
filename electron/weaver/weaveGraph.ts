@@ -24,6 +24,26 @@ import type { WeavePlanRequest, WeavePlanResult, WeaveErrorCategory } from '../v
 import type { WeaveContextSnapshot } from './weaveContextService';
 import type { WeaveFullModelProfile } from './weaveModelProfiles';
 
+export interface WeaveEffectiveBudget {
+  promptToolCalls: number;
+  runtimeNoteReads: number;
+  maxRetrievedChars: number;
+}
+
+export function resolveWeaveEffectiveBudget(
+  modelProfile: WeaveFullModelProfile,
+  contextSnapshot: WeaveContextSnapshot,
+): WeaveEffectiveBudget {
+  const runtimeNoteReads = contextSnapshot.retrievalBudget.maxNoteReads;
+  const promptToolCalls = Math.min(modelProfile.iterationLimit, Math.max(1, runtimeNoteReads));
+
+  return {
+    promptToolCalls,
+    runtimeNoteReads,
+    maxRetrievedChars: contextSnapshot.retrievalBudget.maxRetrievedChars,
+  };
+}
+
 function sumOptional(a?: number, b?: number): number | undefined {
   if (a === undefined && b === undefined) return undefined;
   return (a ?? 0) + (b ?? 0);
@@ -46,6 +66,10 @@ function updateState(state: WeaveAgentState, updates: Partial<WeaveAgentState>):
     ? state.messages.concat(updates.messages)
     : state.messages;
 
+  const nextTrace = updates.trace
+    ? state.trace.concat(updates.trace)
+    : state.trace;
+
   const nextUsage = updates.accumulatedUsage !== undefined
     ? mergeUsage(state.accumulatedUsage, updates.accumulatedUsage)
     : state.accumulatedUsage;
@@ -55,6 +79,7 @@ function updateState(state: WeaveAgentState, updates: Partial<WeaveAgentState>):
     ...updates,
     messages: nextMessages,
     accumulatedUsage: nextUsage,
+    trace: nextTrace,
   };
 }
 
@@ -78,11 +103,18 @@ export async function runWeaveGraph(
   toolRuntime: WeaveContextToolRuntime,
   logger?: WeaveRequestSessionLogger,
 ): Promise<WeavePlanResult> {
+  const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
+
   const systemMsg = new SystemMessage(
-    buildSystemPrompt(modelProfile, modelProfile.iterationLimit),
+    buildSystemPrompt(
+      modelProfile,
+      effectiveBudget.promptToolCalls,
+      effectiveBudget.runtimeNoteReads,
+      effectiveBudget.maxRetrievedChars,
+    ),
   );
   const userMsg = new HumanMessage(
-    buildInitialUserTurn(request, contextSnapshot, modelProfile.iterationLimit),
+    buildInitialUserTurn(request, contextSnapshot, effectiveBudget),
   );
 
   if (logger) {
@@ -91,6 +123,7 @@ export async function runWeaveGraph(
       structuredOutputMode: modelProfile.structuredOutputMode,
       repairStrategy: modelProfile.repairStrategy,
       iterationLimit: modelProfile.iterationLimit,
+      effectiveBudget,
       maxTokens: modelProfile.maxTokens,
       timeoutMs: modelProfile.timeoutMs,
       temperature: modelProfile.temperature,

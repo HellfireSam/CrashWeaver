@@ -314,12 +314,15 @@ export function SettingsModal({
                     <div style={{ display: 'grid', gap: '0.8rem', gridTemplateColumns: 'minmax(0, 1fr)' }}>
                       <div>
                         <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Guided Insert Mode (Default: 1400 tokens / 30s)</p>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100–32000 | Timeout: 5000–600000 ms</p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
-                            placeholder="Max Tokens"
+                            placeholder="Max Tokens (100–32k)"
+                            min="100"
+                            max="32000"
                             value={weaverSettings?.guidedInsertBaseMaxTokens ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ guidedInsertBaseMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -327,7 +330,9 @@ export function SettingsModal({
                             className="notePathInput"
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
-                            placeholder="Timeout Ms"
+                            placeholder="Timeout Ms (5k–600k)"
+                            min="5000"
+                            max="600000"
                             value={weaverSettings?.guidedInsertBaseTimeoutMs ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ guidedInsertBaseTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -336,12 +341,15 @@ export function SettingsModal({
 
                       <div>
                         <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Guided Insert Mode Expanded (Default: 2200 tokens / 45s)</p>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100–32000 | Timeout: 5000–600000 ms</p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Tokens"
+                            min="100"
+                            max="32000"
                             value={weaverSettings?.guidedInsertExpandedMaxTokens ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ guidedInsertExpandedMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -350,6 +358,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Timeout Ms"
+                            min="5000"
+                            max="600000"
                             value={weaverSettings?.guidedInsertExpandedTimeoutMs ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ guidedInsertExpandedTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -358,12 +368,15 @@ export function SettingsModal({
 
                       <div>
                         <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Intelligent Light Mode (Default: 1500 tokens / 30s / 2 iterations)</p>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20</p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Tokens"
+                            min="100"
+                            max="32000"
                             value={weaverSettings?.intelligentLightMaxTokens ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentLightMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -372,6 +385,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Timeout Ms"
+                            min="5000"
+                            max="600000"
                             value={weaverSettings?.intelligentLightTimeoutMs ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentLightTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -380,6 +395,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Iterations"
+                            min="1"
+                            max="20"
                             value={weaverSettings?.intelligentLightIterationLimit ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentLightIterationLimit: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -388,12 +405,15 @@ export function SettingsModal({
 
                       <div>
                         <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Intelligent Standard Mode (Default: 3000 tokens / 60s / 4 iterations)</p>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20</p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Tokens"
+                            min="100"
+                            max="32000"
                             value={weaverSettings?.intelligentStandardMaxTokens ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -402,6 +422,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Timeout Ms"
+                            min="5000"
+                            max="600000"
                             value={weaverSettings?.intelligentStandardTimeoutMs ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -410,6 +432,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Iterations"
+                            min="1"
+                            max="20"
                             value={weaverSettings?.intelligentStandardIterationLimit ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardIterationLimit: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -418,12 +442,15 @@ export function SettingsModal({
 
                       <div>
                         <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Intelligent Go Ham Mode (Default: 6000 tokens / 120s / 6 iterations)</p>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20</p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Tokens"
+                            min="100"
+                            max="32000"
                             value={weaverSettings?.intelligentGoHamMaxTokens ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -432,6 +459,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Timeout Ms"
+                            min="5000"
+                            max="600000"
                             value={weaverSettings?.intelligentGoHamTimeoutMs ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
                           />
@@ -440,6 +469,8 @@ export function SettingsModal({
                             style={{ flex: 1, minWidth: 0 }}
                             type="number"
                             placeholder="Max Iterations"
+                            min="1"
+                            max="20"
                             value={weaverSettings?.intelligentGoHamIterationLimit ?? ''}
                             onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamIterationLimit: e.target.value ? Number(e.target.value) : undefined })}
                           />

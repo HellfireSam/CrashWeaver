@@ -328,8 +328,8 @@ interface WeavePlanRequestBase {
   intent: string;
   cardUid: string;
   activeNotePath?: string;
-  activeCrashpadId?: string;
-  activeCrashpadPath?: string;
+  activeCrashpadId: string;
+  activeCrashpadPath: string;
   selectedText?: string;
   maxOperations?: number;
 }
@@ -399,6 +399,16 @@ export interface WeaveReActStep {
   thought?: string;
   action?: string;
   observation?: string;
+  diagnostics?: {
+    code:
+      | 'budget-note-reads-exhausted'
+      | 'budget-chars-exhausted'
+      | 'note-outside-candidates'
+      | 'invalid-arguments'
+      | 'unsupported-tool'
+      | 'runtime-error';
+    recoverable: boolean;
+  };
 }
 
 export interface WeavePlanResult {

@@ -14,6 +14,7 @@
  */
 
 import { net } from 'electron';
+import { createHash } from 'crypto';
 import type {
   WeavePlanRequest,
   WeavePlanResult,
@@ -31,7 +32,7 @@ import {
   createWeaveContextToolRuntime,
   type WeaveContextSnapshot,
 } from './weaveContextService';
-import { runWeaveGraph } from './weaveGraph';
+import { resolveWeaveEffectiveBudget, runWeaveGraph } from './weaveGraph';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -75,6 +76,55 @@ interface OpenRouterDependencies {
 
 interface OpenRouterPlanOptions {
   requestLogDirectory?: string;
+}
+
+/**
+ * Redacts sensitive content from request/response payloads for safe logging.
+ * Hashes large text content and truncates responses to prevent logging vault excerpts.
+ */
+function redactSensitiveLoggingData(data: unknown, maxLength = 300): unknown {
+  if (typeof data === 'string') {
+    if (data.length > maxLength) {
+      const hash = createHash('sha256').update(data).digest('hex').slice(0, 16);
+      return `[TRUNCATED: ${data.length} chars, hash:${hash}]`;
+    }
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => redactSensitiveLoggingData(item, maxLength));
+  }
+
+  if (data !== null && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    const redacted: Record<string, unknown> = {};
+
+    // Special handling for request messages — hash content but keep role
+    if ('messages' in obj && Array.isArray(obj.messages)) {
+      redacted.messages = (obj.messages as Array<unknown>).map(msg => {
+        if (msg && typeof msg === 'object' && 'role' in msg && 'content' in msg) {
+          const msgObj = msg as { role?: string; content?: unknown };
+          const content = typeof msgObj.content === 'string' ? msgObj.content : String(msgObj.content);
+          const hash = createHash('sha256').update(content).digest('hex').slice(0, 16);
+          return {
+            role: msgObj.role,
+            content: `[REDACTED: ${content.length} chars, hash:${hash}]`,
+          };
+        }
+        return msg;
+      });
+    }
+
+    // For other fields, recurse but keep structure
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === 'messages') continue; // already handled
+      redacted[key] = redactSensitiveLoggingData(value, maxLength);
+    }
+
+    return redacted;
+  }
+
+  return data;
 }
 
 function categorizeHttpError(status: number): { category: WeaveErrorCategory; message: string } {
@@ -137,6 +187,8 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
     timeoutMs: number,
     logger?: WeaveRequestSessionLogger,
   ): Promise<WeaveHttpClientResponse> {
+    const allowFullLogging = process.env.CRASHWEAVER_WEAVER_DEBUG_LOG_FULL === '1';
+
     const requestBody = {
       model: request.model,
       messages: request.messages,
@@ -148,7 +200,14 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
     if (logger) {
       await logger.log('openrouter-request', {
         endpoint: '/chat/completions',
-        requestBody,
+        model: requestBody.model,
+        maxTokens: requestBody.max_tokens,
+        temperature: requestBody.temperature,
+        messageCount: requestBody.messages.length,
+        messages: allowFullLogging
+          ? requestBody.messages
+          : redactSensitiveLoggingData(requestBody.messages),
+        safeLoggingMode: !allowFullLogging,
       });
     }
 
@@ -192,7 +251,11 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
         endpoint: '/chat/completions',
         ok: response.ok,
         status: response.status,
-        responseText,
+        responseLength: responseText.length,
+        responseBody: allowFullLogging
+          ? responseText
+          : redactSensitiveLoggingData(responseText, 500),
+        safeLoggingMode: !allowFullLogging,
       });
     }
 
@@ -256,6 +319,7 @@ export class OpenRouterWeaveProvider implements WeaveModelProvider {
     const modelProfile = resolveFullModelProfile(resolvedModelId, request, settings);
     const contextSnapshot = context ?? (await buildWeaveContextSnapshot(request));
     const toolRuntime = createWeaveContextToolRuntime(contextSnapshot);
+    const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
 
     let sessionLogger: WeaveRequestSessionLogger | undefined;
 
@@ -274,6 +338,7 @@ export class OpenRouterWeaveProvider implements WeaveModelProvider {
           iterationLimit: modelProfile.iterationLimit,
           structuredOutputMode: modelProfile.structuredOutputMode,
           repairStrategy: modelProfile.repairStrategy,
+          effectiveBudget,
           contextSummary: {
             candidateNotes: contextSnapshot.candidateNotes.length,
             directorySummaries: contextSnapshot.directorySummaries.length,

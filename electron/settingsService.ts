@@ -29,6 +29,31 @@ interface PersistedSettings {
   weaverIntelligentGoHamIterationLimit?: number;
 }
 
+const WEAVER_BUDGET_BOUNDS = {
+  minTokens: 100,
+  maxTokens: 32_000,
+  minTimeoutMs: 5_000,
+  maxTimeoutMs: 600_000,
+  minIterations: 1,
+  maxIterations: 20,
+} as const;
+
+function normalizeBoundedNumber(
+  value: unknown,
+  label: string,
+  min: number,
+  max: number,
+): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    throw new Error(`Invalid ${label}: value must be finite.`);
+  }
+  if (num < min || num > max) {
+    throw new Error(`Invalid ${label}: must be between ${min} and ${max}.`);
+  }
+  return Math.trunc(num);
+}
+
 function toStringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
@@ -406,43 +431,108 @@ export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Pr
       settings.weaverDisableBudgetRestrictions = updates.disableBudgetRestrictions;
     }
     if (updates.guidedInsertBaseMaxTokens !== undefined) {
-      settings.weaverGuidedInsertBaseMaxTokens = updates.guidedInsertBaseMaxTokens;
+      settings.weaverGuidedInsertBaseMaxTokens = normalizeBoundedNumber(
+        updates.guidedInsertBaseMaxTokens,
+        'guidedInsertBaseMaxTokens',
+        WEAVER_BUDGET_BOUNDS.minTokens,
+        WEAVER_BUDGET_BOUNDS.maxTokens,
+      );
     }
     if (updates.guidedInsertBaseTimeoutMs !== undefined) {
-      settings.weaverGuidedInsertBaseTimeoutMs = updates.guidedInsertBaseTimeoutMs;
+      settings.weaverGuidedInsertBaseTimeoutMs = normalizeBoundedNumber(
+        updates.guidedInsertBaseTimeoutMs,
+        'guidedInsertBaseTimeoutMs',
+        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
+        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
+      );
     }
     if (updates.guidedInsertExpandedMaxTokens !== undefined) {
-      settings.weaverGuidedInsertExpandedMaxTokens = updates.guidedInsertExpandedMaxTokens;
+      settings.weaverGuidedInsertExpandedMaxTokens = normalizeBoundedNumber(
+        updates.guidedInsertExpandedMaxTokens,
+        'guidedInsertExpandedMaxTokens',
+        WEAVER_BUDGET_BOUNDS.minTokens,
+        WEAVER_BUDGET_BOUNDS.maxTokens,
+      );
     }
     if (updates.guidedInsertExpandedTimeoutMs !== undefined) {
-      settings.weaverGuidedInsertExpandedTimeoutMs = updates.guidedInsertExpandedTimeoutMs;
+      settings.weaverGuidedInsertExpandedTimeoutMs = normalizeBoundedNumber(
+        updates.guidedInsertExpandedTimeoutMs,
+        'guidedInsertExpandedTimeoutMs',
+        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
+        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
+      );
     }
     if (updates.intelligentLightMaxTokens !== undefined) {
-      settings.weaverIntelligentLightMaxTokens = updates.intelligentLightMaxTokens;
+      settings.weaverIntelligentLightMaxTokens = normalizeBoundedNumber(
+        updates.intelligentLightMaxTokens,
+        'intelligentLightMaxTokens',
+        WEAVER_BUDGET_BOUNDS.minTokens,
+        WEAVER_BUDGET_BOUNDS.maxTokens,
+      );
     }
     if (updates.intelligentLightTimeoutMs !== undefined) {
-      settings.weaverIntelligentLightTimeoutMs = updates.intelligentLightTimeoutMs;
+      settings.weaverIntelligentLightTimeoutMs = normalizeBoundedNumber(
+        updates.intelligentLightTimeoutMs,
+        'intelligentLightTimeoutMs',
+        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
+        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
+      );
     }
     if (updates.intelligentLightIterationLimit !== undefined) {
-      settings.weaverIntelligentLightIterationLimit = updates.intelligentLightIterationLimit;
+      settings.weaverIntelligentLightIterationLimit = normalizeBoundedNumber(
+        updates.intelligentLightIterationLimit,
+        'intelligentLightIterationLimit',
+        WEAVER_BUDGET_BOUNDS.minIterations,
+        WEAVER_BUDGET_BOUNDS.maxIterations,
+      );
     }
     if (updates.intelligentStandardMaxTokens !== undefined) {
-      settings.weaverIntelligentStandardMaxTokens = updates.intelligentStandardMaxTokens;
+      settings.weaverIntelligentStandardMaxTokens = normalizeBoundedNumber(
+        updates.intelligentStandardMaxTokens,
+        'intelligentStandardMaxTokens',
+        WEAVER_BUDGET_BOUNDS.minTokens,
+        WEAVER_BUDGET_BOUNDS.maxTokens,
+      );
     }
     if (updates.intelligentStandardTimeoutMs !== undefined) {
-      settings.weaverIntelligentStandardTimeoutMs = updates.intelligentStandardTimeoutMs;
+      settings.weaverIntelligentStandardTimeoutMs = normalizeBoundedNumber(
+        updates.intelligentStandardTimeoutMs,
+        'intelligentStandardTimeoutMs',
+        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
+        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
+      );
     }
     if (updates.intelligentStandardIterationLimit !== undefined) {
-      settings.weaverIntelligentStandardIterationLimit = updates.intelligentStandardIterationLimit;
+      settings.weaverIntelligentStandardIterationLimit = normalizeBoundedNumber(
+        updates.intelligentStandardIterationLimit,
+        'intelligentStandardIterationLimit',
+        WEAVER_BUDGET_BOUNDS.minIterations,
+        WEAVER_BUDGET_BOUNDS.maxIterations,
+      );
     }
     if (updates.intelligentGoHamMaxTokens !== undefined) {
-      settings.weaverIntelligentGoHamMaxTokens = updates.intelligentGoHamMaxTokens;
+      settings.weaverIntelligentGoHamMaxTokens = normalizeBoundedNumber(
+        updates.intelligentGoHamMaxTokens,
+        'intelligentGoHamMaxTokens',
+        WEAVER_BUDGET_BOUNDS.minTokens,
+        WEAVER_BUDGET_BOUNDS.maxTokens,
+      );
     }
     if (updates.intelligentGoHamTimeoutMs !== undefined) {
-      settings.weaverIntelligentGoHamTimeoutMs = updates.intelligentGoHamTimeoutMs;
+      settings.weaverIntelligentGoHamTimeoutMs = normalizeBoundedNumber(
+        updates.intelligentGoHamTimeoutMs,
+        'intelligentGoHamTimeoutMs',
+        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
+        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
+      );
     }
     if (updates.intelligentGoHamIterationLimit !== undefined) {
-      settings.weaverIntelligentGoHamIterationLimit = updates.intelligentGoHamIterationLimit;
+      settings.weaverIntelligentGoHamIterationLimit = normalizeBoundedNumber(
+        updates.intelligentGoHamIterationLimit,
+        'intelligentGoHamIterationLimit',
+        WEAVER_BUDGET_BOUNDS.minIterations,
+        WEAVER_BUDGET_BOUNDS.maxIterations,
+      );
     }
 
     return buildWeaverSettingsResponse(settings);

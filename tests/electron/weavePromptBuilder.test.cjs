@@ -2,12 +2,22 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  buildSystemInstruction,
-  buildUserMessage,
-} = require('../../dist-electron/weaver/weavePromptBuilder.js');
+  buildSystemPrompt,
+  buildRequestSpecification,
+} = require('../../dist-electron/weaver/weavePlanPrompts.js');
+
+const profile = {
+  structuredOutputMode: 'fences_and_braces',
+  systemPromptOverlay: '',
+  repairStrategy: 'aggressive',
+  maxTokens: 1500,
+  timeoutMs: 30000,
+  temperature: 0.2,
+  iterationLimit: 2,
+};
 
 test('guided insert prompt forbids note edits and note creation when permissions are disabled', () => {
-  const message = buildUserMessage({
+  const message = buildRequestSpecification({
     rootPath: 'D:/vault',
     kind: 'guided-insert',
     intent: 'Place the card in the graph notes.',
@@ -27,14 +37,14 @@ test('guided insert prompt forbids note edits and note creation when permissions
 });
 
 test('system instruction frames crashpad as source-only and create-note as substantive', () => {
-  const instruction = buildSystemInstruction();
+  const instruction = buildSystemPrompt(profile, 2, 1);
 
   assert.match(instruction, /Crashpad is source context only/i);
   assert.match(instruction, /create-note.*must.*meaningful markdown prose|create-note payload must contain substantive markdown prose/i);
 });
 
 test('intelligent prompt describes vault-wide note and directory restructuring', () => {
-  const message = buildUserMessage({
+  const message = buildRequestSpecification({
     rootPath: 'D:/vault',
     kind: 'intelligent',
     strength: 'go-ham',

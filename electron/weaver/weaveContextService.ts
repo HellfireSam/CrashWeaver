@@ -130,6 +130,16 @@ interface WeaveToolErrorResult {
   toolName: string;
   usage: WeaveToolRuntimeUsage;
   error: string;
+  diagnostics?: {
+    code:
+      | 'budget-note-reads-exhausted'
+      | 'budget-chars-exhausted'
+      | 'note-outside-candidates'
+      | 'invalid-arguments'
+      | 'unsupported-tool'
+      | 'runtime-error';
+    recoverable: boolean;
+  };
 }
 
 export type WeaveToolResult = WeaveToolSuccessResult | WeaveToolErrorResult;
@@ -551,6 +561,26 @@ function normalizeOptionalPath(value: unknown) {
   return typeof value === 'string' && value.trim() ? toPosixPath(value.trim()) : undefined;
 }
 
+function classifyToolError(errorMessage: string): WeaveToolErrorResult['diagnostics'] {
+  const msg = errorMessage.toLowerCase();
+  if (msg.includes('note-read budget is exhausted')) {
+    return { code: 'budget-note-reads-exhausted', recoverable: true };
+  }
+  if (msg.includes('character budget is exhausted')) {
+    return { code: 'budget-chars-exhausted', recoverable: true };
+  }
+  if (msg.includes('outside the ranked candidate set')) {
+    return { code: 'note-outside-candidates', recoverable: true };
+  }
+  if (msg.includes('requires')) {
+    return { code: 'invalid-arguments', recoverable: true };
+  }
+  if (msg.includes('unsupported read-only tool')) {
+    return { code: 'unsupported-tool', recoverable: true };
+  }
+  return { code: 'runtime-error', recoverable: false };
+}
+
 export async function buildWeaveContextSnapshot(request: WeavePlanRequest): Promise<WeaveContextSnapshot> {
   const warnings: string[] = [];
   const retrievalBudget = resolveRetrievalBudget(request);
@@ -633,6 +663,31 @@ export class WeaveContextToolRuntime {
     if (this.noteReads >= this.retrievalBudget.maxNoteReads) {
       throw new Error('Weaver retrieval note-read budget is exhausted. Finalize with the current evidence.');
     }
+  }
+
+  private findNoteSpan(content: string, startAnchor: string, endAnchor: string) {
+    const startIndex = content.indexOf(startAnchor);
+    if (startIndex < 0) {
+      throw new Error('read_note_span startAnchor was not found in the note content.');
+    }
+
+    const endSearchStart = startIndex + startAnchor.length;
+    const endIndex = content.indexOf(endAnchor, endSearchStart);
+    if (endIndex < 0) {
+      throw new Error('read_note_span endAnchor was not found after startAnchor in the note content.');
+    }
+
+    const spanStart = startIndex;
+    const spanEnd = endIndex + endAnchor.length;
+    const before = content.slice(0, spanStart);
+    const lineStart = before.split(/\r?\n/g).length;
+    const lineEnd = before.concat(content.slice(spanStart, spanEnd)).split(/\r?\n/g).length;
+
+    return {
+      spanText: content.slice(spanStart, spanEnd),
+      lineStart,
+      lineEnd,
+    };
   }
 
   private async readNoteSlice(filePath: string, mode: 'excerpt' | 'full', requestedChars: unknown) {
@@ -735,6 +790,45 @@ export class WeaveContextToolRuntime {
           };
         }
 
+        case 'search_notes': {
+          const queryValue = args && typeof args === 'object'
+            ? (args as Record<string, unknown>).query
+            : undefined;
+          const query = typeof queryValue === 'string' ? queryValue.trim().toLowerCase() : '';
+          if (!query) {
+            throw new Error('search_notes requires a non-empty query.');
+          }
+
+          const limit = normalizeLimit(
+            args && typeof args === 'object' ? (args as Record<string, unknown>).limit : undefined,
+            this.retrievalBudget.maxCandidateNotes,
+            this.retrievalBudget.maxCandidateNotes,
+          );
+
+          const directoryPath = normalizeOptionalPath(
+            args && typeof args === 'object' ? (args as Record<string, unknown>).directoryPath : undefined,
+          );
+
+          const notes = this.snapshot.candidateNotes
+            .filter((note) => !directoryPath || note.directoryPath === directoryPath)
+            .filter((note) => {
+              const haystack = `${note.filePath}\n${note.title}\n${note.tags.join(' ')}`.toLowerCase();
+              return haystack.includes(query);
+            })
+            .slice(0, limit);
+
+          return {
+            ok: true,
+            toolName,
+            usage: this.getUsage(),
+            data: {
+              query,
+              directoryPath,
+              notes,
+            },
+          };
+        }
+
         case 'read_note_excerpt': {
           const filePath = normalizeOptionalPath(
             args && typeof args === 'object' ? (args as Record<string, unknown>).filePath : undefined,
@@ -767,15 +861,70 @@ export class WeaveContextToolRuntime {
           );
         }
 
+        case 'read_note_span': {
+          const filePath = normalizeOptionalPath(
+            args && typeof args === 'object' ? (args as Record<string, unknown>).filePath : undefined,
+          );
+          const startAnchor = args && typeof args === 'object'
+            ? (args as Record<string, unknown>).startAnchor
+            : undefined;
+          const endAnchor = args && typeof args === 'object'
+            ? (args as Record<string, unknown>).endAnchor
+            : undefined;
+
+          if (!filePath) {
+            throw new Error('read_note_span requires a candidate filePath.');
+          }
+          if (typeof startAnchor !== 'string' || !startAnchor.trim()) {
+            throw new Error('read_note_span requires a non-empty startAnchor.');
+          }
+          if (typeof endAnchor !== 'string' || !endAnchor.trim()) {
+            throw new Error('read_note_span requires a non-empty endAnchor.');
+          }
+
+          const normalizedPath = toPosixPath(filePath);
+          if (!this.candidateLookup.has(normalizedPath)) {
+            throw new Error(`Note ${normalizedPath} is outside the ranked candidate set.`);
+          }
+
+          this.assertNoteReadBudget();
+          const allowedChars = this.resolveRequestedChars(
+            args && typeof args === 'object' ? (args as Record<string, unknown>).maxChars : undefined,
+            this.retrievalBudget.maxFullNoteChars,
+          );
+
+          const note = await readNote(this.snapshot.rootPath, normalizedPath);
+          const span = this.findNoteSpan(note.content, startAnchor.trim(), endAnchor.trim());
+          const truncated = trimExcerpt(span.spanText, allowedChars);
+          this.noteReads += 1;
+          this.retrievedChars += truncated.length;
+
+          return {
+            ok: true,
+            toolName,
+            usage: this.getUsage(),
+            data: {
+              filePath: normalizedPath,
+              title: note.title,
+              lineStart: span.lineStart,
+              lineEnd: span.lineEnd,
+              truncated: truncated.length < span.spanText.length,
+              content: truncated,
+            },
+          };
+        }
+
         default:
           throw new Error(`Unsupported read-only tool: ${toolName}.`);
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       return {
         ok: false,
         toolName,
         usage: this.getUsage(),
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
+        diagnostics: classifyToolError(message),
       };
     }
   }

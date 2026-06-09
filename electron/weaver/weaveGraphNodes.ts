@@ -29,6 +29,7 @@ import {
 } from './weavePlanPrompts';
 import { validateWeavePlanResult } from './weavePlanSchema';
 import type { WeavePlanResult, WeaveErrorCategory } from '../vault-contract';
+import type { WeaveToolResult } from './weaveContextService';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -97,11 +98,6 @@ function parseActionFromJson(value: unknown): ParsedAction | null {
     return { type: 'final', thought, plan: value.plan };
   }
 
-  // Bare plan object without the envelope — treat as implicit final.
-  if (typeof value.kind === 'string' && Array.isArray(value.operations)) {
-    return { type: 'final', thought, plan: value };
-  }
-
   return null;
 }
 
@@ -124,6 +120,12 @@ function messagesToOpenRouterFormat(
 
 function makeWeaveError(message: string, category: WeaveErrorCategory): Error {
   return Object.assign(new Error(message), { errorCategory: category });
+}
+
+function getTraceDiagnostics(
+  toolResult: WeaveToolResult,
+): NonNullable<WeavePlanResult['trace']>[number]['diagnostics'] {
+  return toolResult.ok ? undefined : toolResult.diagnostics;
 }
 
 // ── callModel node ────────────────────────────────────────────────────────────
@@ -389,7 +391,14 @@ export function makeExecuteToolNode(
 
     const thought = pendingThought || undefined;
     const action = `Tool Call: "${pendingToolName}" with arguments:\n${JSON.stringify(pendingToolArgs, null, 2)}`;
-    const observation = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult, null, 2);
+    let observation = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult, null, 2);
+    const diagnostics = getTraceDiagnostics(toolResult);
+    
+    // Compact large observations to prevent unbounded trace growth
+    const MAX_OBSERVATION_LEN = 800;
+    if (observation.length > MAX_OBSERVATION_LEN) {
+      observation = observation.slice(0, MAX_OBSERVATION_LEN) + `\n[... truncated ${observation.length - MAX_OBSERVATION_LEN} characters]`;
+    }
 
     return {
       messages: [new HumanMessage(observationMsg)],
@@ -398,7 +407,7 @@ export function makeExecuteToolNode(
       pendingToolName: null,
       pendingToolArgs: null,
       pendingThought: null, // clear it!
-      trace: [{ thought, action, observation }],
+      trace: [{ thought, action, observation, diagnostics }],
     };
   };
 }

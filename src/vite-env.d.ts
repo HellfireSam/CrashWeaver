@@ -61,6 +61,7 @@ declare global {
       checkWeaveProvider: () => Promise<WeaveProviderHealth>;
       listWeaveModels: () => Promise<WeaveModelInfo[]>;
       getWeaverSettings: () => Promise<WeaverSettings>;
+      updateWeaverSettings: (updates: Partial<WeaverSettings>) => Promise<WeaverSettings>;
       setWeaverPreferredModel: (preferredModel: string | null) => Promise<WeaverSettings>;
       getWeaverRequestLogsDirectory: () => Promise<string | null>;
       setWeaverRequestLogsDirectory: (directoryPath: string | null) => Promise<string | null>;
