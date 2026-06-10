@@ -1,16 +1,51 @@
 /**
  * weaveModelProfiles.ts
  *
- * Extended model profile registry for the Weaver agent loop.
- * Combines model-specific behaviour (structured output mode, prompt overlays,
- * repair strategy) with per-request execution budgets (tokens, timeout,
- * temperature, iteration limit).
+ * Canonical model profile registry for the Weaver agent loop.
+ * Combines model resolution (UI-tier shortcuts → OpenRouter IDs), model-specific
+ * behaviour (structured output mode, prompt overlays, repair strategy), and
+ * per-request execution budgets (tokens, timeout, temperature, iteration limit).
  *
- * This is the canonical source for model-driven execution policy.
- * weaveCostPolicy.ts retains resolveModel() and backward-compat helpers.
+ * This is the single source of truth for model-driven execution policy.
  */
 
 import type { WeavePlanRequest, WeaveStrength, WeaverSettings } from '../vault-contract';
+
+// ── Model resolution ──────────────────────────────────────────────────────────
+
+/** Maps compact UI model shortcuts to actual OpenRouter model IDs. */
+export const DEFAULT_MODEL_BY_UI_TIER: Record<string, string> = {
+  'cw-fast': 'openai/gpt-4o-mini',
+  'cw-balanced': 'openai/gpt-4o',
+  'cw-deep': 'anthropic/claude-sonnet-4-5',
+};
+
+const DEFAULT_FALLBACK_MODEL = DEFAULT_MODEL_BY_UI_TIER['cw-balanced'];
+
+function normalizeModelCandidate(candidate?: string | null) {
+  return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : undefined;
+}
+
+/**
+ * Resolve the actual OpenRouter model ID from the explicit request model
+ * or persisted preference. Falls back to a safe balanced default if neither is present.
+ */
+export function resolveModel(
+  explicitModel?: string,
+  preferredModel?: string | null,
+): string {
+  const resolvedModel = normalizeModelCandidate(explicitModel) ?? normalizeModelCandidate(preferredModel);
+
+  if (!resolvedModel) {
+    return DEFAULT_FALLBACK_MODEL;
+  }
+
+  if (resolvedModel.includes('/')) {
+    return resolvedModel;
+  }
+
+  return DEFAULT_MODEL_BY_UI_TIER[resolvedModel] ?? resolvedModel;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -14,16 +14,18 @@ import {
   getWeaverRequestLogsDirectory,
   setWeaverRequestLogsDirectory as persistWeaverRequestLogsDirectory,
 } from '../settingsService';
-import type { WeavePlanRequest, WeavePlanResult, WeaveModelProvider, WeaveProviderHealth, WeaverSettings, WeaverKeyStatus } from '../vault-contract';
+import type { WeavePlanRequest, WeavePlanResult, WeaveModelProvider, WeaveModelInfo, WeaveProviderHealth, WeaverSettings, WeaverKeyStatus } from '../vault-contract';
 
 export type { WeaveModelProvider };
 
-interface InternalWeaveModelProvider extends WeaveModelProvider {
+interface InternalWeaveModelProvider {
   generatePlan(
     request: WeavePlanRequest,
-    context?: WeaveContextSnapshot,
+    context: WeaveContextSnapshot,
     options?: { requestLogDirectory?: string },
   ): Promise<WeavePlanResult>;
+  healthCheck(): Promise<WeaveProviderHealth>;
+  listModels(): Promise<WeaveModelInfo[]>;
 }
 
 let activeProvider: InternalWeaveModelProvider = new StubWeaveProvider();

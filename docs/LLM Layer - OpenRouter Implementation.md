@@ -57,20 +57,38 @@ Renderer:
 - Displays proposal output.
 - Displays status and errors from main process.
 
-## 4. Proposed File And Service Layout
+## 4. File And Service Layout
 
-Suggested additions under electron:
-- `electron/weaver/openRouterClient.ts`
-- `electron/weaver/weaveService.ts`
-- `electron/weaver/weavePromptBuilder.ts`
-- `electron/weaver/weavePlanSchema.ts`
-- `electron/weaver/weaveValidation.ts`
-- `electron/weaver/weaveCostPolicy.ts`
+Implemented under `electron/weaver/`:
 
-Suggested contract extensions:
-- `electron/vault-contract.ts`: add Weaver request and response types.
-- `electron/preload.ts`: expose new Weaver IPC methods.
-- `electron/main.ts`: register Weaver IPC handlers.
+**Core orchestration:**
+- `weaveService.ts` — public API for plan generation, provider lifecycle, API key management, settings
+- `weaveGraph.ts` — procedural ReAct loop with transition-table state machine (no LangChain/LangGraph)
+- `weaveGraphNodes.ts` — node factories: callModel, executeTool, repair, finalize, validate, fail
+- `weaveGraphState.ts` — typed state model, `WeaveMessage` type, step/route enums, budget constants
+
+**LLM transport:**
+- `weaveHttpClient.ts` — `WeaveHttpClient` interface, `OpenRouterHttpClient` (Electron net.fetch + AbortController)
+- `openRouterClient.ts` — `OpenRouterWeaveProvider` (model resolution, profile, context → graph execution)
+- `stubWeaveProvider.ts` — deterministic stub for offline/testing
+
+**Prompts & schema:**
+- `weavePlanPrompts.ts` — 10-layer composable prompt architecture (task contract, safety, operations, tool loop, repair)
+- `weavePlanSchema.ts` — request and result validation, path normalisation, boundary checks
+
+**Context & tools:**
+- `weaveContextService.ts` — context snapshot builder, candidate note scoring, read-only tool runtime (6 tools via registry)
+- `weaveModelProfiles.ts` — single source of truth for model resolution (UI tiers → OpenRouter IDs), structured output config, repair strategy, execution budgets
+- `weaveCostPolicy.ts` — **deprecated** re-export stub; all logic lives in `weaveModelProfiles.ts`
+
+**Observability:**
+- `weaveRequestLogger.ts` — per-session JSONL request logs
+- `weaveTraceCompactor.ts` — ReAct trace compaction for bounded memory
+
+Contracts:
+- `electron/vault-contract.ts` — Weaver request/response types, operation kinds, error categories
+- `electron/preload.ts` — narrow Weaver IPC bridge
+- `electron/main.ts` — Weaver IPC handler registration
 
 ## 5. Configuration And Secrets
 
@@ -229,14 +247,17 @@ Recommended headers:
 - `X-Title: <OPENROUTER_APP_NAME>`
 
 ### ReAct Graph & Adaptive Orchestration Loop (Stage 5 Hardening)
-The planning process runs inside a sophisticated, stateful execution loop supporting model-tailored settings and adaptive error self-repair.
+The planning process runs inside a procedural, stateful execution loop supporting model-tailored settings and adaptive error self-repair — **no LangChain or LangGraph dependency**.
 
 Instead of a single brittle run, orchestration utilizes:
-1. **Layered Prompts**: Separation of Core Task Contract, Safety & Boundary Policies, Model-Specific Overlays, and request context summaries rather than monolithic prompts.
-2. **Model Profile resolution**: Models like GPT-4o and Claude have customized prompting overlays, temperatures, and structured JSON requirements initialized at the runtime start.
-3. **Syntactic JSON Repair**: When parser/extraction fails on minor syntactic errors, the engine performs auto-repair by feeding back error context to request a corrected JSON format instead of throwing immediately.
-4. **Semantic Schema Repair**: If a generated plan violates our strict [WeavePlanResult](electron/vault-contract.ts) rules, the loop returns structural error details to the model to correct properties of operations on-the-fly.
-5. **Retrieval Limit Graceful Fallback**: If tool calls reach the maximum iteration limit, the system appends a final warning requiring the model to finalize from partial evidence, ensuring a high-quality best-guess proposal is returned rather than a loop exhaustion error.
+1. **Layered Prompts** (`weavePlanPrompts.ts`): Separation of Core Task Contract, Safety & Boundary Policies, Model-Specific Overlays, and request context summaries rather than monolithic prompts.
+2. **Model Profile resolution** (`weaveModelProfiles.ts`): Models like GPT-4o and Claude have customized prompting overlays, temperatures, structured JSON requirements, and repair strategies initialized at runtime.
+3. **Transition-table state machine** (`weaveGraph.ts`): A pure function `resolveNextStep()` maps each graph step + route to the next step, replacing fragile string-based dispatch with exhaustiveness-checked transitions.
+4. **Syntactic JSON Repair**: When parser/extraction fails on minor syntactic errors, the engine performs auto-repair by feeding back error context to request a corrected JSON format instead of throwing immediately.
+5. **Semantic Schema Repair**: If a generated plan violates the strict `WeavePlanResult` schema, the loop returns structural error details to the model to correct operations on-the-fly.
+6. **Hard step cap** (`MAX_TOTAL_STEPS = 24`): Prevents infinite oscillation between repair and model-call.
+7. **Retrieval Limit Graceful Fallback**: If tool calls reach the maximum iteration limit, the system appends a final warning requiring the model to finalize from partial evidence.
+8. **Proper HTTP cancellation**: `AbortController` replaces `Promise.race` for timeout handling, ensuring the underlying fetch is actually cancelled.
 
 Trace visibility:
 - Each major step can be emitted as a typed ReAct trace item and returned with the final plan result.
@@ -249,11 +270,18 @@ Important:
 
 ## 9. Prompt Strategy
 
-Prompt builder should compose:
+The prompt builder (`weavePlanPrompts.ts`) composes a 10-layer architecture:
+
 - **Layer 1 (Task Contract)**: Core Weaver identity, planner scope, and non-destructive Stage 5 target specifications.
 - **Layer 2 (Mandatory Safety & Boundary Policies)**: Rigid rules including no crashpad mutations, matching focused card UID boundary rules, non-traversal relative target paths, permission adherence, substantive note creation prose, explicit delete justification, and strict JSON-only format constraints.
-- **Layer 3 (Model-Specific Resolution Overlay)**: Injected instructions optimizing output syntax configuration (JSON Mode, XML/markdown fences, schema strictness) per resolved model.
-- **Layer 4 (Request Specification Context)**: Current kind-specific permissions, intelligent strength descriptor details, user intent, crashpad metadata, active note, and truncated selected text.
+- **Layer 3 (Operation Schema)**: Full documentation of all 10 operation kinds with canonical examples.
+- **Layer 4 (Output Format Schema)**: Exact expected JSON shape for the final plan response.
+- **Layer 5 (Tool Loop Protocol)**: Dynamic — max tool call count, note-read budget, available tools, and tool constraints.
+- **Layer 6 (Model-Specific Resolution Overlay)**: Dynamic — injected instructions per resolved model (JSON mode, markdown fences, thinking tags).
+- **Layer 7 (Request Specification Context)**: Dynamic — current kind, permissions, strength, user intent, crashpad metadata, active note, truncated selected text.
+- **Layer 8 (Context Snapshot)**: Dynamic — pre-loaded vault context: card summary, ranked candidate notes with scores, directory summaries, retrieval budget.
+- **Layer 9 (Observation)**: Dynamic — tool result digests with remaining budget tracking.
+- **Layer 10 (Repair Messages)**: Dynamic — targeted correction prompts for syntactic, semantic, schema, and exhaustion errors.
 
 Context minimization:
 - Send only relevant notes and snippets instead of full vault contents.
@@ -312,18 +340,13 @@ Data governance:
 
 ## 13. Model Selection Policy
 
-Recommended starter policy:
-- Let the user explicitly select the model used for a Weaver request.
-- Keep one safe default model when no explicit selection exists.
-- Use strength to control prompt autonomy and request budgets, not model routing.
-- Allow user-level budget overrides for max tokens, timeout, and iteration limits.
-- Support an explicit "disable budget restrictions" switch for lenient runs.
+Model resolution and profile configuration is centralized in `weaveModelProfiles.ts` (canonical) with a deprecated re-export stub in `weaveCostPolicy.ts`.
 
-Policy should be data-driven:
-- Store the preferred model selection in settings, not hardcoded in renderer.
-- Support live model listing from the provider.
-- Add per-request max token and timeout caps.
-- Persist optional budget override settings in the same settings service used by preferred model selection.
+- `resolveModel()` maps UI-tier shortcuts (`cw-fast`, `cw-balanced`, `cw-deep`) to full OpenRouter model IDs, with a safe fallback to `openai/gpt-4o`.
+- `resolveFullModelProfile()` combines model-specific config (structured output mode, repair strategy, system prompt overlay) with per-request execution budgets (max tokens, timeout, temperature, iteration limit).
+- Strength controls prompt autonomy and request budgets, not model routing.
+- Per-request budget overrides are validated and clamped to safe bounds (`BUDGET_VALIDATION_BOUNDS`).
+- An explicit "disable budget restrictions" toggle lifts all caps while preserving Stage 5 non-destructive safety validation.
 
 ## 14. Observability And Cost Control
 

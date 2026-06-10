@@ -1,3 +1,4 @@
+import type { WeaveContextSnapshot } from './weaveContextService';
 import type {
   WeavePlanOperation,
   WeavePlanRequest,
@@ -213,7 +214,11 @@ function buildPlanOperations(request: WeavePlanRequest) {
 }
 
 export class StubWeaveProvider {
-  async generatePlan(request: WeavePlanRequest): Promise<WeavePlanResult> {
+  async generatePlan(
+    request: WeavePlanRequest,
+    _context: WeaveContextSnapshot,
+    _options?: { requestLogDirectory?: string },
+  ): Promise<WeavePlanResult> {
     const operations = buildPlanOperations(request).slice(0, request.maxOperations);
     const resolvedModel = resolveModel(request);
     const warnings: string[] = [

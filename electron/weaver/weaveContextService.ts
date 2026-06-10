@@ -623,6 +623,9 @@ export class WeaveContextToolRuntime {
   private noteReads = 0;
   private retrievedChars = 0;
 
+  /** Registry of all read-only tool handlers keyed by tool name. */
+  private readonly toolHandlers: Record<string, (args: Record<string, unknown>) => Promise<WeaveToolResult>>;
+
   constructor(
     private readonly snapshot: WeaveContextSnapshot,
     budgetOverrides?: Partial<WeaveRetrievalBudget>,
@@ -636,6 +639,17 @@ export class WeaveContextToolRuntime {
     this.retrievalBudget = {
       ...snapshot.retrievalBudget,
       ...budgetOverrides,
+    };
+
+    // ── Tool registry ────────────────────────────────────────────────────────
+    // Each tool is a private method below; the registry maps names → bound handlers.
+    this.toolHandlers = {
+      list_candidate_notes: this.toolListCandidateNotes.bind(this),
+      list_directory_summary: this.toolListDirectorySummary.bind(this),
+      search_notes: this.toolSearchNotes.bind(this),
+      read_note_excerpt: this.toolReadNoteExcerpt.bind(this),
+      read_note_full: this.toolReadNoteFull.bind(this),
+      read_note_span: this.toolReadNoteSpan.bind(this),
     };
   }
 
@@ -746,177 +760,134 @@ export class WeaveContextToolRuntime {
     };
   }
 
+  // ── Individual tool handlers ────────────────────────────────────────────────
+
+  private async toolListCandidateNotes(args: Record<string, unknown>): Promise<WeaveToolResult> {
+    const limit = normalizeLimit(args.limit, this.retrievalBudget.maxCandidateNotes, this.retrievalBudget.maxCandidateNotes);
+    const directoryPath = normalizeOptionalPath(args.directoryPath);
+    const notes = this.snapshot.candidateNotes
+      .filter((note) => !directoryPath || note.directoryPath === directoryPath)
+      .slice(0, limit);
+
+    return {
+      ok: true,
+      toolName: 'list_candidate_notes',
+      usage: this.getUsage(),
+      data: { notes, directoryPath },
+    };
+  }
+
+  private async toolListDirectorySummary(args: Record<string, unknown>): Promise<WeaveToolResult> {
+    const limit = normalizeLimit(args.limit, this.retrievalBudget.maxDirectorySummaries, this.retrievalBudget.maxDirectorySummaries);
+    return {
+      ok: true,
+      toolName: 'list_directory_summary',
+      usage: this.getUsage(),
+      data: { directories: this.snapshot.directorySummaries.slice(0, limit) },
+    };
+  }
+
+  private async toolSearchNotes(args: Record<string, unknown>): Promise<WeaveToolResult> {
+    const query = typeof args.query === 'string' ? args.query.trim().toLowerCase() : '';
+    if (!query) throw new Error('search_notes requires a non-empty query.');
+
+    const limit = normalizeLimit(args.limit, this.retrievalBudget.maxCandidateNotes, this.retrievalBudget.maxCandidateNotes);
+    const directoryPath = normalizeOptionalPath(args.directoryPath);
+
+    const notes = this.snapshot.candidateNotes
+      .filter((note) => !directoryPath || note.directoryPath === directoryPath)
+      .filter((note) => {
+        const haystack = `${note.filePath}\n${note.title}\n${note.tags.join(' ')}`.toLowerCase();
+        return haystack.includes(query);
+      })
+      .slice(0, limit);
+
+    return {
+      ok: true,
+      toolName: 'search_notes',
+      usage: this.getUsage(),
+      data: { query, directoryPath, notes },
+    };
+  }
+
+  private async toolReadNoteExcerpt(args: Record<string, unknown>): Promise<WeaveToolResult> {
+    const filePath = normalizeOptionalPath(args.filePath);
+    if (!filePath) throw new Error('read_note_excerpt requires a candidate filePath.');
+    return this.readNoteSlice(filePath, 'excerpt', args.maxChars);
+  }
+
+  private async toolReadNoteFull(args: Record<string, unknown>): Promise<WeaveToolResult> {
+    const filePath = normalizeOptionalPath(args.filePath);
+    if (!filePath) throw new Error('read_note_full requires a candidate filePath.');
+    return this.readNoteSlice(filePath, 'full', args.maxChars);
+  }
+
+  private async toolReadNoteSpan(args: Record<string, unknown>): Promise<WeaveToolResult> {
+    const filePath = normalizeOptionalPath(args.filePath);
+    const startAnchor = args.startAnchor;
+    const endAnchor = args.endAnchor;
+
+    if (!filePath) throw new Error('read_note_span requires a candidate filePath.');
+    if (typeof startAnchor !== 'string' || !startAnchor.trim()) throw new Error('read_note_span requires a non-empty startAnchor.');
+    if (typeof endAnchor !== 'string' || !endAnchor.trim()) throw new Error('read_note_span requires a non-empty endAnchor.');
+
+    const normalizedPath = toPosixPath(filePath);
+    if (!this.candidateLookup.has(normalizedPath)) {
+      throw new Error(`Note ${normalizedPath} is outside the ranked candidate set.`);
+    }
+
+    this.assertNoteReadBudget();
+    const allowedChars = this.resolveRequestedChars(args.maxChars, this.retrievalBudget.maxFullNoteChars);
+
+    const note = await readNote(this.snapshot.rootPath, normalizedPath);
+    const span = this.findNoteSpan(note.content, startAnchor.trim(), endAnchor.trim());
+    const truncated = trimExcerpt(span.spanText, allowedChars);
+    this.noteReads += 1;
+    this.retrievedChars += truncated.length;
+
+    return {
+      ok: true,
+      toolName: 'read_note_span',
+      usage: this.getUsage(),
+      data: {
+        filePath: normalizedPath,
+        title: note.title,
+        lineStart: span.lineStart,
+        lineEnd: span.lineEnd,
+        truncated: truncated.length < span.spanText.length,
+        content: truncated,
+      },
+    };
+  }
+
+  // ── Public dispatcher ───────────────────────────────────────────────────────
+
+  /**
+   * Dispatches a tool call by name.  Each tool handler throws on validation
+   * errors; the dispatcher catches all throws and converts them to a
+   * structured WeaveToolErrorResult so the caller never deals with raw
+   * exceptions.
+   */
   async execute(toolName: string, args: unknown): Promise<WeaveToolResult> {
+    const toolArgs: Record<string, unknown> =
+      args && typeof args === 'object' && !Array.isArray(args)
+        ? args as Record<string, unknown>
+        : {};
+
+    const handler = this.toolHandlers[toolName];
+
+    if (!handler) {
+      return {
+        ok: false,
+        toolName,
+        usage: this.getUsage(),
+        error: `Unsupported read-only tool: ${toolName}.`,
+        diagnostics: classifyToolError(`Unsupported read-only tool: ${toolName}.`),
+      };
+    }
+
     try {
-      switch (toolName) {
-        case 'list_candidate_notes': {
-          const limit = normalizeLimit(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).limit : undefined,
-            this.retrievalBudget.maxCandidateNotes,
-            this.retrievalBudget.maxCandidateNotes,
-          );
-          const directoryPath = normalizeOptionalPath(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).directoryPath : undefined,
-          );
-          const notes = this.snapshot.candidateNotes
-            .filter((note) => !directoryPath || note.directoryPath === directoryPath)
-            .slice(0, limit);
-
-          return {
-            ok: true,
-            toolName,
-            usage: this.getUsage(),
-            data: {
-              notes,
-              directoryPath,
-            },
-          };
-        }
-
-        case 'list_directory_summary': {
-          const limit = normalizeLimit(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).limit : undefined,
-            this.retrievalBudget.maxDirectorySummaries,
-            this.retrievalBudget.maxDirectorySummaries,
-          );
-
-          return {
-            ok: true,
-            toolName,
-            usage: this.getUsage(),
-            data: {
-              directories: this.snapshot.directorySummaries.slice(0, limit),
-            },
-          };
-        }
-
-        case 'search_notes': {
-          const queryValue = args && typeof args === 'object'
-            ? (args as Record<string, unknown>).query
-            : undefined;
-          const query = typeof queryValue === 'string' ? queryValue.trim().toLowerCase() : '';
-          if (!query) {
-            throw new Error('search_notes requires a non-empty query.');
-          }
-
-          const limit = normalizeLimit(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).limit : undefined,
-            this.retrievalBudget.maxCandidateNotes,
-            this.retrievalBudget.maxCandidateNotes,
-          );
-
-          const directoryPath = normalizeOptionalPath(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).directoryPath : undefined,
-          );
-
-          const notes = this.snapshot.candidateNotes
-            .filter((note) => !directoryPath || note.directoryPath === directoryPath)
-            .filter((note) => {
-              const haystack = `${note.filePath}\n${note.title}\n${note.tags.join(' ')}`.toLowerCase();
-              return haystack.includes(query);
-            })
-            .slice(0, limit);
-
-          return {
-            ok: true,
-            toolName,
-            usage: this.getUsage(),
-            data: {
-              query,
-              directoryPath,
-              notes,
-            },
-          };
-        }
-
-        case 'read_note_excerpt': {
-          const filePath = normalizeOptionalPath(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).filePath : undefined,
-          );
-
-          if (!filePath) {
-            throw new Error('read_note_excerpt requires a candidate filePath.');
-          }
-
-          return await this.readNoteSlice(
-            filePath,
-            'excerpt',
-            args && typeof args === 'object' ? (args as Record<string, unknown>).maxChars : undefined,
-          );
-        }
-
-        case 'read_note_full': {
-          const filePath = normalizeOptionalPath(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).filePath : undefined,
-          );
-
-          if (!filePath) {
-            throw new Error('read_note_full requires a candidate filePath.');
-          }
-
-          return await this.readNoteSlice(
-            filePath,
-            'full',
-            args && typeof args === 'object' ? (args as Record<string, unknown>).maxChars : undefined,
-          );
-        }
-
-        case 'read_note_span': {
-          const filePath = normalizeOptionalPath(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).filePath : undefined,
-          );
-          const startAnchor = args && typeof args === 'object'
-            ? (args as Record<string, unknown>).startAnchor
-            : undefined;
-          const endAnchor = args && typeof args === 'object'
-            ? (args as Record<string, unknown>).endAnchor
-            : undefined;
-
-          if (!filePath) {
-            throw new Error('read_note_span requires a candidate filePath.');
-          }
-          if (typeof startAnchor !== 'string' || !startAnchor.trim()) {
-            throw new Error('read_note_span requires a non-empty startAnchor.');
-          }
-          if (typeof endAnchor !== 'string' || !endAnchor.trim()) {
-            throw new Error('read_note_span requires a non-empty endAnchor.');
-          }
-
-          const normalizedPath = toPosixPath(filePath);
-          if (!this.candidateLookup.has(normalizedPath)) {
-            throw new Error(`Note ${normalizedPath} is outside the ranked candidate set.`);
-          }
-
-          this.assertNoteReadBudget();
-          const allowedChars = this.resolveRequestedChars(
-            args && typeof args === 'object' ? (args as Record<string, unknown>).maxChars : undefined,
-            this.retrievalBudget.maxFullNoteChars,
-          );
-
-          const note = await readNote(this.snapshot.rootPath, normalizedPath);
-          const span = this.findNoteSpan(note.content, startAnchor.trim(), endAnchor.trim());
-          const truncated = trimExcerpt(span.spanText, allowedChars);
-          this.noteReads += 1;
-          this.retrievedChars += truncated.length;
-
-          return {
-            ok: true,
-            toolName,
-            usage: this.getUsage(),
-            data: {
-              filePath: normalizedPath,
-              title: note.title,
-              lineStart: span.lineStart,
-              lineEnd: span.lineEnd,
-              truncated: truncated.length < span.spanText.length,
-              content: truncated,
-            },
-          };
-        }
-
-        default:
-          throw new Error(`Unsupported read-only tool: ${toolName}.`);
-      }
+      return await handler(toolArgs);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return {

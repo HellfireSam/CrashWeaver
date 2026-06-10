@@ -184,3 +184,81 @@ test('WeaveContextToolRuntime enforces bounded note reads and truncates excerpts
     settingsService.__resetSettingsMutationQueueForTests();
   }
 });
+
+// ── Tool registry dispatch ───────────────────────────────────────────────────
+
+test('WeaveContextToolRuntime returns error for unsupported tool names', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-unknown-tool-'));
+  const settingsPath = path.join(tempDir, 'crashweaver-settings.json');
+  const rootPath = path.join(tempDir, 'vault-root');
+
+  await fs.mkdir(rootPath, { recursive: true });
+
+  settingsService.__resetSettingsMutationQueueForTests();
+  settingsService.__setSettingsFilePathForTests(settingsPath);
+
+  try {
+    const createdCard = await vaultService.createCard(rootPath, 'CW-RETRIEVE-1');
+
+    await vaultService.saveCard(rootPath, {
+      ...createdCard,
+      type: ['test'],
+      raw_content: 'Test content.',
+      referenced_in: [],
+    });
+    await createIndexedVault(rootPath);
+
+    const snapshot = await buildWeaveContextSnapshot(createGuidedRequest(rootPath));
+    const runtime = createWeaveContextToolRuntime(snapshot);
+
+    const result = await runtime.execute('non_existent_tool', { some: 'args' });
+
+    assert.equal(result.ok, false);
+    assert.match(result.error, /Unsupported read-only tool/i);
+    assert.ok(result.diagnostics);
+    assert.equal(result.diagnostics.code, 'unsupported-tool');
+    assert.equal(result.diagnostics.recoverable, true);
+  } finally {
+    settingsService.__setSettingsFilePathForTests(null);
+    settingsService.__resetSettingsMutationQueueForTests();
+  }
+});
+
+test('WeaveContextToolRuntime search_notes requires a non-empty query', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-search-'));
+  const settingsPath = path.join(tempDir, 'crashweaver-settings.json');
+  const rootPath = path.join(tempDir, 'vault-root');
+
+  await fs.mkdir(rootPath, { recursive: true });
+
+  settingsService.__resetSettingsMutationQueueForTests();
+  settingsService.__setSettingsFilePathForTests(settingsPath);
+
+  try {
+    const createdCard = await vaultService.createCard(rootPath, 'CW-RETRIEVE-1');
+
+    await vaultService.saveCard(rootPath, {
+      ...createdCard,
+      type: ['test'],
+      raw_content: 'Test content.',
+      referenced_in: [],
+    });
+    await createIndexedVault(rootPath);
+
+    const snapshot = await buildWeaveContextSnapshot(createGuidedRequest(rootPath));
+    const runtime = createWeaveContextToolRuntime(snapshot);
+
+    // Empty query
+    const result1 = await runtime.execute('search_notes', { query: '' });
+    assert.equal(result1.ok, false);
+    assert.match(result1.error, /requires a non-empty query/i);
+
+    // Missing query
+    const result2 = await runtime.execute('search_notes', {});
+    assert.equal(result2.ok, false);
+    assert.match(result2.error, /requires a non-empty query/i);
+  } finally {
+    settingsService.__setSettingsFilePathForTests(null);
+    settingsService.__resetSettingsMutationQueueForTests();
+  }
+});

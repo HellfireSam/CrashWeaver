@@ -2,12 +2,16 @@
  * weaveGraph.ts
  *
  * Fully type-safe, robust sequential ReAct loop for the Weaver planner.
- * Uses a pure procedural state machine instead of LangGraph to achieve
- * high reliability, complete control over history, and zero runtime overhead.
+ * Uses a pure procedural state machine with a transition table — no LangChain,
+ * no LangGraph, zero runtime overhead from external agent frameworks.
  */
 
-import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import type { WeaveAgentState, WeaveAgentRoute } from './weaveGraphState';
+import type { WeaveAgentState, WeaveAgentRoute, WeaveGraphStep } from './weaveGraphState';
+import {
+  MAX_TOTAL_STEPS,
+  systemMsg,
+  userMsg,
+} from './weaveGraphState';
 import {
   makeCallModelNode,
   makeExecuteToolNode,
@@ -19,7 +23,7 @@ import {
 import { buildSystemPrompt, buildInitialUserTurn } from './weavePlanPrompts';
 import type { WeaveContextToolRuntime } from './weaveContextService';
 import type { WeaveRequestSessionLogger } from './weaveRequestLogger';
-import type { WeaveHttpClient } from './openRouterClient';
+import type { WeaveHttpClient } from './weaveHttpClient';
 import type { WeavePlanRequest, WeavePlanResult, WeaveErrorCategory } from '../vault-contract';
 import type { WeaveContextSnapshot } from './weaveContextService';
 import type { WeaveFullModelProfile } from './weaveModelProfiles';
@@ -87,12 +91,57 @@ function makeWeaveError(message: string, category: WeaveErrorCategory): Error {
   return Object.assign(new Error(message), { errorCategory: category });
 }
 
+// ── Transition table ──────────────────────────────────────────────────────────
+
+/**
+ * Pure function that resolves the next graph step from the current step
+ * and the route set by the previous node.  Every transition is explicit,
+ * exhaustiveness-checked, and easy to test in isolation.
+ */
+function resolveNextStep(current: WeaveGraphStep, state: WeaveAgentState): WeaveGraphStep {
+  switch (current) {
+    case 'callModel': {
+      const route = state.pendingRoute;
+      if (route === 'execute-tool') return 'executeTool';
+      if (route === 'finalize') return 'finalize';
+      if (
+        route === 'repair-syntactic' ||
+        route === 'repair-semantic' ||
+        route === 'repair-exhaustion'
+      ) {
+        return 'repair';
+      }
+      return 'fail';
+    }
+    case 'executeTool':
+      return 'callModel';
+    case 'repair':
+      return 'callModel';
+    case 'finalize':
+      return 'validate';
+    case 'validate': {
+      // Success: result is set, no route, no error
+      if (state.result !== null && state.pendingRoute === null && state.errorMessage === null) {
+        return 'done';
+      }
+      if (state.pendingRoute === 'repair-schema') return 'repair';
+      return 'fail';
+    }
+    case 'fail':
+      return 'done';
+    default:
+      return 'done';
+  }
+}
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+
 /**
  * Runs the Weaver agent ReAct loop end-to-end.
  *
  * Builds initial messages from the model profile and context snapshot,
- * runs the sequential state machine, and returns the validated WeavePlanResult
- * or throws a typed error.
+ * runs the sequential state machine with a hard step cap, and returns
+ * the validated WeavePlanResult or throws a typed error.
  */
 export async function runWeaveGraph(
   request: WeavePlanRequest,
@@ -105,17 +154,19 @@ export async function runWeaveGraph(
 ): Promise<WeavePlanResult> {
   const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
 
-  const systemMsg = new SystemMessage(
-    buildSystemPrompt(
-      modelProfile,
-      effectiveBudget.promptToolCalls,
-      effectiveBudget.runtimeNoteReads,
-      effectiveBudget.maxRetrievedChars,
+  const initialMessages = [
+    systemMsg(
+      buildSystemPrompt(
+        modelProfile,
+        effectiveBudget.promptToolCalls,
+        effectiveBudget.runtimeNoteReads,
+        effectiveBudget.maxRetrievedChars,
+      ),
     ),
-  );
-  const userMsg = new HumanMessage(
-    buildInitialUserTurn(request, contextSnapshot, effectiveBudget),
-  );
+    userMsg(
+      buildInitialUserTurn(request, contextSnapshot, effectiveBudget),
+    ),
+  ];
 
   if (logger) {
     await logger.log('graph-start', {
@@ -145,7 +196,7 @@ export async function runWeaveGraph(
     modelProfile,
     resolvedModel,
     startTimeMs: Date.now(),
-    messages: [systemMsg, userMsg],
+    messages: initialMessages,
     toolCallCount: 0,
     repairAttemptCount: 0,
     pendingRoute: null,
@@ -161,57 +212,56 @@ export async function runWeaveGraph(
     trace: [],
   };
 
-  let currentStep = 'callModel';
+  let step: WeaveGraphStep = 'callModel';
+  let stepCount = 0;
 
-  while (true) {
-    if (currentStep === 'callModel') {
-      const updates = await callModel(state);
-      state = updateState(state, updates);
+  while (step !== 'done') {
+    stepCount += 1;
 
-      const route = state.pendingRoute;
-      if (route === 'execute-tool') {
-        currentStep = 'executeTool';
-      } else if (route === 'finalize') {
-        currentStep = 'finalize';
-      } else if (
-        route === 'repair-syntactic' ||
-        route === 'repair-semantic' ||
-        route === 'repair-exhaustion'
-      ) {
-        currentStep = 'repair';
-      } else {
-        currentStep = 'fail';
-      }
-    } else if (currentStep === 'executeTool') {
-      const updates = await executeTool(state);
-      state = updateState(state, updates);
-      currentStep = 'callModel';
-    } else if (currentStep === 'repair') {
-      const updates = repair(state);
-      state = updateState(state, updates);
-      currentStep = 'callModel';
-    } else if (currentStep === 'finalize') {
-      const updates = finalize(state);
-      state = updateState(state, updates);
-      currentStep = 'validate';
-    } else if (currentStep === 'validate') {
-      const updates = validate(state);
-      state = updateState(state, updates);
-
-      if (state.result !== null && state.pendingRoute === null && state.errorMessage === null) {
-        break;
-      } else if (state.pendingRoute === 'repair-schema') {
-        currentStep = 'repair';
-      } else {
-        currentStep = 'fail';
-      }
-    } else if (currentStep === 'fail') {
-      const updates = await fail(state);
-      state = updateState(state, updates);
-      break;
-    } else {
-      break;
+    // Hard cap — prevents infinite oscillation between repair & callModel
+    if (stepCount > MAX_TOTAL_STEPS) {
+      state = updateState(state, {
+        pendingRoute: 'fail' as WeaveAgentRoute,
+        errorMessage: `Weaver exceeded the maximum ${MAX_TOTAL_STEPS} loop steps.`,
+        errorCategory: 'provider-error' as WeaveErrorCategory,
+      });
+      step = 'fail';
     }
+
+    switch (step) {
+      case 'callModel': {
+        const updates = await callModel(state);
+        state = updateState(state, updates);
+        break;
+      }
+      case 'executeTool': {
+        const updates = await executeTool(state);
+        state = updateState(state, updates);
+        break;
+      }
+      case 'repair': {
+        const updates = repair(state);
+        state = updateState(state, updates);
+        break;
+      }
+      case 'finalize': {
+        const updates = finalize(state);
+        state = updateState(state, updates);
+        break;
+      }
+      case 'validate': {
+        const updates = validate(state);
+        state = updateState(state, updates);
+        break;
+      }
+      case 'fail': {
+        const updates = await fail(state);
+        state = updateState(state, updates);
+        break;
+      }
+    }
+
+    step = resolveNextStep(step, state);
   }
 
   if (state.result !== null) {
@@ -223,6 +273,7 @@ export async function runWeaveGraph(
         latencyMs: state.result.latencyMs,
         toolCallCount: state.toolCallCount,
         repairAttemptCount: state.repairAttemptCount,
+        totalSteps: stepCount,
       });
     }
     return state.result;
@@ -238,6 +289,7 @@ export async function runWeaveGraph(
       errorCategory,
       toolCallCount: state.toolCallCount,
       repairAttemptCount: state.repairAttemptCount,
+      totalSteps: stepCount,
     });
   }
 

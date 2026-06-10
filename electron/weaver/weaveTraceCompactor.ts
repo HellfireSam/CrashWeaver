@@ -29,8 +29,10 @@ const MAX_OBSERVATION_CHARS = 400;  // Truncate observations in compact mode
 const MAX_RESULT_CHARS = 2000;       // Hard cap on raw result storage
 
 /**
- * Generates a SHA256 hash of a value for audit/debugging purposes.
- * Does NOT require crypto module to be available.
+ * Generates a fast non-cryptographic hash of a string for trace deduplication
+ * and audit-trail purposes.  Uses a simple DJB2-style 32-bit hash.
+ * Not suitable for security-sensitive contexts — use crypto.createHash('sha256')
+ * when cryptographic integrity is required.
  */
 function quickHashString(str: string): string {
   let hash = 0;

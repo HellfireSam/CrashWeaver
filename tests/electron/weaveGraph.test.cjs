@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { runWeaveGraph } = require('../../dist-electron/weaver/weaveGraph.js');
+const { runWeaveGraph, resolveWeaveEffectiveBudget } = require('../../dist-electron/weaver/weaveGraph.js');
 
 function makeContextSnapshot(rootPath) {
   return {
@@ -481,4 +481,241 @@ test('runWeaveGraph preserves tool diagnostics on trace entries', async () => {
   assert.ok(result.trace);
   const diagnosticTrace = result.trace.find((step) => step.diagnostics?.code === 'budget-chars-exhausted');
   assert.ok(diagnosticTrace, 'Expected trace to include structured tool diagnostics code.');
+});
+
+// ── Transition table tests ───────────────────────────────────────────────────
+
+test('runWeaveGraph routes directly to finalize when model returns type=final on first call (no tools needed)', async () => {
+  const rootPath = 'D:/vault';
+  const request = makeRequest(rootPath);
+  const contextSnapshot = makeContextSnapshot(rootPath);
+  const modelProfile = makeModelProfile();
+
+  const httpClient = {
+    async chatCompletion() {
+      return {
+        content: JSON.stringify({
+          type: 'final',
+          thought: 'Context is enough, no tools required.',
+          plan: {
+            kind: 'guided-insert',
+            permissions: { editContent: false, createNote: false },
+            summary: 'Direct insert without any tool calls.',
+            operations: [
+              {
+                kind: 'insert-boundary-pair',
+                targetPath: 'notes/overview.md',
+                payload: {
+                  cardUid: 'CW-001',
+                  placement: 'append-to-note',
+                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nDirect plan content.\n%%CW_CARD_END uid:CW-001%%',
+                },
+                rationale: 'Direct insertion from pre-loaded context.',
+              },
+            ],
+            warnings: [],
+            referencedCards: ['CW-001'],
+          },
+        }),
+        resolvedModel: 'openai/gpt-4o-mini',
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      };
+    },
+  };
+
+  const toolRuntime = {
+    async execute() {
+      throw new Error('Tool runtime should not be called when no tools are requested.');
+    },
+  };
+
+  const result = await runWeaveGraph(
+    request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
+    httpClient, toolRuntime, undefined,
+  );
+
+  assert.equal(result.plan.operations.length, 1);
+  assert.equal(result.plan.summary, 'Direct insert without any tool calls.');
+  assert.ok(result.trace);
+});
+
+// ── Step cap (MAX_TOTAL_STEPS) tests ─────────────────────────────────────────
+
+test('runWeaveGraph enforces repair budget or step cap by failing after repeated repair loops', async () => {
+  const rootPath = 'D:/vault';
+  const request = makeRequest(rootPath);
+  const contextSnapshot = makeContextSnapshot(rootPath);
+  const modelProfile = {
+    ...makeModelProfile(),
+    repairStrategy: 'aggressive',
+  };
+
+  // Every response returns invalid JSON → triggers endless repair/fail cycle.
+  const httpClient = {
+    async chatCompletion() {
+      return {
+        content: JSON.stringify({ invalid: true }),
+        resolvedModel: 'openai/gpt-4o-mini',
+      };
+    },
+  };
+
+  const toolRuntime = {
+    async execute() { throw new Error('Should not be called'); },
+  };
+
+  await assert.rejects(
+    runWeaveGraph(
+      request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
+      httpClient, toolRuntime, undefined,
+    ),
+    (err) => {
+      // Should fail with either schema-error (repair budget exhausted) or
+      // provider-error (step cap exceeded). Both are valid terminal states.
+      return err.errorCategory === 'schema-error' || err.errorCategory === 'provider-error';
+    },
+  );
+});
+
+test('runWeaveGraph produces trace entries on successful direct-to-final plan', async () => {
+  const rootPath = 'D:/vault';
+  const request = makeRequest(rootPath);
+  const contextSnapshot = makeContextSnapshot(rootPath);
+  const modelProfile = makeModelProfile();
+
+  const httpClient = {
+    async chatCompletion() {
+      return {
+        content: JSON.stringify({
+          type: 'final',
+          thought: 'Direct final',
+          plan: {
+            kind: 'guided-insert',
+            permissions: { editContent: false, createNote: false },
+            summary: 'Quick plan.',
+            operations: [
+              {
+                kind: 'insert-boundary-pair',
+                targetPath: 'notes/overview.md',
+                payload: {
+                  cardUid: 'CW-001',
+                  placement: 'append-to-note',
+                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nStep count test.\n%%CW_CARD_END uid:CW-001%%',
+                },
+                rationale: 'Test trace entries on direct path.',
+              },
+            ],
+            warnings: [],
+            referencedCards: ['CW-001'],
+          },
+        }),
+        resolvedModel: 'openai/gpt-4o-mini',
+        usage: { prompt_tokens: 5, completion_tokens: 2, total_tokens: 7 },
+      };
+    },
+  };
+
+  const toolRuntime = {
+    async execute() { throw new Error('Should not be called'); },
+  };
+
+  const result = await runWeaveGraph(
+    request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
+    httpClient, toolRuntime, undefined,
+  );
+
+  assert.ok(result.trace);
+  // Direct final path: validate node adds the success trace entry (1 entry).
+  // At minimum 1 trace entry for the validate step.
+  assert.ok(result.trace.length >= 1, `Expected >=1 trace items, got ${result.trace.length}`);
+  assert.match(result.trace[result.trace.length - 1].observation || '', /successfully validated|ready to apply/i);
+});
+
+test('runWeaveGraph fails on provider error from HTTP client', async () => {
+  const rootPath = 'D:/vault';
+  const request = makeRequest(rootPath);
+  const contextSnapshot = makeContextSnapshot(rootPath);
+  const modelProfile = makeModelProfile();
+
+  const httpClient = {
+    async chatCompletion() {
+      const err = new Error('Network failure');
+      err.errorCategory = 'provider-error';
+      throw err;
+    },
+  };
+
+  const toolRuntime = {
+    async execute() { throw new Error('Should not be called'); },
+  };
+
+  await assert.rejects(
+    runWeaveGraph(
+      request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
+      httpClient, toolRuntime, undefined,
+    ),
+    (err) => {
+      return err.errorCategory === 'provider-error' && err.message.includes('Network failure');
+    },
+  );
+});
+
+// ── Effective budget resolution ──────────────────────────────────────────────
+
+test('resolveWeaveEffectiveBudget caps promptToolCalls at iterationLimit', () => {
+  const modelProfile = {
+    iterationLimit: 3,
+    structuredOutputMode: 'json_mode',
+    systemPromptOverlay: '',
+    repairStrategy: 'aggressive',
+    maxTokens: 1000,
+    timeoutMs: 30000,
+    temperature: 0.2,
+  };
+
+  const contextSnapshot = {
+    retrievalBudget: {
+      maxCandidateNotes: 8,
+      maxDirectorySummaries: 6,
+      maxNoteReads: 6,        // more than iterationLimit
+      maxExcerptChars: 1200,
+      maxFullNoteChars: 3200,
+      maxRetrievedChars: 5000,
+    },
+  };
+
+  const budget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
+
+  // promptToolCalls should be min(iterationLimit, max(runtimeNoteReads, 1)) = min(3, 6) = 3
+  assert.equal(budget.promptToolCalls, 3);
+  assert.equal(budget.runtimeNoteReads, 6);
+  assert.equal(budget.maxRetrievedChars, 5000);
+});
+
+test('resolveWeaveEffectiveBudget floors promptToolCalls at 1 even with zero note reads', () => {
+  const modelProfile = {
+    iterationLimit: 5,
+    structuredOutputMode: 'json_mode',
+    systemPromptOverlay: '',
+    repairStrategy: 'aggressive',
+    maxTokens: 1000,
+    timeoutMs: 30000,
+    temperature: 0.2,
+  };
+
+  const contextSnapshot = {
+    retrievalBudget: {
+      maxCandidateNotes: 8,
+      maxDirectorySummaries: 6,
+      maxNoteReads: 0,        // zero note reads allowed
+      maxExcerptChars: 1200,
+      maxFullNoteChars: 3200,
+      maxRetrievedChars: 5000,
+    },
+  };
+
+  const budget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
+
+  // promptToolCalls should be min(5, max(0, 1)) = min(5, 1) = 1
+  assert.equal(budget.promptToolCalls, 1);
 });

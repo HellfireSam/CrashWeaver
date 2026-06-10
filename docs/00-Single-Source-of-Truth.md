@@ -74,10 +74,20 @@ Core Electron services:
 - `services/cardRestoreMutationService.ts`: boundary reinsertion in restore flows.
 - `services/crashpadCardMutationService.ts`: crashpad UID mutation propagation.
 
-Stage 5 services:
+Stage 5 services (`electron/weaver/`):
 - `weaveService.ts`: plans and stages Weaver proposals for inserting a focused crashpad card into vault notes, plus intelligent vault restructuring proposals driven by explicit permissions, strength, and user intent.
-- `weaveGraph.ts` and `weaveGraphNodes.ts`: run the procedural ReAct planning loop with schema validation and repair passes.
-- `openRouterClient.ts`: executes live provider requests and applies resolved model-profile budgets.
+- `weaveGraph.ts` and `weaveGraphNodes.ts`: run the procedural ReAct planning loop (transition-table state machine, no LangChain/LangGraph) with schema validation and repair passes.
+- `weaveGraphState.ts`: typed state model, `WeaveMessage` type, graph step/route enums, budget guard constants.
+- `weaveHttpClient.ts`: `WeaveHttpClient` interface and `OpenRouterHttpClient` (Electron net.fetch + AbortController timeout).
+- `openRouterClient.ts`: `OpenRouterWeaveProvider` — model resolution, profile, context → graph execution.
+- `stubWeaveProvider.ts`: deterministic stub for offline/testing.
+- `weavePlanPrompts.ts`: 10-layer composable prompt architecture.
+- `weavePlanSchema.ts`: request and result schema validation, path normalisation, boundary marker checks.
+- `weaveContextService.ts`: context snapshot builder, candidate note scoring, read-only tool runtime (6 tools via a handler registry).
+- `weaveModelProfiles.ts`: single source of truth for model resolution (UI tiers → OpenRouter IDs), structured output config, repair strategy, execution budgets with safe bounds.
+- `weaveCostPolicy.ts`: **deprecated** re-export stub; canonical logic is in `weaveModelProfiles.ts`.
+- `weaveRequestLogger.ts`: per-session JSONL request logs.
+- `weaveTraceCompactor.ts`: ReAct trace compaction for bounded memory.
 
 Planned services:
 - `reviewService.ts`: future scheduling and familiarity updates over the shared card schema.
@@ -126,6 +136,7 @@ Implemented:
 - Stage 3 parser plus card-store sync
 - Stage 4 crashpad workflows and crashpad-focused undo/redo
 - Stage 5 core planning loop with live OpenRouter path, schema/repair hardening, request logging, renderer ReAct trace visibility, and user-configurable budget settings
+- Stage 5 June 2026 hardening pass: removed LangChain dependency (native `WeaveMessage` type), transition-table state machine, `AbortController` timeout, tool handler registry, unified model profiles, split HTTP transport layer
 
 Planned:
 - Stage 6 accept/reject diff gate and apply or reject UX for Weaver changes

@@ -2,9 +2,10 @@
  * weavePlanPrompts.ts
  *
  * Layered prompt architecture for the Weaver agent loop.
+ * Each layer composes independently so individual prompt sections can be
+ * iterated on without touching the rest of the system.
  *
- * Replaces the monolithic weavePromptBuilder.ts with distinct, independently
- * composable layers:
+ * Layers:
  *   1. TASK CONTRACT       — mission and role definition
  *   2. SAFETY POLICY       — absolute non-negotiable constraints
  *   3. OPERATION SCHEMA    — available operation kinds and shapes

@@ -5,15 +5,13 @@ const {
   makeCallModelNode,
   makeExecuteToolNode,
   makeRepairNode,
+  makeFinalizeNode,
+  makeValidateNode,
+  makeFailNode,
 } = require('../../dist-electron/weaver/weaveGraphNodes.js');
 
 function makeMessage(role, content) {
-  return {
-    content,
-    _getType() {
-      return role;
-    },
-  };
+  return { role, content };
 }
 
 function makeBaseState(overrides = {}) {
@@ -195,4 +193,295 @@ test('executeTool truncates oversized observation in trace entries', async () =>
   assert.equal(updates.toolCallCount, 1);
   assert.equal(Array.isArray(updates.trace), true);
   assert.match(updates.trace[0].observation, /\[\.\.\. truncated/);
+});
+
+test('callModel extracts JSON from markdown-fenced content', async () => {
+  const node = makeCallModelNode(
+    makeHttpClientWithContent(
+      '```json\n{"type":"final","thought":"Done via fence","plan":{"kind":"guided-insert","operations":[]}}\n```',
+    ),
+  );
+
+  const updates = await node(makeBaseState());
+
+  assert.equal(updates.pendingRoute, 'finalize');
+  assert.equal(updates.pendingThought, 'Done via fence');
+});
+
+test('callModel extracts JSON from prose-embedded content', async () => {
+  const node = makeCallModelNode(
+    makeHttpClientWithContent(
+      'Here is my plan: {"type":"final","thought":"Embedded in prose","plan":{"kind":"guided-insert","operations":[]}} and that is all.',
+    ),
+  );
+
+  const updates = await node(makeBaseState());
+
+  assert.equal(updates.pendingRoute, 'finalize');
+  assert.equal(updates.pendingThought, 'Embedded in prose');
+});
+
+test('callModel routes to repair-syntactic for content with braces but invalid JSON', async () => {
+  const node = makeCallModelNode(
+    makeHttpClientWithContent(
+      'Almost JSON but not quite: {"type": final, plan: {}}',
+    ),
+  );
+
+  const updates = await node(makeBaseState());
+
+  assert.equal(updates.pendingRoute, 'repair-syntactic');
+});
+
+test('callModel fails for content without any braces at all', async () => {
+  const node = makeCallModelNode(
+    makeHttpClientWithContent('No JSON here, just prose.'),
+  );
+
+  const updates = await node(makeBaseState());
+
+  assert.equal(updates.pendingRoute, 'fail');
+  assert.equal(updates.errorCategory, 'schema-error');
+});
+
+test('repair node handles repair-schema with error message', () => {
+  const repair = makeRepairNode();
+
+  const updates = repair({
+    pendingRoute: 'repair-schema',
+    repairAttemptCount: 0,
+    errorMessage: 'Invalid boundary markers',
+  });
+
+  assert.equal(updates.repairAttemptCount, 1);
+  assert.match(updates.messages[0].content, /boundary|cardUid/i);
+});
+
+test('repair node handles repair-exhaustion route', () => {
+  const repair = makeRepairNode();
+
+  const updates = repair({
+    pendingRoute: 'repair-exhaustion',
+    repairAttemptCount: 2,
+    errorMessage: null,
+  });
+
+  assert.equal(updates.repairAttemptCount, 3);
+  assert.match(updates.messages[0].content, /budget exhausted|TOOL BUDGET/i);
+});
+
+// ── finalize node ─────────────────────────────────────────────────────────────
+
+test('finalizeNode wraps pendingPlanData into a WeavePlanResult shell', () => {
+  const finalize = makeFinalizeNode();
+  const startTime = Date.now() - 5000;
+
+  const planData = {
+    kind: 'guided-insert',
+    permissions: { editContent: false, createNote: false },
+    summary: 'A test plan.',
+    operations: [{ kind: 'insert-boundary-pair', targetPath: 'notes/x.md', payload: {}, rationale: 'Test' }],
+    warnings: [],
+    referencedCards: ['CW-001'],
+  };
+
+  const updates = finalize({
+    pendingPlanData: planData,
+    resolvedModel: 'openai/gpt-4o-mini',
+    accumulatedUsage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+    startTimeMs: startTime,
+    request: { kind: 'guided-insert', cardUid: 'CW-001' },
+  });
+
+  assert.ok(updates.result);
+  assert.equal(updates.result.model, 'openai/gpt-4o-mini');
+  assert.equal(updates.result.provider, 'openrouter');
+  assert.deepEqual(updates.result.plan, planData);
+  assert.equal(updates.result.usage.promptTokens, 10);
+  assert.ok(updates.result.latencyMs >= 0);
+  assert.equal(updates.pendingPlanData, null);
+  assert.equal(updates.pendingRoute, null);
+});
+
+test('finalizeNode fails when request is missing', () => {
+  const finalize = makeFinalizeNode();
+
+  const updates = finalize({
+    pendingPlanData: {},
+    resolvedModel: 'test-model',
+    accumulatedUsage: undefined,
+    startTimeMs: Date.now(),
+    request: null,
+  });
+
+  assert.equal(updates.pendingRoute, 'fail');
+  assert.equal(updates.errorCategory, 'config-error');
+  assert.match(updates.errorMessage, /missing request/i);
+});
+
+// ── validate node ─────────────────────────────────────────────────────────────
+
+test('validateNode returns validated result on schema-valid plan', () => {
+  const validate = makeValidateNode();
+  const startTime = Date.now() - 1000;
+
+  const plan = {
+    kind: 'guided-insert',
+    permissions: { editContent: false, createNote: false },
+    summary: 'Valid plan.',
+    operations: [
+      {
+        kind: 'insert-boundary-pair',
+        targetPath: 'notes/overview.md',
+        payload: {
+          cardUid: 'CW-001',
+          placement: 'append-to-note',
+          boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nValid content.\n%%CW_CARD_END uid:CW-001%%',
+        },
+        rationale: 'Insert the card.',
+      },
+    ],
+    warnings: [],
+    referencedCards: ['CW-001'],
+  };
+
+  const updates = validate({
+    result: {
+      plan,
+      model: 'openai/gpt-4o-mini',
+      provider: 'openrouter',
+      usage: { promptTokens: 5, completionTokens: 3, totalTokens: 8 },
+      latencyMs: 500,
+    },
+    request: {
+      kind: 'guided-insert',
+      rootPath: 'D:/vault',
+      cardUid: 'CW-001',
+      permissions: { editContent: false, createNote: false },
+      maxOperations: 8,
+      activeCrashpadId: 'cp-1',
+      activeCrashpadPath: '.crashweaver/cp-1.crashpad.json',
+    },
+    repairAttemptCount: 0,
+    modelProfile: { repairStrategy: 'aggressive', timeoutMs: 60_000 },
+    startTimeMs: startTime,
+    pendingThought: 'Final check',
+    trace: [],
+  });
+
+  assert.ok(updates.result);
+  assert.equal(updates.pendingRoute, null);
+  assert.equal(updates.errorMessage, null);
+  assert.ok(updates.result.trace.length > 0);
+  assert.match(updates.result.trace[0].observation, /successfully validated|ready to apply/i);
+});
+
+test('validateNode routes to repair-schema on invalid plan', () => {
+  const validate = makeValidateNode();
+  const startTime = Date.now();
+
+  const updates = validate({
+    result: {
+      plan: {
+        kind: 'guided-insert',
+        permissions: { editContent: false, createNote: false },
+        summary: 'Invalid — no operations.',
+        operations: [],  // empty → schema validation fails
+        warnings: [],
+        referencedCards: ['CW-001'],
+      },
+      model: 'openai/gpt-4o-mini',
+      provider: 'openrouter',
+      latencyMs: 100,
+    },
+    request: {
+      kind: 'guided-insert',
+      rootPath: 'D:/vault',
+      cardUid: 'CW-001',
+      permissions: { editContent: false, createNote: false },
+      maxOperations: 8,
+      activeCrashpadId: 'cp-1',
+      activeCrashpadPath: '.crashweaver/cp-1.crashpad.json',
+    },
+    repairAttemptCount: 0,
+    modelProfile: { repairStrategy: 'aggressive', timeoutMs: 60_000 },
+    startTimeMs: startTime,
+    pendingThought: null,
+    trace: [],
+  });
+
+  assert.equal(updates.pendingRoute, 'repair-schema');
+  assert.ok(updates.errorMessage);
+  assert.equal(updates.result, null);
+  assert.ok(updates.trace.length > 0);
+  assert.match(updates.trace[0].observation, /validation failed/i);
+});
+
+test('validateNode fails when repair budget exhausted', () => {
+  const validate = makeValidateNode();
+  const startTime = Date.now();
+
+  const updates = validate({
+    result: {
+      plan: {
+        kind: 'guided-insert',
+        permissions: { editContent: false, createNote: false },
+        summary: 'Invalid.',
+        operations: [],
+        warnings: [],
+        referencedCards: ['CW-001'],
+      },
+      model: 'test',
+      provider: 'openrouter',
+      latencyMs: 100,
+    },
+    request: {
+      kind: 'guided-insert',
+      rootPath: 'D:/vault',
+      cardUid: 'CW-001',
+      permissions: { editContent: false, createNote: false },
+      maxOperations: 8,
+      activeCrashpadId: 'cp-1',
+      activeCrashpadPath: '.crashweaver/cp-1.crashpad.json',
+    },
+    repairAttemptCount: 2,  // already at max for aggressive
+    modelProfile: { repairStrategy: 'aggressive', timeoutMs: 60_000 },
+    startTimeMs: startTime,
+    pendingThought: null,
+    trace: [],
+  });
+
+  assert.equal(updates.pendingRoute, 'fail');
+  assert.equal(updates.errorCategory, 'schema-error');
+  assert.equal(updates.result, null);
+});
+
+// ── fail node ─────────────────────────────────────────────────────────────────
+
+test('failNode seals error state with defaults when no error set', async () => {
+  const fail = makeFailNode();
+  const startTime = Date.now() - 3000;
+
+  const updates = await fail({
+    errorMessage: null,
+    errorCategory: null,
+    startTimeMs: startTime,
+  });
+
+  assert.equal(updates.errorCategory, 'provider-error');
+  assert.match(updates.errorMessage, /unexpected error/i);
+});
+
+test('failNode preserves explicit error category and message', async () => {
+  const fail = makeFailNode();
+  const startTime = Date.now() - 2000;
+
+  const updates = await fail({
+    errorMessage: 'Custom auth failure',
+    errorCategory: 'auth-error',
+    startTimeMs: startTime,
+  });
+
+  assert.equal(updates.errorCategory, 'auth-error');
+  assert.equal(updates.errorMessage, 'Custom auth failure');
 });

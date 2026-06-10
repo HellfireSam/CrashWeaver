@@ -41,6 +41,15 @@ During Part 1, proposal generation may be stub-backed, but the staged output mus
 	- Expanded schema/repair handling in graph nodes for malformed output and boundary/schema violations.
 	- Settings persistence and IPC bridge support for user-adjustable budget controls and disable-budgets mode.
 	- OpenRouter request log coverage used for iterative validation and repair-loop tuning.
+- June 2026 hardening pass completed:
+	- Removed LangChain dependency — replaced `BaseMessage`/`SystemMessage`/`HumanMessage`/`AIMessage` with native `WeaveMessage` type (`{ role, content }`).
+	- Replaced fragile `while(true)` string-dispatch loop with a `resolveNextStep()` transition table.
+	- Added hard step cap (`MAX_TOTAL_STEPS = 24`) to prevent infinite repair oscillation.
+	- HTTP timeout upgraded from `Promise.race` to `AbortController` for proper request cancellation.
+	- Collapsed `weaveCostPolicy.ts` into `weaveModelProfiles.ts` as the single source of truth for model resolution and budgets.
+	- Extracted HTTP transport to `weaveHttpClient.ts`; `openRouterClient.ts` now contains only the provider.
+	- Refactored `WeaveContextToolRuntime.execute()` from monolithic switch to a tool handler registry.
+	- Fixed misleading JSDoc in `weaveTraceCompactor.ts` (was claiming SHA256, actually using DJB2).
 
 ## Stage Boundary
 

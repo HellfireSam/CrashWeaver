@@ -191,8 +191,12 @@ test('OpenRouterWeaveProvider surfaces provider-timeout when the chat request ti
   const fixture = await createProviderFixture();
 
   try {
+    // Simulate a real AbortError (which has name: 'AbortError')
+    const abortError = new Error('The operation was aborted.');
+    abortError.name = 'AbortError';
+
     const { fetchImpl } = createFetchSequence([
-      new Error('provider-timeout'),
+      abortError,
     ]);
     const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, { fetchImpl });
 

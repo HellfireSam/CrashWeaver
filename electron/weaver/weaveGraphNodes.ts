@@ -1,10 +1,11 @@
 /**
  * weaveGraphNodes.ts
  *
- * LangGraph node factories for the Weaver agent loop.
+ * Node factories for the Weaver agent loop.
  *
  * Each factory returns a node function (state) => Partial<state>.
  * Dependencies (HTTP client, tool runtime, logger) are injected via closure.
+ * All message types are native — no LangChain dependency.
  *
  * Nodes:
  *   callModel    — calls the LLM, parses response, sets pendingRoute
@@ -15,11 +16,11 @@
  *   fail         — logs and seals the error state (terminal)
  */
 
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
-import type { WeaveAgentState, WeaveAgentRoute } from './weaveGraphState';
+import type { WeaveAgentState, WeaveAgentRoute, WeaveMessage } from './weaveGraphState';
+import { MIN_REMAINING_TIME_MS, assistantMsg, userMsg } from './weaveGraphState';
 import type { WeaveContextToolRuntime } from './weaveContextService';
 import type { WeaveRequestSessionLogger } from './weaveRequestLogger';
-import type { WeaveHttpClient } from './openRouterClient';
+import type { WeaveHttpClient } from './weaveHttpClient';
 import {
   buildObservationMessage,
   buildSyntacticRepairMessage,
@@ -102,20 +103,14 @@ function parseActionFromJson(value: unknown): ParsedAction | null {
 }
 
 /**
- * Converts LangChain BaseMessage array to the role/content format expected
- * by the OpenRouter chat completions endpoint.
+ * WeaveMessage is already in the role/content format expected by OpenRouter,
+ * so conversion is an identity pass-through.  Kept as an explicit function
+ * so the contract is clear at the call site.
  */
 function messagesToOpenRouterFormat(
-  messages: WeaveAgentState['messages'],
+  messages: WeaveMessage[],
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
-  return messages.map((msg) => {
-    const type = msg._getType();
-    const role: 'system' | 'user' | 'assistant' =
-      type === 'system' ? 'system' : type === 'ai' ? 'assistant' : 'user';
-    const content =
-      typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-    return { role, content };
-  });
+  return messages;
 }
 
 function makeWeaveError(message: string, category: WeaveErrorCategory): Error {
@@ -234,7 +229,7 @@ export function makeCallModelNode(
 
     const maxRepairs = modelProfile.repairStrategy === 'conservative' ? 1 : 2;
     const repairsRemaining = repairAttemptCount < maxRepairs;
-    const timeOk = modelProfile.timeoutMs - (Date.now() - startTimeMs) > 10_000;
+    const timeOk = modelProfile.timeoutMs - (Date.now() - startTimeMs) > MIN_REMAINING_TIME_MS;
 
     if (parseError) {
       if (logger) {
@@ -251,7 +246,7 @@ export function makeCallModelNode(
         return {
           ...updates,
           pendingRoute: 'repair-syntactic' as WeaveAgentRoute,
-          messages: [new AIMessage(rawContent)],
+          messages: [assistantMsg(rawContent)],
           trace: [{
             thought: "The model response failed to parse as valid JSON directly.",
             action: `Raw output length: ${rawContent.length} chars`,
@@ -287,7 +282,7 @@ export function makeCallModelNode(
         return {
           ...updates,
           pendingRoute: 'repair-semantic' as WeaveAgentRoute,
-          messages: [new AIMessage(rawContent)],
+          messages: [assistantMsg(rawContent)],
           trace: [{
             thought: "Parsed JSON does not match the expected Action envelope structure.",
             action: `Raw output: ${rawContent.length > 500 ? rawContent.substring(0, 500) + '...' : rawContent}`,
@@ -315,7 +310,7 @@ export function makeCallModelNode(
           return {
             ...finalizedUpdates,
             pendingRoute: 'repair-exhaustion' as WeaveAgentRoute,
-            messages: [new AIMessage(rawContent)],
+            messages: [assistantMsg(rawContent)],
             pendingThought: null,
             trace: [{
               thought: action.thought || undefined,
@@ -338,7 +333,7 @@ export function makeCallModelNode(
         pendingRoute: 'execute-tool' as WeaveAgentRoute,
         pendingToolName: action.toolName,
         pendingToolArgs: action.arguments,
-        messages: [new AIMessage(rawContent)],
+        messages: [assistantMsg(rawContent)],
       };
     }
 
@@ -347,7 +342,7 @@ export function makeCallModelNode(
       ...finalizedUpdates,
       pendingRoute: 'finalize' as WeaveAgentRoute,
       pendingPlanData: action.plan,
-      messages: [new AIMessage(rawContent)],
+      messages: [assistantMsg(rawContent)],
     };
   };
 }
@@ -401,12 +396,12 @@ export function makeExecuteToolNode(
     }
 
     return {
-      messages: [new HumanMessage(observationMsg)],
+      messages: [userMsg(observationMsg)],
       toolCallCount: newToolCount,
       pendingRoute: null,
       pendingToolName: null,
       pendingToolArgs: null,
-      pendingThought: null, // clear it!
+      pendingThought: null,
       trace: [{ thought, action, observation, diagnostics }],
     };
   };
@@ -451,7 +446,7 @@ export function makeRepairNode(
     }
 
     return {
-      messages: [new HumanMessage(repairMessage)],
+      messages: [userMsg(repairMessage)],
       repairAttemptCount: repairAttemptCount + 1,
       pendingRoute: null,
       errorMessage: null,
@@ -515,7 +510,7 @@ export function makeFinalizeNode(
 
 /**
  * Runs weavePlanSchema validation against the finalized result.
- * On success: sets pendingRoute to null (graph terminates at END).
+ * On success: sets pendingRoute to null (graph terminates).
  * On failure: routes to repair-schema (if budget permits) or fail.
  */
 export function makeValidateNode(
@@ -565,7 +560,7 @@ export function makeValidateNode(
       const maxRepairs = (modelProfile?.repairStrategy === 'conservative' ? 1 : 2);
       const repairsRemaining = repairAttemptCount < maxRepairs;
       const timeOk =
-        (modelProfile?.timeoutMs ?? 0) - (Date.now() - startTimeMs) > 10_000;
+        (modelProfile?.timeoutMs ?? 0) - (Date.now() - startTimeMs) > MIN_REMAINING_TIME_MS;
 
       if (logger) {
         void logger.log('node-validate-failed', {
