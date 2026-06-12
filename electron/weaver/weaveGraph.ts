@@ -12,6 +12,7 @@ import {
   systemMsg,
   userMsg,
 } from './weaveGraphState';
+import type { WeaveProgressCallback } from './weaveGraphState';
 import {
   makeCallModelNode,
   makeExecuteToolNode,
@@ -53,6 +54,21 @@ function sumOptional(a?: number, b?: number): number | undefined {
   return (a ?? 0) + (b ?? 0);
 }
 
+/**
+ * Merges two usage snapshots by summing each token field independently.
+ *
+ * Semantics:
+ *  - If BOTH are undefined/missing, returns undefined (no usage data).
+ *  - If only ONE is present, the other's fields are treated as 0 — so the
+ *    returned object contains the values of the one that exists.
+ *  - If BOTH are present, each token count is summed.
+ *
+ * This is intentionally non-commutative with undefined: when
+ * `updates.accumulatedUsage` is explicitly set to `undefined` in a node
+ * update, `updateState()` skips the merge entirely and preserves the old
+ * value.  That is the intended behaviour — nodes that don't produce usage
+ * data should never accidentally zero out accumulated counts.
+ */
 function mergeUsage(
   existing: WeavePlanResult['usage'],
   incoming: WeavePlanResult['usage'],
@@ -151,6 +167,7 @@ export async function runWeaveGraph(
   httpClient: WeaveHttpClient,
   toolRuntime: WeaveContextToolRuntime,
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): Promise<WeavePlanResult> {
   const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
 
@@ -158,6 +175,7 @@ export async function runWeaveGraph(
     systemMsg(
       buildSystemPrompt(
         modelProfile,
+        request.kind,
         effectiveBudget.promptToolCalls,
         effectiveBudget.runtimeNoteReads,
         effectiveBudget.maxRetrievedChars,
@@ -181,13 +199,15 @@ export async function runWeaveGraph(
     });
   }
 
+  onProgress?.({ phase: 'graph-start', model: resolvedModel, toolBudget: effectiveBudget.promptToolCalls });
+
   // Instantiate the node handlers injected with dependencies
-  const callModel = makeCallModelNode(httpClient, logger);
-  const executeTool = makeExecuteToolNode(toolRuntime, logger);
-  const repair = makeRepairNode(logger);
-  const finalize = makeFinalizeNode(logger);
-  const validate = makeValidateNode(logger);
-  const fail = makeFailNode(logger);
+  const callModel = makeCallModelNode(httpClient, logger, onProgress);
+  const executeTool = makeExecuteToolNode(toolRuntime, logger, onProgress);
+  const repair = makeRepairNode(logger, onProgress);
+  const finalize = makeFinalizeNode(logger, onProgress);
+  const validate = makeValidateNode(logger, onProgress);
+  const fail = makeFailNode(logger, onProgress);
 
   // Initialize the typed sequential state
   let state: WeaveAgentState = {
@@ -276,6 +296,7 @@ export async function runWeaveGraph(
         totalSteps: stepCount,
       });
     }
+    onProgress?.({ phase: 'graph-complete', operations: state.result.plan.operations.length, latencyMs: state.result.latencyMs });
     return state.result;
   }
 

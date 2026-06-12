@@ -125,35 +125,49 @@ export function validateAndClampBudgetValue(
 
 // ── Model pattern matching ────────────────────────────────────────────────────
 
-function isOpenAiGpt(id: string): boolean {
-  return /gpt-4o|gpt-4-o|gpt-3\.5/i.test(id);
+/**
+ * Extracts the provider prefix from an OpenRouter model ID.
+ * e.g. "openai/gpt-4o" → "openai", "anthropic/claude-sonnet-4-5" → "anthropic"
+ * Falls back to the full ID if no slash is present.
+ */
+function extractProviderPrefix(modelId: string): string {
+  const slashIndex = modelId.indexOf('/');
+  return slashIndex >= 0 ? modelId.slice(0, slashIndex).toLowerCase() : modelId.toLowerCase();
 }
 
-function isOpenAiReasoning(id: string): boolean {
-  return /openai\/o[134]/i.test(id);
-}
+/**
+ * Provider families known to support native JSON mode via `response_format`.
+ * These providers guarantee valid JSON in their output.
+ */
+const JSON_MODE_PROVIDERS = new Set([
+  'openai',
+  'google',
+  'deepseek',
+  'x-ai',
+]);
 
-function isClaude(id: string): boolean {
-  return /claude|anthropic/i.test(id);
-}
+/**
+ * Provider families for Anthropic/Claude models.
+ * These require a different prompt overlay and use conservative repair.
+ */
+const CLAUDE_PROVIDERS = new Set([
+  'anthropic',
+]);
 
 // ── Model-specific profile helpers ────────────────────────────────────────────
 
 function resolveStructuredOutputMode(modelId: string): WeaveStructuredOutputMode {
-  if (isOpenAiGpt(modelId) || isOpenAiReasoning(modelId)) {
+  const provider = extractProviderPrefix(modelId);
+  if (JSON_MODE_PROVIDERS.has(provider)) {
     return 'json_mode';
   }
   return 'fences_and_braces';
 }
 
 function resolveSystemPromptOverlay(modelId: string): string {
-  if (isOpenAiGpt(modelId) || isOpenAiReasoning(modelId)) {
-    return (
-      'You must respond with valid JSON only. ' +
-      'Every response is a raw JSON object — no prose, no markdown fences, no trailing text.'
-    );
-  }
-  if (isClaude(modelId)) {
+  const provider = extractProviderPrefix(modelId);
+
+  if (CLAUDE_PROVIDERS.has(provider)) {
     return (
       'You are in structured JSON-only mode. ' +
       'Every response must be a single JSON object matching the required schema. ' +
@@ -161,12 +175,22 @@ function resolveSystemPromptOverlay(modelId: string): string {
       'Your final output must be a bare JSON object with no surrounding prose or markdown.'
     );
   }
+
+  if (JSON_MODE_PROVIDERS.has(provider)) {
+    return (
+      'You must respond with valid JSON only. ' +
+      'Every response is a raw JSON object — no prose, no markdown fences, no trailing text.'
+    );
+  }
+
+  // Unknown provider: conservative fallback
   return 'Respond with only a raw JSON object. No prose, no markdown code fences, no surrounding text.';
 }
 
 function resolveRepairStrategy(modelId: string): WeaveRepairStrategy {
-  // Claude tends to over-generate; conservative strategy limits repair turns.
-  return isClaude(modelId) ? 'conservative' : 'aggressive';
+  // Claude models tend to over-generate; conservative strategy limits repair turns.
+  const provider = extractProviderPrefix(modelId);
+  return CLAUDE_PROVIDERS.has(provider) ? 'conservative' : 'aggressive';
 }
 
 function resolveResponseFormatParams(mode: WeaveStructuredOutputMode): Record<string, unknown> | undefined {

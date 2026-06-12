@@ -41,6 +41,11 @@ Run tests:
 npm test
 ```
 
+Test infrastructure:
+- **Electron (main process)**: Node.js built-in test runner (`node:test`) targeting compiled `.cjs` output in `dist-electron/`. Test files live in `tests/electron/*.test.cjs`. Run with `npm run test:electron`. Requires `npm run build:main` first.
+- **Renderer (Vite)**: Vitest targeting TypeScript source in `src/`. Run with `npm run test:renderer`.
+- To run a single test file: `node --test tests/electron/weaveGraphNodes.test.cjs` (after build).
+
 Build all targets:
 
 ```bash

@@ -55,3 +55,32 @@ What each session log includes:
 Configure a custom log directory through the main-process bridge:
 - `window.crashWeaver.getWeaverRequestLogsDirectory()`
 - `window.crashWeaver.setWeaverRequestLogsDirectory(directoryPathOrNull)`
+
+## Session History
+
+Weaver sessions are automatically logged and indexed. Access them via:
+- `window.crashWeaver.listWeaverSessions()` — list all past sessions, newest first
+- `window.crashWeaver.getWeaverSession(sessionId)` — full detail including plan and request
+- `window.crashWeaver.deleteWeaverSession(sessionId)` — delete a single session log
+- `window.crashWeaver.clearWeaverSessions()` — delete all sessions
+
+## Live Progress Events
+
+During generation, the renderer can subscribe to live progress:
+```ts
+const unsubscribe = window.crashWeaver.onWeavePlanProgress((event) => {
+  // event.phase: 'graph-start' | 'call-model-start' | 'execute-tool-start' |
+  //   'execute-tool-end' | 'repair' | 'finalize-start' | 'validate-start' |
+  //   'validate-end' | 'graph-complete' | 'graph-fail'
+});
+// Later: unsubscribe();
+```
+
+## Demo Mode Detection
+
+Check if the stub (offline) provider is active:
+- `window.crashWeaver.isStubWeaveProvider()` — returns `true` when no API key is configured
+
+## Semantic Search (Embeddings)
+
+When an OpenRouter API key is configured, Weaver enriches candidate note ranking with embedding-based semantic similarity. Embeddings are computed via `openai/text-embedding-3-small` and cached per-note in `.crashweaver/embeddings.json`. The cache is invalidated when note content changes (SHA256 hash). If the embeddings API is unavailable, ranking falls back to keyword-only mode.

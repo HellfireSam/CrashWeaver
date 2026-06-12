@@ -68,6 +68,7 @@ contextBridge.exposeInMainWorld('crashWeaver', {
   generateWeavePlan: (request: WeavePlanRequest) =>
     ipcRenderer.invoke('weave:generate-plan', request) as Promise<WeavePlanResult>,
   checkWeaveProvider: () => ipcRenderer.invoke('weave:health-check') as Promise<WeaveProviderHealth>,
+  isStubWeaveProvider: () => ipcRenderer.invoke('weave:is-stub-provider') as Promise<boolean>,
   listWeaveModels: () => ipcRenderer.invoke('weave:list-models') as Promise<WeaveModelInfo[]>,
   getWeaverSettings: () => ipcRenderer.invoke('weave:get-settings') as Promise<WeaverSettings>,
   updateWeaverSettings: (updates: Partial<WeaverSettings>) =>
@@ -79,4 +80,20 @@ contextBridge.exposeInMainWorld('crashWeaver', {
     ipcRenderer.invoke('weave:set-request-logs-directory', directoryPath) as Promise<string | null>,
   setWeaverApiKey: (key: string) => ipcRenderer.invoke('weave:set-api-key', key) as Promise<void>,
   clearWeaverApiKey: () => ipcRenderer.invoke('weave:clear-api-key') as Promise<void>,
+
+  // Weaver progress events (push-based, not invoke)
+  onWeavePlanProgress: (callback: (event: unknown) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: unknown) => callback(data);
+    ipcRenderer.on('weave:plan-progress', handler);
+    // Return unsubscribe function
+    return () => ipcRenderer.removeListener('weave:plan-progress', handler);
+  },
+
+  // Weaver session history
+  listWeaverSessions: () => ipcRenderer.invoke('weave:list-sessions') as Promise<unknown[]>,
+  getWeaverSession: (sessionId: string) =>
+    ipcRenderer.invoke('weave:get-session', sessionId) as Promise<unknown | null>,
+  deleteWeaverSession: (sessionId: string) =>
+    ipcRenderer.invoke('weave:delete-session', sessionId) as Promise<boolean>,
+  clearWeaverSessions: () => ipcRenderer.invoke('weave:clear-sessions') as Promise<number>,
 });

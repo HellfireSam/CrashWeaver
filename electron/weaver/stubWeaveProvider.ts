@@ -217,7 +217,7 @@ export class StubWeaveProvider {
   async generatePlan(
     request: WeavePlanRequest,
     _context: WeaveContextSnapshot,
-    _options?: { requestLogDirectory?: string },
+    _options?: { requestLogDirectory?: string; onProgress?: unknown },
   ): Promise<WeavePlanResult> {
     const operations = buildPlanOperations(request).slice(0, request.maxOperations);
     const resolvedModel = resolveModel(request);

@@ -83,11 +83,12 @@ Stage 5 services (`electron/weaver/`):
 - `stubWeaveProvider.ts`: deterministic stub for offline/testing.
 - `weavePlanPrompts.ts`: 10-layer composable prompt architecture.
 - `weavePlanSchema.ts`: request and result schema validation, path normalisation, boundary marker checks.
-- `weaveContextService.ts`: context snapshot builder, candidate note scoring, read-only tool runtime (6 tools via a handler registry).
-- `weaveModelProfiles.ts`: single source of truth for model resolution (UI tiers → OpenRouter IDs), structured output config, repair strategy, execution budgets with safe bounds.
-- `weaveCostPolicy.ts`: **deprecated** re-export stub; canonical logic is in `weaveModelProfiles.ts`.
-- `weaveRequestLogger.ts`: per-session JSONL request logs.
+- `weaveContextService.ts`: context snapshot builder, hybrid candidate note scoring (keyword + embedding), read-only tool runtime (7 tools via a handler registry, including `refresh_candidates`).
+- `weaveModelProfiles.ts`: single source of truth for model resolution (UI tiers → OpenRouter IDs), provider-prefix-based model detection, structured output config, repair strategy, execution budgets with safe bounds.
+- `weaverEmbeddingService.ts`: OpenRouter embeddings API client (`text-embedding-3-small`), cosine similarity, embedding cache with SHA256 content-hash validation.
+- `weaveRequestLogger.ts`: per-session JSONL request logs with sensitive-data redaction.
 - `weaveTraceCompactor.ts`: ReAct trace compaction for bounded memory.
+- `weaverSessionHistory.ts`: session history index from JSONL logs (list/get/delete/clear).
 
 Planned services:
 - `reviewService.ts`: future scheduling and familiarity updates over the shared card schema.

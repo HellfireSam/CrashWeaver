@@ -97,3 +97,29 @@ export function userMsg(content: string): WeaveMessage {
 export function assistantMsg(content: string): WeaveMessage {
   return { role: 'assistant', content };
 }
+
+// ── Progress events ───────────────────────────────────────────────────────────
+
+/**
+ * Lightweight progress events emitted by the Weaver ReAct loop.
+ *
+ * These are NOT streaming tokens — they are discrete lifecycle events
+ * that the renderer can use to show a live progress indicator.
+ * This works with ALL model families including those using json_mode
+ * (which is incompatible with SSE token streaming).
+ */
+export type WeaveProgressEvent =
+  | { phase: 'graph-start'; model: string; toolBudget: number }
+  | { phase: 'call-model-start'; turn: number }
+  | { phase: 'call-model-end'; turn: number; parsedAs: 'tool' | 'final' | 'unparseable' | 'invalid-shape'; thought?: string }
+  | { phase: 'execute-tool-start'; toolName: string; turn: number }
+  | { phase: 'execute-tool-end'; toolName: string; ok: boolean; callsRemaining: number }
+  | { phase: 'repair'; repairType: string; repairAttempt: number }
+  | { phase: 'finalize-start' }
+  | { phase: 'validate-start' }
+  | { phase: 'validate-end'; ok: boolean }
+  | { phase: 'graph-complete'; operations: number; latencyMs: number }
+  | { phase: 'graph-fail'; error: string; errorCategory: string };
+
+/** Callback invoked for each lifecycle event during plan generation. */
+export type WeaveProgressCallback = (event: WeaveProgressEvent) => void;

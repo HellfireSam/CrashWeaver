@@ -8,6 +8,7 @@ import {
   checkWeaveProvider,
   generateWeavePlan,
   initializeWeaveProvider,
+  isStubProviderActive,
   listWeaveModels,
   setWeaveApiKey,
   clearWeaveApiKey,
@@ -16,6 +17,10 @@ import {
   setWeaverPreferredModel,
   getConfiguredWeaverRequestLogsDirectory,
   setConfiguredWeaverRequestLogsDirectory,
+  listSessions,
+  getSession,
+  deleteSession,
+  clearSessions,
 } from './weaver/weaveService';
 import { getFsErrorCode } from './utils/fsErrors';
 import { toPosixPath } from './utils/paths';
@@ -443,10 +448,16 @@ ipcMain.handle('crashpad:save', async (_event, rootPath: string, crashpad: Crash
   saveCrashpad(rootPath, crashpad),
 );
 
-ipcMain.handle('weave:generate-plan', async (_event, request: WeavePlanRequest) => generateWeavePlan(request));
+ipcMain.handle('weave:generate-plan', async (event, request: WeavePlanRequest) => {
+  const onProgress = (progressEvent: unknown) => {
+    event.sender.send('weave:plan-progress', progressEvent);
+  };
+  return generateWeavePlan(request, onProgress);
+});
 
 ipcMain.handle('weave:health-check', async () => checkWeaveProvider());
 ipcMain.handle('weave:list-models', async () => listWeaveModels());
+ipcMain.handle('weave:is-stub-provider', async () => isStubProviderActive());
 
 ipcMain.handle('weave:get-settings', async () => getWeaverSettings());
 
@@ -467,6 +478,14 @@ ipcMain.handle('weave:set-request-logs-directory', async (_event, directoryPath:
 ipcMain.handle('weave:set-api-key', async (_event, key: string) => setWeaveApiKey(key));
 
 ipcMain.handle('weave:clear-api-key', async () => clearWeaveApiKey());
+
+ipcMain.handle('weave:list-sessions', async () => listSessions());
+
+ipcMain.handle('weave:get-session', async (_event, sessionId: string) => getSession(sessionId));
+
+ipcMain.handle('weave:delete-session', async (_event, sessionId: string) => deleteSession(sessionId));
+
+ipcMain.handle('weave:clear-sessions', async () => clearSessions());
 
 ipcMain.handle('crashpad:get-delete-preferences', async (_event, rootPath: string) =>
   getVaultCrashpadDeletePreferences(rootPath),

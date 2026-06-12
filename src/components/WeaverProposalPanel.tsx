@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   WeaveKind,
   WeaveModelInfo,
@@ -32,6 +32,8 @@ type WeaverProposalPanelProps = {
   onEditContentChange: (value: boolean) => void;
   onCreateNoteChange: (value: boolean) => void;
   onStrengthChange: (value: WeaveStrength) => void;
+  /** Called when the user wants to apply selected plan operations. */
+  onApplyOperations?: (operations: WeavePlanResult['plan']['operations']) => void;
 };
 
 type WeaverDockId = 'model' | 'workflow' | 'options';
@@ -296,6 +298,7 @@ export function WeaverProposalPanel({
   onEditContentChange,
   onCreateNoteChange,
   onStrengthChange,
+  onApplyOperations,
 }: WeaverProposalPanelProps) {
   const controlSurfaceRef = useRef<HTMLDivElement | null>(null);
   const toolbarHostRef = useRef<HTMLDivElement | null>(null);
@@ -310,6 +313,11 @@ export function WeaverProposalPanel({
   const [modelListLoading, setModelListLoading] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
   const [otherExpanded, setOtherExpanded] = useState(false);
+  const [traceExpanded, setTraceExpanded] = useState(false);
+  const [progressPhase, setProgressPhase] = useState<string | null>(null);
+  const [isStubProvider, setIsStubProvider] = useState(false);
+  const [selectedOps, setSelectedOps] = useState<Set<number>>(new Set());
+  const healthChecked = useRef(false);
   const modelListFetched = useRef(false);
   const isIntelligent = kind === 'intelligent';
   // Derive display label for the currently selected model from the live list, or format the raw ID.
@@ -327,12 +335,37 @@ export function WeaverProposalPanel({
       .map((step) => getTraceDiagnosticCode(step))
       .find((code) => Boolean(code)) ?? null
     : null;
-  const providerStatusLabel = isCheckingHealth ? 'Checking' : providerHealth ? providerHealth.provider : 'Unavailable';
+  const providerStatusLabel = isCheckingHealth
+    ? 'Checking…'
+    : !healthChecked.current && !providerHealth
+      ? 'Checking…'
+      : providerHealth
+        ? providerHealth.provider
+        : 'Unavailable';
   const providerStatusTitle = isCheckingHealth
-    ? 'Checking provider status.'
-    : providerHealth
-      ? `${providerHealth.provider} · ${providerHealth.model}`
-      : 'Provider status unavailable.';
+    ? 'Checking provider status…'
+    : !healthChecked.current && !providerHealth
+      ? 'Waiting for provider check…'
+      : providerHealth
+        ? `${providerHealth.provider} · ${providerHealth.model}`
+        : 'Provider status unavailable.';
+  const providerStatusClass = isCheckingHealth || (!healthChecked.current && !providerHealth)
+    ? ''
+    : providerHealth?.ok
+      ? 'ok'
+      : 'warning';
+
+  // Track when a health check completes
+  useEffect(() => {
+    if (providerHealth) {
+      healthChecked.current = true;
+    }
+  }, [providerHealth]);
+
+  // Check if the stub (offline) provider is active
+  useEffect(() => {
+    window.crashWeaver.isStubWeaveProvider().then(setIsStubProvider).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!activeDock) {
@@ -382,6 +415,27 @@ export function WeaverProposalPanel({
     };
   }, [activeDock]);
 
+  // Subscribe to live progress events during generation
+  useEffect(() => {
+    if (!isGenerating) {
+      setProgressPhase(null);
+      return;
+    }
+    const unsubscribe = window.crashWeaver.onWeavePlanProgress((event: unknown) => {
+      const e = event as { phase?: string; toolName?: string; operations?: number };
+      if (e.phase) {
+        const label = e.phase === 'execute-tool-start' ? `Reading ${e.toolName ?? 'note'}…`
+          : e.phase === 'call-model-start' ? 'Thinking…'
+          : e.phase === 'validate-start' ? 'Validating plan…'
+          : e.phase === 'graph-complete' ? `Done — ${e.operations ?? '?'} ops`
+          : e.phase === 'graph-fail' ? 'Generation failed'
+          : e.phase;
+        setProgressPhase(label);
+      }
+    });
+    return unsubscribe;
+  }, [isGenerating]);
+
   function toggleDock(nextDock: WeaverDockId) {
     setActiveDock((currentDock) => {
       const opening = currentDock !== nextDock ? nextDock : null;
@@ -401,6 +455,15 @@ export function WeaverProposalPanel({
     onModelChange(nextModel);
     setActiveDock(null);
   }
+
+  const handleIntentKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      if (canGenerate && !isGenerating) {
+        void onGenerate();
+      }
+    }
+  }, [canGenerate, isGenerating, onGenerate]);
 
   function handleSelectWorkflow(nextKind: WeaveKind) {
     onKindChange(nextKind);
@@ -538,52 +601,56 @@ export function WeaverProposalPanel({
 
     return (
       <div className="weaverMenuSection">
-        <div className="weaverMenuHeader">
-          <p className="weaverMenuTitle">Guided Insert</p>
-          <span className={`weaverInlineMeta ${isIntelligent ? 'muted' : ''}`}>
-            {isIntelligent ? 'Saved for guided insert' : 'Insert is always allowed'}
-          </span>
-        </div>
-        <div className="weaverMenuList">
-          <button
-            type="button"
-            className={`weaverMenuItem ${editContentEnabled ? 'active' : ''}`}
-            onClick={() => onEditContentChange(!editContentEnabled)}
-          >
-            <span className="weaverMenuItemIcon">
-              <WeaverIcon name="edit" />
-            </span>
-            <span className="weaverMenuItemBody">
-              <strong>Edit content</strong>
-              <span>Allow note prose edits around the insertion point.</span>
-            </span>
-            {editContentEnabled ? (
-              <span className="weaverMenuItemCheck">
-                <WeaverIcon name="check" />
+        {!isIntelligent ? (
+          <>
+            <div className="weaverMenuHeader">
+              <p className="weaverMenuTitle">Guided Insert</p>
+              <span className="weaverInlineMeta">
+                Insert is always allowed
               </span>
-            ) : null}
-          </button>
-          <button
-            type="button"
-            className={`weaverMenuItem ${createNoteEnabled ? 'active' : ''}`}
-            onClick={() => onCreateNoteChange(!createNoteEnabled)}
-          >
-            <span className="weaverMenuItemIcon">
-              <WeaverIcon name="note" />
-            </span>
-            <span className="weaverMenuItemBody">
-              <strong>Create note</strong>
-              <span>Allow Weaver to propose a new markdown note when insertion into an existing note is not enough.</span>
-            </span>
-            {createNoteEnabled ? (
-              <span className="weaverMenuItemCheck">
-                <WeaverIcon name="check" />
-              </span>
-            ) : null}
-          </button>
-        </div>
+            </div>
+            <div className="weaverMenuList">
+              <button
+                type="button"
+                className={`weaverMenuItem ${editContentEnabled ? 'active' : ''}`}
+                onClick={() => onEditContentChange(!editContentEnabled)}
+              >
+                <span className="weaverMenuItemIcon">
+                  <WeaverIcon name="edit" />
+                </span>
+                <span className="weaverMenuItemBody">
+                  <strong>Edit content</strong>
+                  <span>Allow note prose edits around the insertion point.</span>
+                </span>
+                {editContentEnabled ? (
+                  <span className="weaverMenuItemCheck">
+                    <WeaverIcon name="check" />
+                  </span>
+                ) : null}
+              </button>
+              <button
+                type="button"
+                className={`weaverMenuItem ${createNoteEnabled ? 'active' : ''}`}
+                onClick={() => onCreateNoteChange(!createNoteEnabled)}
+              >
+                <span className="weaverMenuItemIcon">
+                  <WeaverIcon name="note" />
+                </span>
+                <span className="weaverMenuItemBody">
+                  <strong>Create note</strong>
+                  <span>Allow Weaver to propose a new markdown note when insertion into an existing note is not enough.</span>
+                </span>
+                {createNoteEnabled ? (
+                  <span className="weaverMenuItemCheck">
+                    <WeaverIcon name="check" />
+                  </span>
+                ) : null}
+              </button>
+            </div>
+          </>
+        ) : null}
 
-        <div className="weaverMenuHeader" style={{ marginTop: '0.85rem' }}>
+        <div className="weaverMenuHeader" style={isIntelligent ? undefined : { marginTop: '0.85rem' }}>
           <p className="weaverMenuTitle">Intelligent</p>
           <span className={`weaverInlineMeta ${!isIntelligent ? 'muted' : ''}`}>
             {isIntelligent ? 'Strength active' : 'Switch workflow to enable strength'}
@@ -626,11 +693,16 @@ export function WeaverProposalPanel({
       <div ref={controlSurfaceRef} className="weaverComposer">
         <header className="weaverHeader">
           <span className="weaverHeaderTitle">Weaver</span>
+          {isStubProvider ? (
+            <span className="weaverDemoBadge" title="No API key configured — Weaver is running in offline demo mode with stub plans.">
+              Demo Mode
+            </span>
+          ) : null}
           <p className="weaverContextLabel" title={contextLabel}>
             {compactContextLabel}
           </p>
           <span
-            className={`weaverStatusInline ${providerHealth?.ok ? 'ok' : providerHealth ? 'warning' : ''}`}
+            className={`weaverStatusInline ${providerStatusClass}`}
             title={providerStatusTitle}
           >
             <span className="weaverStatusDot" />
@@ -711,12 +783,20 @@ export function WeaverProposalPanel({
           </div>
         ) : null}
 
+        {isGenerating && progressPhase ? (
+          <div className="weaverProgressBar">
+            <span className="weaverProgressLabel">{progressPhase}</span>
+            <span className="weaverProgressDots"><span /><span /><span /></span>
+          </div>
+        ) : null}
+
         <label className="weaverComposerField">
           <textarea
             className="editorTextArea weaverIntentInput"
             value={intent}
             onChange={(event) => onIntentChange(event.target.value)}
-            placeholder="Describe where this card should land in the vault or what restructuring Weaver should plan."
+            onKeyDown={handleIntentKeyDown}
+            placeholder="Describe where this card should land in the vault or what restructuring Weaver should plan. (Ctrl+Enter to generate)"
             aria-label="Weaver intent"
           />
         </label>
@@ -767,12 +847,21 @@ export function WeaverProposalPanel({
 
           {planResult.trace && planResult.trace.length > 0 ? (
             <div className="weaverTraceList">
-              <h3 className="weaverTraceHeading">ReAct Loop Trace</h3>
+              <div className="weaverTraceHeadingRow">
+                <h3 className="weaverTraceHeading">ReAct Loop Trace</h3>
+                <button
+                  type="button"
+                  className="weaverTraceToggle"
+                  onClick={() => setTraceExpanded((v) => !v)}
+                >
+                  {traceExpanded ? 'Collapse All' : 'Expand All'}
+                </button>
+              </div>
               {planResult.trace.map((step, idx) => {
                 const diagnosticCode = getTraceDiagnosticCode(step);
 
                 return (
-                  <details key={`trace-step-${idx}`} className="weaverTraceItem">
+                  <details key={`trace-step-${idx}`} className="weaverTraceItem" open={traceExpanded}>
                     <summary className="weaverTraceSummary">
                       <span className="weaverTraceHeader">
                         <span className="weaverTraceStepBadge">Step {idx + 1}</span>
@@ -818,10 +907,27 @@ export function WeaverProposalPanel({
           <div className="weaverOperationList">
             {planResult.plan.operations.map((operation, index) => {
               const operationMeta = WEAVE_OPERATION_META[operation.kind];
+              const isSelected = selectedOps.has(index);
 
               return (
                 <details key={`${operation.kind}-${operation.targetPath ?? 'none'}-${index}`} className="weaverOperationItem" open={index === 0}>
                   <summary className="weaverOperationSummary">
+                    {onApplyOperations ? (
+                      <label className="weaverOperationCheck" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            setSelectedOps((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(index)) next.delete(index);
+                              else next.add(index);
+                              return next;
+                            });
+                          }}
+                        />
+                      </label>
+                    ) : null}
                     <span className={`weaverOperationGlyph ${operation.kind}`}>
                       <WeaverIcon name={operationMeta.icon} />
                     </span>
@@ -841,6 +947,29 @@ export function WeaverProposalPanel({
               );
             })}
           </div>
+
+          {onApplyOperations && planResult.plan.operations.length > 0 ? (
+            <div className="weaverApplyBar">
+              <button
+                type="button"
+                className="weaverApplyButton"
+                disabled={selectedOps.size === 0}
+                onClick={() => {
+                  const ops = planResult.plan.operations.filter((_, i) => selectedOps.has(i));
+                  onApplyOperations(ops);
+                }}
+              >
+                Apply Selected{selectedOps.size > 0 ? ` (${selectedOps.size})` : ''}
+              </button>
+              <button
+                type="button"
+                className="weaverApplyButton secondary"
+                onClick={() => onApplyOperations(planResult.plan.operations)}
+              >
+                Apply All
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="weaverEmptyState">

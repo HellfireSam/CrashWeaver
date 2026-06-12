@@ -137,18 +137,53 @@ function redactSensitiveLoggingData(data: unknown, maxLength = 300): unknown {
   return data;
 }
 
+// ── Retry helpers ────────────────────────────────────────────────────────────
+
+const DEFAULT_MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 800;
+const RETRY_MAX_DELAY_MS = 8_000;
+
+/**
+ * Status codes eligible for a retry.
+ * 429 (rate-limit) and 5xx (server error) are transient; auth errors and
+ * client errors (4xx except 429) are not retryable.
+ */
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+/**
+ * Exponential backoff with full jitter.
+ * delay = min(maxDelay, baseDelay * 2^attempt) * random(0, 1)
+ */
+function backoffDelayMs(attempt: number): number {
+  const exponential = Math.min(RETRY_MAX_DELAY_MS, RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
+  return Math.floor(exponential * Math.random());
+}
+
 // ── OpenRouter HTTP client ───────────────────────────────────────────────────
+
+export interface OpenRouterHttpClientOptions {
+  /** Maximum number of retry attempts for transient errors (default 2). */
+  maxRetries?: number;
+}
 
 /**
  * Thin HTTP wrapper around OpenRouter's chat completions endpoint.
  * Uses Electron's net.fetch and AbortController for proper cancellation.
+ * Includes exponential-backoff retry for transient server errors (429, 5xx).
  */
 export class OpenRouterHttpClient implements WeaveHttpClient {
+  private readonly maxRetries: number;
+
   constructor(
     private readonly apiKey: string,
     private readonly appUrl: string,
     private readonly fetchImpl: OpenRouterFetch,
-  ) {}
+    options?: OpenRouterHttpClientOptions,
+  ) {
+    this.maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
+  }
 
   async chatCompletion(
     request: WeaveHttpClientRequest,
@@ -179,6 +214,68 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
       });
     }
 
+    const startTimeMs = Date.now();
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      const elapsedMs = Date.now() - startTimeMs;
+      const remainingMs = Math.max(0, timeoutMs - elapsedMs);
+
+      if (remainingMs <= 0) {
+        throw makeWeaveError(
+          'Weaver request timed out after retries. Try a smaller guided insert or a lighter intelligent strength.',
+          'provider-timeout',
+        );
+      }
+
+      try {
+        const result = await this._sendRequest(requestBody, remainingMs, logger, allowFullLogging);
+        return result;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Do not retry auth errors, parse errors, empty responses, or timeouts
+        const errorCategory = (lastError as { errorCategory?: WeaveErrorCategory }).errorCategory;
+        const isRetryable =
+          errorCategory === 'rate-limit' || errorCategory === 'provider-error';
+
+        if (!isRetryable || attempt >= this.maxRetries) {
+          throw lastError;
+        }
+
+        const delay = backoffDelayMs(attempt);
+        console.warn(
+          `CrashWeaver Weaver: attempt ${attempt + 1}/${this.maxRetries + 1} failed, ` +
+            `retrying in ${delay}ms — ${lastError.message}`,
+        );
+
+        if (logger) {
+          await logger.log('openrouter-retry', {
+            attempt: attempt + 1,
+            maxRetries: this.maxRetries,
+            delayMs: delay,
+            error: lastError.message,
+          });
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    // Should never reach here, but TypeScript needs it
+    throw lastError ?? makeWeaveError('Unknown HTTP error.', 'provider-error');
+  }
+
+  /**
+   * Performs a single HTTP request attempt (no retry).
+   * Extracted so the retry loop can call it cleanly.
+   */
+  private async _sendRequest(
+    requestBody: Record<string, unknown>,
+    timeoutMs: number,
+    logger: WeaveRequestSessionLogger | undefined,
+    allowFullLogging: boolean,
+  ): Promise<WeaveHttpClientResponse> {
     let response: Response;
 
     const controller = new AbortController();
@@ -199,7 +296,6 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      // Handle timeout: either the AbortController fired, or an AbortError came from the fetch layer
       const isAbort =
         controller.signal.aborted ||
         (error instanceof Error && error.name === 'AbortError');
@@ -255,7 +351,7 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
 
     return {
       content,
-      resolvedModel: parsed.model ?? request.model,
+      resolvedModel: parsed.model ?? (requestBody.model as string),
       usage: parsed.usage,
     };
   }

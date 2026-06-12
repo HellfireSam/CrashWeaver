@@ -10,6 +10,17 @@ import type {
 } from '../vault-contract';
 import { getVaultCardStore, readNote } from '../vaultService';
 import { toPosixPath } from '../utils/paths';
+import type {
+  EmbeddingSimilarityMap,
+  EmbeddingCache,
+} from './weaverEmbeddingService';
+import {
+  loadEmbeddingCache,
+  buildQueryEmbedding,
+  getOrComputeNoteEmbedding,
+  buildSimilarityMap,
+  EMBEDDING_SIMILARITY_BOOST,
+} from './weaverEmbeddingService';
 
 const INTERNAL_DIRECTORY_NAME = '.crashweaver';
 const INDEX_FILE_NAME = 'index.json';
@@ -79,6 +90,8 @@ export interface WeaveCandidateNoteSummary {
   updatedAt: string;
   directoryPath: string;
   score: number;
+  /** Cosine similarity to the query embedding (0–1), if embedding is available. */
+  embeddingScore?: number;
   reasons: string[];
 }
 
@@ -102,6 +115,22 @@ export interface WeaveContextSnapshot {
   directorySummaries: WeaveDirectorySummary[];
   retrievalBudget: WeaveRetrievalBudget;
   warnings: string[];
+  /**
+   * Full vault note catalog (all notes, not just candidates).
+   * Populated by buildWeaveContextSnapshot for use by the refresh_candidates
+   * tool.  Not serialized into the prompt context — only used at runtime.
+   */
+  _allNotes?: WeaveStoredNoteSummary[];
+  /**
+   * Pre-computed search tokens extracted from the card and intent.
+   * Used by refresh_candidates to re-score without re-deriving.
+   */
+  _searchTokens?: string[];
+  /**
+   * Pre-computed anchor paths for proximity scoring.
+   * Used by refresh_candidates to re-score without re-deriving.
+   */
+  _anchorPaths?: string[];
 }
 
 export interface WeaveToolRuntimeUsage {
@@ -283,6 +312,7 @@ function getCandidateReasonFragments(
   tokens: string[],
   request: WeavePlanRequest,
   referenceMap: Map<string, CardNoteReference>,
+  similarityMap?: EmbeddingSimilarityMap,
 ) {
   const reasons: string[] = [];
   const normalizedPath = toPosixPath(summary.filePath);
@@ -296,6 +326,12 @@ function getCandidateReasonFragments(
 
   if (request.activeNotePath && normalizedPath === toPosixPath(request.activeNotePath)) {
     reasons.push('Matches the active note context.');
+  }
+
+  const similarity = similarityMap?.get(normalizedPath);
+  if (similarity !== undefined && similarity >= 0.3) {
+    const pct = Math.round(similarity * 100);
+    reasons.push(`Semantic match (${pct}% similar to card content).`);
   }
 
   if (titleMatches > 0) {
@@ -319,6 +355,7 @@ function scoreCandidateNote(
   request: WeavePlanRequest,
   referenceMap: Map<string, CardNoteReference>,
   anchorPaths: string[],
+  similarityMap?: EmbeddingSimilarityMap,
 ) {
   const normalizedPath = toPosixPath(summary.filePath);
   const titleMatches = countTokenMatches(summary.title, tokens);
@@ -338,6 +375,14 @@ function scoreCandidateNote(
   score += tagMatches * 15;
   score += pathMatches * 8;
   score += getPathProximityScore(normalizedPath, anchorPaths);
+
+  // Blend embedding similarity if available (0–1 → scaled by boost weight)
+  if (similarityMap) {
+    const similarity = similarityMap.get(normalizedPath);
+    if (similarity !== undefined) {
+      score += similarity * EMBEDDING_SIMILARITY_BOOST;
+    }
+  }
 
   return score;
 }
@@ -391,6 +436,7 @@ function buildCandidateNotes(
   card: CardDocument,
   request: WeavePlanRequest,
   budget: WeaveRetrievalBudget,
+  similarityMap?: EmbeddingSimilarityMap,
 ) {
   const referenceMap = getReferenceMap(card);
   const tokens = extractNoteSearchTokens(card, request.intent ?? '');
@@ -400,15 +446,20 @@ function buildCandidateNotes(
   ];
 
   return notes
-    .map((summary) => ({
-      filePath: toPosixPath(summary.filePath),
-      title: summary.title,
-      tags: [...summary.tags],
-      updatedAt: summary.updatedAt,
-      directoryPath: getDirectoryPath(summary.filePath),
-      score: scoreCandidateNote(summary, tokens, request, referenceMap, anchorPaths),
-      reasons: getCandidateReasonFragments(summary, tokens, request, referenceMap),
-    }))
+    .map((summary) => {
+      const filePath = toPosixPath(summary.filePath);
+      const similarity = similarityMap?.get(filePath);
+      return {
+        filePath,
+        title: summary.title,
+        tags: [...summary.tags],
+        updatedAt: summary.updatedAt,
+        directoryPath: getDirectoryPath(summary.filePath),
+        score: scoreCandidateNote(summary, tokens, request, referenceMap, anchorPaths, similarityMap),
+        embeddingScore: similarity,
+        reasons: getCandidateReasonFragments(summary, tokens, request, referenceMap, similarityMap),
+      };
+    })
     .filter((summary) => summary.score > 0)
     .sort((left, right) => right.score - left.score || left.filePath.localeCompare(right.filePath))
     .slice(0, budget.maxCandidateNotes);
@@ -581,7 +632,20 @@ function classifyToolError(errorMessage: string): WeaveToolErrorResult['diagnost
   return { code: 'runtime-error', recoverable: false };
 }
 
-export async function buildWeaveContextSnapshot(request: WeavePlanRequest): Promise<WeaveContextSnapshot> {
+export interface BuildWeaveContextOptions {
+  /** If provided, embeddings will be used to boost candidate note ranking. */
+  embedding?: {
+    apiKey: string;
+    fetchImpl: typeof import('electron').net.fetch;
+    appUrl?: string;
+    now?: () => number;
+  };
+}
+
+export async function buildWeaveContextSnapshot(
+  request: WeavePlanRequest,
+  options?: BuildWeaveContextOptions,
+): Promise<WeaveContextSnapshot> {
   const warnings: string[] = [];
   const retrievalBudget = resolveRetrievalBudget(request);
   const cardStore = await getVaultCardStore(request.rootPath);
@@ -593,8 +657,89 @@ export async function buildWeaveContextSnapshot(request: WeavePlanRequest): Prom
 
   const storedIndex = await readVaultIndex(getIndexFilePath(request.rootPath), getLegacyIndexFilePath(request.rootPath));
   const noteCatalog = buildInitialNoteCatalog(request, storedIndex?.entries ?? [], card, warnings);
-  const candidateNotes = buildCandidateNotes(noteCatalog, card, request, retrievalBudget);
+
+  // ── Embedding-based semantic scoring (optional) ────────────────────────────
+  let similarityMap: EmbeddingSimilarityMap | undefined;
+
+  if (options?.embedding) {
+    const { apiKey, fetchImpl, appUrl } = options.embedding;
+    const now = options.embedding.now ?? Date.now;
+
+    try {
+      // Build the query embedding from card + intent
+      const queryEmbedding = await buildQueryEmbedding(
+        apiKey,
+        fetchImpl,
+        appUrl,
+        card.uid,
+        card.type,
+        card.raw_content,
+        request.intent ?? '',
+      );
+
+      if (queryEmbedding) {
+        // Load cached note embeddings and ensure they're fresh
+        const cache = await loadEmbeddingCache(request.rootPath) ?? {
+          version: 1 as const,
+          model: 'openai/text-embedding-3-small',
+          entries: {},
+        };
+
+        const noteEmbeddings = new Map<string, number[]>();
+        let embeddedCount = 0;
+
+        for (const note of noteCatalog) {
+          try {
+            const embedding = await getOrComputeNoteEmbedding(
+              apiKey,
+              fetchImpl,
+              appUrl,
+              request.rootPath,
+              toPosixPath(note.filePath),
+              note.title,
+              // We don't have full content here; use title + tags as a proxy
+              // for the initial embedding round. Full-content embedding happens
+              // lazily when notes are read via tools.
+              note.tags.join(' ') || note.title,
+              cache,
+              now,
+            );
+            if (embedding) {
+              noteEmbeddings.set(toPosixPath(note.filePath), embedding);
+              embeddedCount += 1;
+            }
+          } catch {
+            // Skip notes that fail to embed
+          }
+        }
+
+        if (embeddedCount > 0) {
+          const result = buildSimilarityMap(queryEmbedding, noteEmbeddings);
+          similarityMap = result.similarityMap;
+
+          if (result.boostedCount > 0) {
+            warnings.push(
+              `Embedding-based ranking active: ${result.boostedCount} of ${embeddedCount} embedded notes semantically matched the card.`,
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('CrashWeaver Weaver: embedding enrichment failed, falling back to keyword-only ranking —', error);
+      warnings.push('Semantic ranking unavailable; using keyword-based note discovery.');
+    }
+  }
+
+  // ── Build candidates (now with optional embedding boost) ────────────────────
+  const candidateNotes = buildCandidateNotes(noteCatalog, card, request, retrievalBudget, similarityMap);
   const directorySummaries = buildDirectorySummaries(noteCatalog, candidateNotes, request, card, retrievalBudget);
+
+  // Pre-compute refresh parameters for the tool runtime
+  const searchTokens = extractNoteSearchTokens(card, request.intent ?? '');
+  const anchorPaths = [
+    ...(request.activeNotePath ? [toPosixPath(request.activeNotePath)] : []),
+    ...card.referenced_in.map((reference) => toPosixPath(reference.note_path)),
+  ];
 
   if (candidateNotes.length === 0) {
     warnings.push('No candidate notes ranked above zero. Intelligent mode should stay conservative unless the active note is enough.');
@@ -613,6 +758,9 @@ export async function buildWeaveContextSnapshot(request: WeavePlanRequest): Prom
     directorySummaries,
     retrievalBudget,
     warnings,
+    _allNotes: noteCatalog,
+    _searchTokens: searchTokens,
+    _anchorPaths: anchorPaths,
   };
 }
 
@@ -622,6 +770,8 @@ export class WeaveContextToolRuntime {
   private readonly retrievalBudget: WeaveRetrievalBudget;
   private noteReads = 0;
   private retrievedChars = 0;
+  private refreshCount = 0;
+  private readonly maxRefreshes = 1;
 
   /** Registry of all read-only tool handlers keyed by tool name. */
   private readonly toolHandlers: Record<string, (args: Record<string, unknown>) => Promise<WeaveToolResult>>;
@@ -629,6 +779,14 @@ export class WeaveContextToolRuntime {
   constructor(
     private readonly snapshot: WeaveContextSnapshot,
     budgetOverrides?: Partial<WeaveRetrievalBudget>,
+    /**
+     * Pre-computed search tokens and anchor paths for refresh_candidates.
+     * Passed through from buildWeaveContextSnapshot to avoid re-deriving them.
+     */
+    private readonly refreshParams?: {
+      tokens: string[];
+      anchorPaths: string[];
+    },
   ) {
     this.candidateLookup = new Map(snapshot.candidateNotes.map((note) => [note.filePath, note]));
     this.referenceLookup = new Map(snapshot.card.referencedIn.map((reference) => [reference.notePath, {
@@ -650,6 +808,7 @@ export class WeaveContextToolRuntime {
       read_note_excerpt: this.toolReadNoteExcerpt.bind(this),
       read_note_full: this.toolReadNoteFull.bind(this),
       read_note_span: this.toolReadNoteSpan.bind(this),
+      ...(refreshParams ? { refresh_candidates: this.toolRefreshCandidates.bind(this) } : {}),
     };
   }
 
@@ -860,6 +1019,94 @@ export class WeaveContextToolRuntime {
     };
   }
 
+  private async toolRefreshCandidates(_args: Record<string, unknown>): Promise<WeaveToolResult> {
+    if (this.refreshCount >= this.maxRefreshes) {
+      return {
+        ok: false,
+        toolName: 'refresh_candidates',
+        usage: this.getUsage(),
+        error: 'refresh_candidates can only be used once per session.',
+        diagnostics: { code: 'budget-note-reads-exhausted', recoverable: true },
+      };
+    }
+
+    const allNotes = this.snapshot._allNotes;
+    if (!allNotes || !this.refreshParams) {
+      return {
+        ok: false,
+        toolName: 'refresh_candidates',
+        usage: this.getUsage(),
+        error: 'refresh_candidates is not available for this session.',
+        diagnostics: { code: 'runtime-error', recoverable: false },
+      };
+    }
+
+    this.refreshCount += 1;
+
+    const existingPaths = new Set(this.snapshot.candidateNotes.map((n) => n.filePath));
+    const referenceMap = new Map(
+      this.snapshot.card.referencedIn.map((r) => [r.notePath, {
+        note_path: r.notePath,
+        start_line: r.startLine,
+        end_line: r.endLine,
+      }]),
+    );
+
+    // Re-score ALL notes and pick those not already in the initial candidate set
+    const expandedLimit = Math.min(
+      this.retrievalBudget.maxCandidateNotes * 2,
+      allNotes.length,
+    );
+
+    const freshCandidates = allNotes
+      .filter((note) => !existingPaths.has(toPosixPath(note.filePath)))
+      .map((note) => {
+        const score = scoreCandidateNote(
+          note,
+          this.refreshParams!.tokens,
+          { activeNotePath: this.snapshot.activeNotePath } as WeavePlanRequest,
+          referenceMap,
+          this.refreshParams!.anchorPaths,
+        );
+        const reasons = getCandidateReasonFragments(
+          note,
+          this.refreshParams!.tokens,
+          { activeNotePath: this.snapshot.activeNotePath } as WeavePlanRequest,
+          referenceMap,
+        );
+        return {
+          filePath: toPosixPath(note.filePath),
+          title: note.title,
+          tags: [...note.tags],
+          updatedAt: note.updatedAt,
+          directoryPath: getDirectoryPath(note.filePath),
+          score,
+          reasons,
+        };
+      })
+      .filter((c) => c.score > 0)
+      .sort((a, b) => b.score - a.score || a.filePath.localeCompare(b.filePath))
+      .slice(0, expandedLimit);
+
+    // Merge fresh candidates into the lookup so subsequent tool calls can find them
+    for (const candidate of freshCandidates) {
+      if (!this.candidateLookup.has(candidate.filePath)) {
+        this.candidateLookup.set(candidate.filePath, candidate);
+      }
+    }
+
+    return {
+      ok: true,
+      toolName: 'refresh_candidates',
+      usage: this.getUsage(),
+      data: {
+        expandedCount: freshCandidates.length,
+        noteCount: allNotes.length,
+        candidates: freshCandidates,
+      },
+    };
+  }
+
   // ── Public dispatcher ───────────────────────────────────────────────────────
 
   /**
@@ -904,6 +1151,7 @@ export class WeaveContextToolRuntime {
 export function createWeaveContextToolRuntime(
   snapshot: WeaveContextSnapshot,
   budgetOverrides?: Partial<WeaveRetrievalBudget>,
+  refreshParams?: { tokens: string[]; anchorPaths: string[] },
 ) {
-  return new WeaveContextToolRuntime(snapshot, budgetOverrides);
+  return new WeaveContextToolRuntime(snapshot, budgetOverrides, refreshParams);
 }

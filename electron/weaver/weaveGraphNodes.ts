@@ -18,6 +18,7 @@
 
 import type { WeaveAgentState, WeaveAgentRoute, WeaveMessage } from './weaveGraphState';
 import { MIN_REMAINING_TIME_MS, assistantMsg, userMsg } from './weaveGraphState';
+import type { WeaveProgressCallback } from './weaveGraphState';
 import type { WeaveContextToolRuntime } from './weaveContextService';
 import type { WeaveRequestSessionLogger } from './weaveRequestLogger';
 import type { WeaveHttpClient } from './weaveHttpClient';
@@ -140,6 +141,7 @@ function getTraceDiagnostics(
 export function makeCallModelNode(
   httpClient: WeaveHttpClient,
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): (state: WeaveAgentState) => Promise<Partial<WeaveAgentState>> {
   return async function callModelNode(state: WeaveAgentState): Promise<Partial<WeaveAgentState>> {
     const {
@@ -173,6 +175,9 @@ export function makeCallModelNode(
     }
 
     // ── Call the LLM ──────────────────────────────────────────────────────────
+
+    const turnNumber = toolCallCount + repairAttemptCount + 1;
+    onProgress?.({ phase: 'call-model-start', turn: turnNumber });
 
     let rawContent: string;
     let resolvedModelName: string;
@@ -241,6 +246,7 @@ export function makeCallModelNode(
           parseError: true,
         });
       }
+      onProgress?.({ phase: 'call-model-end', turn: turnNumber, parsedAs: 'unparseable' });
       const hasBraces = rawContent.includes('{') && rawContent.includes('}');
       if (hasBraces && repairsRemaining && timeOk) {
         return {
@@ -278,6 +284,7 @@ export function makeCallModelNode(
     }
 
     if (!action) {
+      onProgress?.({ phase: 'call-model-end', turn: turnNumber, parsedAs: 'invalid-shape' });
       if (repairsRemaining && timeOk) {
         return {
           ...updates,
@@ -302,6 +309,13 @@ export function makeCallModelNode(
       ...updates,
       pendingThought: action.thought || null,
     };
+
+    onProgress?.({
+      phase: 'call-model-end',
+      turn: turnNumber,
+      parsedAs: action.type,
+      thought: action.thought || undefined,
+    });
 
     if (action.type === 'tool') {
       if (toolCallCount >= modelProfile.iterationLimit) {
@@ -356,6 +370,7 @@ export function makeCallModelNode(
 export function makeExecuteToolNode(
   toolRuntime: WeaveContextToolRuntime,
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): (state: WeaveAgentState) => Promise<Partial<WeaveAgentState>> {
   return async function executeToolNode(state: WeaveAgentState): Promise<Partial<WeaveAgentState>> {
     const { pendingToolName, pendingToolArgs, toolCallCount, modelProfile, pendingThought } = state;
@@ -368,9 +383,19 @@ export function makeExecuteToolNode(
       };
     }
 
+    const turnNumber = toolCallCount + 1;
+    onProgress?.({ phase: 'execute-tool-start', toolName: pendingToolName, turn: turnNumber });
+
     const toolResult = await toolRuntime.execute(pendingToolName, pendingToolArgs ?? {});
     const newToolCount = toolCallCount + 1;
     const callsRemaining = Math.max(0, (modelProfile?.iterationLimit ?? 0) - newToolCount);
+
+    onProgress?.({
+      phase: 'execute-tool-end',
+      toolName: pendingToolName,
+      ok: (toolResult as { ok?: boolean }).ok !== false,
+      callsRemaining,
+    });
 
     const observationMsg = buildObservationMessage(pendingToolName, toolResult, callsRemaining);
 
@@ -415,6 +440,7 @@ export function makeExecuteToolNode(
  */
 export function makeRepairNode(
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): (state: WeaveAgentState) => Partial<WeaveAgentState> {
   return function repairNode(state: WeaveAgentState): Partial<WeaveAgentState> {
     const { pendingRoute, repairAttemptCount, errorMessage } = state;
@@ -445,6 +471,8 @@ export function makeRepairNode(
       });
     }
 
+    onProgress?.({ phase: 'repair', repairType: pendingRoute ?? 'unknown', repairAttempt: repairAttemptCount + 1 });
+
     return {
       messages: [userMsg(repairMessage)],
       repairAttemptCount: repairAttemptCount + 1,
@@ -462,8 +490,10 @@ export function makeRepairNode(
  */
 export function makeFinalizeNode(
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): (state: WeaveAgentState) => Partial<WeaveAgentState> {
   return function finalizeNode(state: WeaveAgentState): Partial<WeaveAgentState> {
+    onProgress?.({ phase: 'finalize-start' });
     const { pendingPlanData, resolvedModel, accumulatedUsage, startTimeMs, request } = state;
 
     if (!request) {
@@ -515,8 +545,10 @@ export function makeFinalizeNode(
  */
 export function makeValidateNode(
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): (state: WeaveAgentState) => Partial<WeaveAgentState> {
   return function validateNode(state: WeaveAgentState): Partial<WeaveAgentState> {
+    onProgress?.({ phase: 'validate-start' });
     const { result, request, repairAttemptCount, modelProfile, startTimeMs } = state;
 
     if (!result || !request) {
@@ -539,6 +571,8 @@ export function makeValidateNode(
         });
       }
 
+      onProgress?.({ phase: 'validate-end', ok: true });
+
       const thought = state.pendingThought || undefined;
       const action = `Proposed Weaver Plan with ${validated.plan.operations.length} operations.`;
       const observation = `Plan successfully validated and ready to apply.`;
@@ -557,6 +591,7 @@ export function makeValidateNode(
     } catch (validationError) {
       const errorMsg =
         validationError instanceof Error ? validationError.message : String(validationError);
+      onProgress?.({ phase: 'validate-end', ok: false });
       const maxRepairs = (modelProfile?.repairStrategy === 'conservative' ? 1 : 2);
       const repairsRemaining = repairAttemptCount < maxRepairs;
       const timeOk =
@@ -602,9 +637,16 @@ export function makeValidateNode(
  */
 export function makeFailNode(
   logger?: WeaveRequestSessionLogger,
+  onProgress?: WeaveProgressCallback,
 ): (state: WeaveAgentState) => Promise<Partial<WeaveAgentState>> {
   return async function failNode(state: WeaveAgentState): Promise<Partial<WeaveAgentState>> {
     const { errorMessage, errorCategory, startTimeMs } = state;
+
+    onProgress?.({
+      phase: 'graph-fail',
+      error: errorMessage ?? 'Unknown error',
+      errorCategory: errorCategory ?? 'provider-error',
+    });
 
     if (logger) {
       void logger.log('node-fail', {

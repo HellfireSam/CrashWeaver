@@ -77,13 +77,14 @@ Implemented under `electron/weaver/`:
 - `weavePlanSchema.ts` — request and result validation, path normalisation, boundary checks
 
 **Context & tools:**
-- `weaveContextService.ts` — context snapshot builder, candidate note scoring, read-only tool runtime (6 tools via registry)
-- `weaveModelProfiles.ts` — single source of truth for model resolution (UI tiers → OpenRouter IDs), structured output config, repair strategy, execution budgets
-- `weaveCostPolicy.ts` — **deprecated** re-export stub; all logic lives in `weaveModelProfiles.ts`
+- `weaveContextService.ts` — context snapshot builder, candidate note scoring (keyword + embedding hybrid), read-only tool runtime (7 tools via registry, including `refresh_candidates`)
+- `weaveModelProfiles.ts` — single source of truth for model resolution (UI tiers → OpenRouter IDs), provider-prefix-based model detection, structured output config, repair strategy, execution budgets
+- `weaverEmbeddingService.ts` — OpenRouter embeddings API client (`text-embedding-3-small`), cosine similarity, embedding cache in `.crashweaver/embeddings.json` with SHA256 content-hash validation
 
-**Observability:**
-- `weaveRequestLogger.ts` — per-session JSONL request logs
+**Observability & history:**
+- `weaveRequestLogger.ts` — per-session JSONL request logs with sensitive-data redaction
 - `weaveTraceCompactor.ts` — ReAct trace compaction for bounded memory
+- `weaverSessionHistory.ts` — session history index from JSONL logs (list/get/delete/clear)
 
 Contracts:
 - `electron/vault-contract.ts` — Weaver request/response types, operation kinds, error categories
@@ -340,10 +341,11 @@ Data governance:
 
 ## 13. Model Selection Policy
 
-Model resolution and profile configuration is centralized in `weaveModelProfiles.ts` (canonical) with a deprecated re-export stub in `weaveCostPolicy.ts`.
+Model resolution and profile configuration is centralized in `weaveModelProfiles.ts` (canonical).
 
 - `resolveModel()` maps UI-tier shortcuts (`cw-fast`, `cw-balanced`, `cw-deep`) to full OpenRouter model IDs, with a safe fallback to `openai/gpt-4o`.
 - `resolveFullModelProfile()` combines model-specific config (structured output mode, repair strategy, system prompt overlay) with per-request execution budgets (max tokens, timeout, temperature, iteration limit).
+- Model family detection uses provider-prefix extraction (`openai/`, `anthropic/`, `google/`, `deepseek/` etc.) rather than fragile regex patterns. Unknown providers safely fall back to `fences_and_braces` + aggressive repair.
 - Strength controls prompt autonomy and request budgets, not model routing.
 - Per-request budget overrides are validated and clamped to safe bounds (`BUDGET_VALIDATION_BOUNDS`).
 - An explicit "disable budget restrictions" toggle lifts all caps while preserving Stage 5 non-destructive safety validation.
@@ -361,7 +363,8 @@ Add guardrails:
 - monthly or weekly budget cap
 - request concurrency cap
 - circuit breaker for repeated provider failures
-- retry with backoff for retryable failures only
+- retry with exponential backoff + full jitter for transient failures (429, 5xx) — up to 2 retries, non-retryable errors (401, timeout, parse failure) pass through immediately
+- model list cache with 30-min TTL survives temporary API outages
 - when budget restrictions are disabled, continue enforcing non-destructive Stage 5 safety validation and output schema constraints
 
 Never log:
@@ -375,6 +378,18 @@ Unit tests:
 - Schema validator rejects malformed plans.
 - Safety validator rejects out-of-vault paths and unknown operations.
 - Model selection honors explicit user choice with a safe fallback.
+- Provider-prefix detection correctly identifies model families (openai, anthropic, google, deepseek, unknown).
+- Cosine similarity computation for embedding-based ranking.
+- Progress callback invocation across all 6 graph node types.
+- HTTP client retry logic for transient errors.
+
+Test files (under `tests/electron/`):
+- `weaveGraphState.test.cjs`, `weaveGraph.test.cjs`, `weaveGraphNodes.test.cjs`
+- `weaveHttpClient.test.cjs`, `openRouterClient.test.cjs`, `stubWeaveProvider.test.cjs`
+- `weavePlanSchema.test.cjs`, `weavePromptBuilder.test.cjs`
+- `weaveModelProfiles.test.cjs`, `weaveContextService.test.cjs`
+- `weaveTraceCompactor.test.cjs`
+- `weaverEmbeddingService.test.cjs` (NEW)
 
 Integration tests:
 - Mock OpenRouter responses for success, invalid JSON, timeout, and auth failure.

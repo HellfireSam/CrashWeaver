@@ -59,6 +59,8 @@ declare global {
       ) => Promise<CrashpadDeletePreferences>;
       generateWeavePlan: (request: WeavePlanRequest) => Promise<WeavePlanResult>;
       checkWeaveProvider: () => Promise<WeaveProviderHealth>;
+      /** Returns true when the stub (offline) provider is active. */
+      isStubWeaveProvider: () => Promise<boolean>;
       listWeaveModels: () => Promise<WeaveModelInfo[]>;
       getWeaverSettings: () => Promise<WeaverSettings>;
       updateWeaverSettings: (updates: Partial<WeaverSettings>) => Promise<WeaverSettings>;
@@ -67,6 +69,16 @@ declare global {
       setWeaverRequestLogsDirectory: (directoryPath: string | null) => Promise<string | null>;
       setWeaverApiKey: (key: string) => Promise<void>;
       clearWeaverApiKey: () => Promise<void>;
+      /** Subscribe to live Weaver plan generation progress. Returns an unsubscribe function. */
+      onWeavePlanProgress: (callback: (event: unknown) => void) => () => void;
+      /** List all past Weaver sessions from the logs directory, newest first. */
+      listWeaverSessions: () => Promise<unknown[]>;
+      /** Get full detail for a single Weaver session by its ID. */
+      getWeaverSession: (sessionId: string) => Promise<unknown | null>;
+      /** Delete a single Weaver session log file. */
+      deleteWeaverSession: (sessionId: string) => Promise<boolean>;
+      /** Delete all Weaver session log files. Returns count of files deleted. */
+      clearWeaverSessions: () => Promise<number>;
     };
   }
 }

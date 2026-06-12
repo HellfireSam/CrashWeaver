@@ -46,10 +46,36 @@ During Part 1, proposal generation may be stub-backed, but the staged output mus
 	- Replaced fragile `while(true)` string-dispatch loop with a `resolveNextStep()` transition table.
 	- Added hard step cap (`MAX_TOTAL_STEPS = 24`) to prevent infinite repair oscillation.
 	- HTTP timeout upgraded from `Promise.race` to `AbortController` for proper request cancellation.
-	- Collapsed `weaveCostPolicy.ts` into `weaveModelProfiles.ts` as the single source of truth for model resolution and budgets.
+	- Collapsed `weaveCostPolicy.ts` into `weaveModelProfiles.ts` as the single source of truth for model resolution and budgets. `weaveCostPolicy.ts` deleted.
 	- Extracted HTTP transport to `weaveHttpClient.ts`; `openRouterClient.ts` now contains only the provider.
 	- Refactored `WeaveContextToolRuntime.execute()` from monolithic switch to a tool handler registry.
 	- Fixed misleading JSDoc in `weaveTraceCompactor.ts` (was claiming SHA256, actually using DJB2).
+	- Added retry with exponential backoff + jitter to `weaveHttpClient.ts` for transient errors (429, 5xx).
+	- Added model list cache with 30-min TTL in `openRouterClient.ts`; cleared on API key changes.
+	- Added `GUIDED_INSERT_OPERATION_SCHEMA_LAYER` in prompts — reduced operation schema (3 ops vs 10) for guided-insert mode, saving ~40% prompt tokens.
+	- Added `refresh_candidates` tool to `WeaveContextToolRuntime` for expanding candidate set at runtime.
+	- Replaced regex-based model detection with provider-prefix parsing (`extractProviderPrefix`) in `weaveModelProfiles.ts`.
+	- Added `WeaveProgressEvent` lifecycle events (11 phases) threaded through graph → provider → IPC → renderer for live progress indication.
+	- Added `weaverSessionHistory.ts` — indexes past Weaver sessions from JSONL logs; supports list/get/delete/clear via IPC.
+	- Added `weaverEmbeddingService.ts` — embedding-based semantic search via OpenRouter's `text-embedding-3-small`; hybrid scoring blends keyword + cosine similarity; embeddings cached in `.crashweaver/embeddings.json` with content-hash validation.
+- Prompt hardening pass:
+	- Added 3-turn worked example (search → read excerpt → finalize) to tool loop protocol.
+	- Removed redundant budget statements from user turn (stated once in system prompt).
+	- Added explicit "when to stop searching" sufficiency heuristics.
+- Frontend UX hardening pass:
+	- Live progress bar during generation with animated dots and phase labels.
+	- Ctrl+Enter keyboard shortcut for generating from intent textarea.
+	- Expand All / Collapse All toggle for ReAct trace inspection.
+	- Provider status fix: shows "Checking…" before first health check, not "Unavailable".
+	- Demo Mode badge when stub provider is active (no API key).
+	- Apply Plan buttons: checkboxes per operation + "Apply Selected (N)" / "Apply All".
+	- CSS custom properties (`--weaver-*`) replacing hardcoded colors.
+	- Guided Insert options hidden in Options dock when Intelligent mode active.
+	- Proper textarea styling with focus state.
+- Test coverage pass:
+	- New: `weaverEmbeddingService.test.cjs` — cosine similarity tests.
+	- Updated: `weaveGraphNodes.test.cjs` — progress callback tests.
+	- Updated: `weaveModelProfiles.test.cjs` — provider-prefix detection tests.
 
 ## Stage Boundary
 

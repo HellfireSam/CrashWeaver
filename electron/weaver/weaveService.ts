@@ -1,9 +1,18 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { net } from 'electron';
 import { StubWeaveProvider } from './stubWeaveProvider';
-import { OpenRouterWeaveProvider } from './openRouterClient';
+import { OpenRouterWeaveProvider, clearModelListCache } from './openRouterClient';
 import { buildWeaveContextSnapshot, type WeaveContextSnapshot } from './weaveContextService';
 import { validateWeavePlanRequest, validateWeavePlanResult } from './weavePlanSchema';
+import {
+  listWeaverSessions,
+  getWeaverSession,
+  deleteWeaverSession,
+  clearWeaverSessions,
+  type WeaverSessionSummary,
+  type WeaverSessionDetail,
+} from './weaverSessionHistory';
 import {
   getOpenRouterApiKeyDecrypted,
   setOpenRouterApiKey,
@@ -15,6 +24,7 @@ import {
   setWeaverRequestLogsDirectory as persistWeaverRequestLogsDirectory,
 } from '../settingsService';
 import type { WeavePlanRequest, WeavePlanResult, WeaveModelProvider, WeaveModelInfo, WeaveProviderHealth, WeaverSettings, WeaverKeyStatus } from '../vault-contract';
+import type { WeaveProgressCallback } from './weaveGraphState';
 
 export type { WeaveModelProvider };
 
@@ -22,7 +32,7 @@ interface InternalWeaveModelProvider {
   generatePlan(
     request: WeavePlanRequest,
     context: WeaveContextSnapshot,
-    options?: { requestLogDirectory?: string },
+    options?: { requestLogDirectory?: string; onProgress?: WeaveProgressCallback },
   ): Promise<WeavePlanResult>;
   healthCheck(): Promise<WeaveProviderHealth>;
   listModels(): Promise<WeaveModelInfo[]>;
@@ -63,19 +73,27 @@ export async function initializeWeaveProvider(): Promise<void> {
   if (apiKey) {
     activeProvider = new OpenRouterWeaveProvider(apiKey, settings.preferredModel);
     console.log('CrashWeaver: Weaver initialized with OpenRouter provider.');
+    // Pre-fetch model list in the background so the picker is warm on first open
+    activeProvider.listModels().catch(() => {});
   } else {
     activeProvider = new StubWeaveProvider();
     console.log('CrashWeaver: Weaver initialized with stub provider (no API key configured).');
   }
 }
 
+export function isStubProviderActive(): boolean {
+  return activeProvider instanceof StubWeaveProvider;
+}
+
 export async function setWeaveApiKey(key: string): Promise<void> {
   await setOpenRouterApiKey(key);
+  clearModelListCache();
   await initializeWeaveProvider();
 }
 
 export async function clearWeaveApiKey(): Promise<void> {
   await clearOpenRouterApiKey();
+  clearModelListCache();
   await initializeWeaveProvider();
 }
 
@@ -110,7 +128,10 @@ export async function listWeaveModels() {
   return activeProvider.listModels();
 }
 
-export async function generateWeavePlan(request: WeavePlanRequest) {
+export async function generateWeavePlan(
+  request: WeavePlanRequest,
+  onProgress?: WeaveProgressCallback,
+) {
   const validatedRequest = validateWeavePlanRequest(request);
   const resolvedRoot = await assertVaultRoot(validatedRequest.rootPath);
   const configuredLogsDirectory = await getWeaverRequestLogsDirectory();
@@ -119,8 +140,27 @@ export async function generateWeavePlan(request: WeavePlanRequest) {
     ...validatedRequest,
     rootPath: resolvedRoot,
   };
-  const context = await buildWeaveContextSnapshot(normalizedRequest);
-  const result = await activeProvider.generatePlan(normalizedRequest, context, { requestLogDirectory });
+
+  // Attempt to enrich context with embeddings if an API key is configured
+  let embeddingOptions: import('./weaveContextService').BuildWeaveContextOptions['embedding'] | undefined;
+  try {
+    const apiKey = await getOpenRouterApiKeyDecrypted();
+    if (apiKey) {
+      embeddingOptions = {
+        apiKey,
+        fetchImpl: net.fetch.bind(net),
+        appUrl: 'https://github.com/crashweaver/app',
+      };
+    }
+  } catch {
+    // No API key configured — embeddings are unavailable, keyword ranking only
+  }
+
+  const context = await buildWeaveContextSnapshot(normalizedRequest, embeddingOptions ? { embedding: embeddingOptions } : undefined);
+  const result = await activeProvider.generatePlan(normalizedRequest, context, {
+    requestLogDirectory,
+    onProgress,
+  });
   return validateWeavePlanResult(result, {
     ...validatedRequest,
     rootPath: resolvedRoot,
@@ -129,4 +169,39 @@ export async function generateWeavePlan(request: WeavePlanRequest) {
 
 export function checkWeaveProvider() {
   return activeProvider.healthCheck();
+}
+
+// ── Session history ───────────────────────────────────────────────────────────
+
+export type { WeaverSessionSummary, WeaverSessionDetail } from './weaverSessionHistory';
+
+async function resolveSessionLogsDirectory(): Promise<string | null> {
+  const configuredDirectory = await getWeaverRequestLogsDirectory();
+  if (configuredDirectory) return configuredDirectory;
+  // If no explicit logs directory is configured, sessions are not available
+  return null;
+}
+
+export async function listSessions(): Promise<WeaverSessionSummary[]> {
+  const logsDir = await resolveSessionLogsDirectory();
+  if (!logsDir) return [];
+  return listWeaverSessions(logsDir);
+}
+
+export async function getSession(sessionId: string): Promise<WeaverSessionDetail | null> {
+  const logsDir = await resolveSessionLogsDirectory();
+  if (!logsDir) return null;
+  return getWeaverSession(logsDir, sessionId);
+}
+
+export async function deleteSession(sessionId: string): Promise<boolean> {
+  const logsDir = await resolveSessionLogsDirectory();
+  if (!logsDir) return false;
+  return deleteWeaverSession(logsDir, sessionId);
+}
+
+export async function clearSessions(): Promise<number> {
+  const logsDir = await resolveSessionLogsDirectory();
+  if (!logsDir) return 0;
+  return clearWeaverSessions(logsDir);
 }

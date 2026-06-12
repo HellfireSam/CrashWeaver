@@ -23,6 +23,9 @@ import type { WeaveContextSnapshot } from './weaveContextService';
 import type { WeaveFullModelProfile } from './weaveModelProfiles';
 import type { WeaveEffectiveBudget } from './weaveGraph';
 
+/** The request kind needed to select the right operation schema layer. */
+export type WeavePromptRequestKind = WeavePlanRequest['kind'];
+
 // ── LAYER 1: TASK CONTRACT ────────────────────────────────────────────────────
 
 export const TASK_CONTRACT_LAYER = `# TASK CONTRACT
@@ -130,6 +133,71 @@ These invariants prevent avoidable repair loops:
   "rationale": "Moves networking content to a more discoverable location."
 }`.trim();
 
+// ── LAYER 3b: GUIDED-INSERT OPERATION SCHEMA (reduced) ───────────────────────
+
+/**
+ * Stripped-down operation schema for guided-insert requests.
+ * Only includes the three operations that guided-insert is allowed to emit:
+ * insert-boundary-pair, edit-note-content, and create-note.
+ *
+ * This saves ~40% of the operation schema tokens compared to the full
+ * intelligent-mode schema, which lists all 10 operation kinds.
+ */
+export const GUIDED_INSERT_OPERATION_SCHEMA_LAYER = `# AVAILABLE OPERATIONS (guided-insert mode)
+
+You are in guided-insert mode. Only the three operations below are allowed.
+Any other operation kind will be rejected by schema validation.
+
+Vault note operations (targetPath must point to a .md file inside the vault):
+  insert-boundary-pair  — Insert the focused card boundary pair into an existing note
+    payload: { cardUid, placement, boundaryBlock, headingText?, selectedText? }
+    placement values: append-to-note | prepend-to-note | after-heading | before-heading | after-selection
+  edit-note-content     — Propose deterministic prose edits to a note
+    payload: { action, targetText, replacementMarkdown }
+    action values: replace-selection | replace-heading-section | insert-before-heading | insert-after-heading
+  create-note           — Propose a new note with real markdown prose and an embedded boundary pair
+    payload: { cardUid, title, content }
+
+Each operation object shape:
+{
+  "kind": "<operation kind>",
+  "targetPath": "<vault-relative path, no leading slash, no ..>",
+  "payload": { <operation-specific fields> },
+  "rationale": "<one-sentence justification>"
+}
+
+# OPERATION INVARIANTS
+
+- For insert-boundary-pair: boundaryBlock field must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers with no extra text.
+- For create-note: content field must include the boundary pair markers PLUS substantive markdown (at least 20 chars of prose after removing markers).
+- All payload.cardUid values must exactly match the focused card UID from the request.
+
+# CANONICAL EXAMPLES
+
+**Example 1: insert-boundary-pair to append into existing note**
+{
+  "kind": "insert-boundary-pair",
+  "targetPath": "notes/learning.md",
+  "payload": {
+    "cardUid": "CW-001",
+    "placement": "append-to-note",
+    "boundaryBlock": "%%CW_CARD_START uid:CW-001%%\\nKey learning point\\n%%CW_CARD_END uid:CW-001%%"
+  },
+  "rationale": "Appends the focused card to the existing learning note for reference."
+}
+
+**Example 2: create-note with boundary pair and substance**
+{
+  "kind": "create-note",
+  "targetPath": "notes/design-patterns/observer.md",
+  "payload": {
+    "cardUid": "CW-002",
+    "title": "Observer Pattern",
+    "content": "# Observer Pattern\\n\\n%%CW_CARD_START uid:CW-002%%\\nStructural pattern that defines a one-to-many dependency.\\n%%CW_CARD_END uid:CW-002%%\\n\\n## Use Cases\\n- Event handling"
+  },
+  "rationale": "Creates a new note with the observer card as the focal point."
+}`.trim();
+
 // ── LAYER 4: OUTPUT FORMAT SCHEMA ─────────────────────────────────────────────
 
 export const OUTPUT_FORMAT_LAYER = `# OUTPUT FORMAT
@@ -188,12 +256,51 @@ Available tools for toolName:
   - read_note_excerpt (arguments: { filePath, maxChars? })
   - read_note_full (arguments: { filePath, maxChars? })
   - read_note_span (arguments: { filePath, startAnchor, endAnchor, maxChars? })
+  - refresh_candidates (arguments: {}) — expands the candidate note set with lower-ranked notes from the vault. Use when the initial candidates don't cover what you need. Can only be called once per session.
 
 Tool constraints:
 - Tools are strictly read-only. Never request write-capable tools.
 - Request at most one tool per turn.
 - If a tool result reports budget exhaustion or unavailability, adapt and finalize with conservative warnings.
-- If the pre-loaded context is already sufficient, skip tools and output type="final" immediately.`.trim();
+- If the pre-loaded context is already sufficient, skip tools and output type="final" immediately.
+
+# WHEN TO STOP SEARCHING AND FINALIZE
+Do not exhaust the tool budget just to be thorough. Finalize when:
+  - You have found 2+ candidate notes that clearly serve as insertion targets with matching topics.
+  - You have read enough note content to justify a concrete operation (insert, edit, or create).
+  - Further tool calls would only confirm what you already know.
+  - The remaining tool budget is 1 call or fewer — reserve it for a critical read if needed.
+
+# WORKED EXAMPLE (multi-turn tool loop)
+
+**Turn 1 — Assistant requests a tool:**
+{
+  "type": "tool",
+  "thought": "The candidate notes list includes several networking files. I need to check which one mentions TCP to decide the best insertion point.",
+  "toolName": "search_notes",
+  "arguments": { "query": "TCP handshake", "limit": 5 }
+}
+
+**Turn 1 — System returns observation:**
+Status: SUCCESS. Found 2 notes matching \"TCP handshake\": notes/networking.md (score 248.00), concepts/protocols.md (score 185.00).
+
+**Turn 2 — Assistant reads a specific note:**
+{
+  "type": "tool",
+  "thought": "notes/networking.md scored highest. I'll read an excerpt to confirm it's a good insertion target for the TCP card.",
+  "toolName": "read_note_excerpt",
+  "arguments": { "filePath": "notes/networking.md", "maxChars": 1400 }
+}
+
+**Turn 2 — System returns excerpt:**
+The note covers OSI layers, TCP flags, and connection lifecycle. A section heading \"## Transport Layer\" exists.
+
+**Turn 3 — Assistant finalizes (sufficient evidence gathered):**
+{
+  "type": "final",
+  "thought": "notes/networking.md has a relevant Transport Layer section where the TCP handshake card fits naturally. One insert-boundary-pair operation is sufficient.",
+  "plan": { "kind": "guided-insert", ... }
+}`.trim();
 }
 
 // ── LAYER 6: MODEL OVERLAY (dynamic) ─────────────────────────────────────────
@@ -206,19 +313,31 @@ export function buildModelOverlayLayer(profile: WeaveFullModelProfile): string {
 // ── FULL SYSTEM PROMPT ────────────────────────────────────────────────────────
 
 /**
- * Composes the full system prompt from all layers for a given model profile
- * and maximum tool call count.
+ * Composes the full system prompt from all layers for a given model profile,
+ * request kind, and tool-call budget.
+ *
+ * For guided-insert requests, a reduced operation schema is used that only
+ * lists the three allowed operations (insert-boundary-pair, edit-note-content,
+ * create-note).  This saves ~40% of the operation-schema token cost and
+ * prevents the model from hallucinating unsupported operation kinds that
+ * would be rejected at schema validation time.
  */
 export function buildSystemPrompt(
   profile: WeaveFullModelProfile,
+  requestKind: WeavePromptRequestKind,
   maxToolCalls: number,
   maxNoteReads?: number,
   maxRetrievedChars?: number,
 ): string {
+  const operationSchema =
+    requestKind === 'guided-insert'
+      ? GUIDED_INSERT_OPERATION_SCHEMA_LAYER
+      : OPERATION_SCHEMA_LAYER;
+
   const layers: string[] = [
     TASK_CONTRACT_LAYER,
     SAFETY_POLICY_LAYER,
-    OPERATION_SCHEMA_LAYER,
+    operationSchema,
     OUTPUT_FORMAT_LAYER,
     buildToolLoopLayer(maxToolCalls, maxNoteReads, maxRetrievedChars),
   ];
@@ -397,21 +516,11 @@ export function buildContextLayer(snapshot: WeaveContextSnapshot): string {
 export function buildInitialUserTurn(
   request: WeavePlanRequest,
   snapshot: WeaveContextSnapshot,
-  effectiveBudget: WeaveEffectiveBudget,
+  _effectiveBudget: WeaveEffectiveBudget,
 ): string {
+  // Budget limits are already stated in the system prompt's TOOL LOOP layer.
+  // The user turn focuses on the request and context only — no redundant budget repetition.
   const sections = [buildRequestSpecification(request), buildContextLayer(snapshot)];
-  const maxNoteReads = effectiveBudget.runtimeNoteReads;
-  const maxToolCalls = effectiveBudget.promptToolCalls;
-  const maxRetrievedChars = effectiveBudget.maxRetrievedChars;
-
-  sections.push(
-    maxToolCalls > 0
-      ? `You have ${maxToolCalls} read-only tool call${maxToolCalls === 1 ? '' : 's'} available. ` +
-          `Runtime note-read budget is ${maxNoteReads} for note-reading tools. ` +
-          `Total retrieval budget is ${maxRetrievedChars} chars across note reads. ` +
-          'Start with a tool request if you need more context, or respond with type="final" immediately if sufficient.'
-      : 'No tool calls are available for this request. Respond with type="final" using only the context above.',
-  );
 
   return sections.join('\n\n');
 }

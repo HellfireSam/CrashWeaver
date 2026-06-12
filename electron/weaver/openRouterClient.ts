@@ -16,6 +16,7 @@ import type {
   WeaveModelInfo,
   WeaveProviderHealth,
 } from '../vault-contract';
+import type { WeaveProgressCallback } from './weaveGraphState';
 import { getWeaverSettings } from '../settingsService';
 import { resolveModel, resolveFullModelProfile } from './weaveModelProfiles';
 import { OpenRouterHttpClient } from './weaveHttpClient';
@@ -28,6 +29,37 @@ import { resolveWeaveEffectiveBudget, runWeaveGraph } from './weaveGraph';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
+// ── Model list cache ─────────────────────────────────────────────────────────
+
+const MODEL_LIST_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface ModelListCacheEntry {
+  models: WeaveModelInfo[];
+  fetchedAt: number;
+}
+
+let modelListCache: ModelListCacheEntry | null = null;
+
+function getCachedModelList(now: number): WeaveModelInfo[] | null {
+  if (!modelListCache) return null;
+  if (now - modelListCache.fetchedAt > MODEL_LIST_CACHE_TTL_MS) {
+    modelListCache = null;
+    return null;
+  }
+  return modelListCache.models;
+}
+
+function setCachedModelList(models: WeaveModelInfo[], now: number): void {
+  modelListCache = { models, fetchedAt: now };
+}
+
+/** Clears the model list cache (useful after API key changes). */
+export function clearModelListCache(): void {
+  modelListCache = null;
+}
+
+// ── Provider ─────────────────────────────────────────────────────────────────
+
 type OpenRouterFetch = typeof net.fetch;
 
 interface OpenRouterDependencies {
@@ -37,6 +69,7 @@ interface OpenRouterDependencies {
 
 interface OpenRouterPlanOptions {
   requestLogDirectory?: string;
+  onProgress?: WeaveProgressCallback;
 }
 
 // ── OpenRouter Weave Provider ─────────────────────────────────────────────────
@@ -72,7 +105,13 @@ export class OpenRouterWeaveProvider {
     const resolvedModelId = resolveModel(request.preferredModel, this.preferredModel);
     const settings = await getWeaverSettings();
     const modelProfile = resolveFullModelProfile(resolvedModelId, request, settings);
-    const toolRuntime = createWeaveContextToolRuntime(context);
+    const toolRuntime = createWeaveContextToolRuntime(
+      context,
+      undefined,
+      context._searchTokens && context._anchorPaths
+        ? { tokens: context._searchTokens, anchorPaths: context._anchorPaths }
+        : undefined,
+    );
     const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, context);
 
     let sessionLogger: WeaveRequestSessionLogger | undefined;
@@ -114,6 +153,7 @@ export class OpenRouterWeaveProvider {
       httpClient,
       toolRuntime,
       sessionLogger,
+      options?.onProgress,
     );
   }
 
@@ -179,6 +219,10 @@ export class OpenRouterWeaveProvider {
   }
 
   async listModels(): Promise<WeaveModelInfo[]> {
+    const now = this.now();
+    const cached = getCachedModelList(now);
+    if (cached) return cached;
+
     interface OpenRouterModelEntry {
       id: string;
       name?: string;
@@ -210,7 +254,7 @@ export class OpenRouterWeaveProvider {
       const data = (await response.json()) as { data?: OpenRouterModelEntry[] };
       const entries = data?.data ?? [];
 
-      return entries
+      const models = entries
         .filter(
           (m): m is OpenRouterModelEntry & { id: string } =>
             typeof m.id === 'string' && m.id.trim() !== '',
@@ -230,8 +274,12 @@ export class OpenRouterWeaveProvider {
           if (a.isFree !== b.isFree) return a.isFree ? -1 : 1;
           return a.name.localeCompare(b.name);
         });
+
+      setCachedModelList(models, this.now());
+      return models;
     } catch {
-      return [];
+      // On failure, return cached models even if stale as a fallback
+      return modelListCache?.models ?? [];
     }
   }
 }

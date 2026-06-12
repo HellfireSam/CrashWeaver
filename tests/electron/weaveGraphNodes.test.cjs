@@ -485,3 +485,132 @@ test('failNode preserves explicit error category and message', async () => {
   assert.equal(updates.errorCategory, 'auth-error');
   assert.equal(updates.errorMessage, 'Custom auth failure');
 });
+
+// ── Progress callback ────────────────────────────────────────────────────────
+
+test('callModel invokes onProgress with parsedAs=tool when tool action returned', async () => {
+  let lastEvent = null;
+  const onProgress = (event) => { lastEvent = event; };
+
+  const node = makeCallModelNode(
+    makeHttpClientWithContent(
+      JSON.stringify({
+        type: 'tool',
+        thought: 'Need context',
+        toolName: 'list_candidate_notes',
+        arguments: { limit: 3 },
+      }),
+    ),
+    undefined,
+    onProgress,
+  );
+
+  await node(makeBaseState());
+
+  assert.ok(lastEvent, 'onProgress should have been called');
+  assert.equal(lastEvent.phase, 'call-model-end');
+  assert.equal(lastEvent.parsedAs, 'tool');
+});
+
+test('callModel invokes onProgress with parsedAs=final when final action returned', async () => {
+  let lastEvent = null;
+  const onProgress = (event) => { lastEvent = event; };
+
+  const node = makeCallModelNode(
+    makeHttpClientWithContent(
+      JSON.stringify({
+        type: 'final',
+        thought: 'Done',
+        plan: { kind: 'guided-insert', operations: [] },
+      }),
+    ),
+    undefined,
+    onProgress,
+  );
+
+  await node(makeBaseState());
+
+  assert.equal(lastEvent.phase, 'call-model-end');
+  assert.equal(lastEvent.parsedAs, 'final');
+});
+
+test('executeTool invokes onProgress with start and end events', async () => {
+  const events = [];
+  const onProgress = (event) => { events.push(event); };
+
+  const executeTool = makeExecuteToolNode(
+    {
+      async execute() {
+        return { ok: true, toolName: 'list_candidate_notes', usage: {}, data: {} };
+      },
+    },
+    undefined,
+    onProgress,
+  );
+
+  await executeTool({
+    pendingToolName: 'list_candidate_notes',
+    pendingToolArgs: {},
+    pendingThought: null,
+    toolCallCount: 0,
+    modelProfile: { iterationLimit: 2 },
+  });
+
+  assert.equal(events.length, 2);
+  assert.equal(events[0].phase, 'execute-tool-start');
+  assert.equal(events[0].toolName, 'list_candidate_notes');
+  assert.equal(events[1].phase, 'execute-tool-end');
+  assert.equal(events[1].ok, true);
+});
+
+test('repair node invokes onProgress with repair type', () => {
+  let lastEvent = null;
+  const onProgress = (event) => { lastEvent = event; };
+
+  const repair = makeRepairNode(undefined, onProgress);
+
+  repair({
+    pendingRoute: 'repair-syntactic',
+    repairAttemptCount: 0,
+    errorMessage: null,
+  });
+
+  assert.equal(lastEvent.phase, 'repair');
+  assert.equal(lastEvent.repairType, 'repair-syntactic');
+  assert.equal(lastEvent.repairAttempt, 1);
+});
+
+test('finalize node invokes onProgress with finalize-start', () => {
+  let lastEvent = null;
+  const onProgress = (event) => { lastEvent = event; };
+
+  const finalize = makeFinalizeNode(undefined, onProgress);
+  const startTime = Date.now() - 1000;
+
+  finalize({
+    pendingPlanData: { kind: 'guided-insert', operations: [] },
+    resolvedModel: 'test-model',
+    accumulatedUsage: undefined,
+    startTimeMs: startTime,
+    request: { kind: 'guided-insert', cardUid: 'CW-001' },
+  });
+
+  assert.equal(lastEvent.phase, 'finalize-start');
+});
+
+test('fail node invokes onProgress with graph-fail', async () => {
+  let lastEvent = null;
+  const onProgress = (event) => { lastEvent = event; };
+
+  const fail = makeFailNode(undefined, onProgress);
+
+  await fail({
+    errorMessage: 'Something broke',
+    errorCategory: 'provider-error',
+    startTimeMs: Date.now() - 2000,
+  });
+
+  assert.equal(lastEvent.phase, 'graph-fail');
+  assert.equal(lastEvent.error, 'Something broke');
+  assert.equal(lastEvent.errorCategory, 'provider-error');
+});
