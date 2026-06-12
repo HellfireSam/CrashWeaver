@@ -11,6 +11,7 @@ import type {
   WeavePlanRequest,
   WeavePlanResult,
   WeaveStrength,
+  WeaverSettings,
 } from '../vault-contract';
 
 const VALID_KINDS = new Set<WeaveKind>(['guided-insert', 'intelligent']);
@@ -54,8 +55,37 @@ const VALID_NOTE_EDIT_ACTIONS = new Set<WeaveNoteEditAction>([
   'insert-before-heading',
   'insert-after-heading',
 ]);
-const DEFAULT_MAX_OPERATIONS = 8;
+const DEFAULT_MAX_OPERATIONS_GUIDED = 8;
+const DEFAULT_MAX_OPERATIONS_BY_STRENGTH: Record<WeaveStrength, number> = {
+  light: 6,
+  standard: 10,
+  'go-ham': 16,
+};
 const MAX_ALLOWED_OPERATIONS = 20;
+
+/**
+ * Resolves the effective max operation count for a request.
+ * Checks user settings first, falls back to strength-scaled defaults.
+ */
+export function resolveDefaultMaxOperations(
+  request: WeavePlanRequest,
+  settings?: WeaverSettings | null,
+): number {
+  if (request.kind === 'guided-insert') {
+    return settings?.guidedInsertMaxOperations ?? DEFAULT_MAX_OPERATIONS_GUIDED;
+  }
+  const strength = request.strength;
+  switch (strength) {
+    case 'light':
+      return settings?.intelligentLightMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH.light;
+    case 'standard':
+      return settings?.intelligentStandardMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH.standard;
+    case 'go-ham':
+      return settings?.intelligentGoHamMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH['go-ham'];
+    default:
+      return DEFAULT_MAX_OPERATIONS_GUIDED;
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -563,7 +593,7 @@ function validateOperation(operation: unknown, request: WeavePlanRequest): Weave
   }
 }
 
-function validatePlan(plan: unknown, request: WeavePlanRequest): WeavePlan {
+function validatePlan(plan: unknown, request: WeavePlanRequest, settings?: WeaverSettings | null): WeavePlan {
   if (!isRecord(plan)) {
     throw new Error('Weaver plan must be an object.');
   }
@@ -578,7 +608,7 @@ function validatePlan(plan: unknown, request: WeavePlanRequest): WeavePlan {
     throw new Error('Weaver plans must include at least one operation.');
   }
 
-  if (plan.operations.length > (request.maxOperations ?? DEFAULT_MAX_OPERATIONS)) {
+  if (plan.operations.length > (request.maxOperations ?? resolveDefaultMaxOperations(request, settings))) {
     throw new Error('Weaver plan exceeded the maximum operation count.');
   }
 
@@ -623,7 +653,10 @@ function validatePlan(plan: unknown, request: WeavePlanRequest): WeavePlan {
   };
 }
 
-export function validateWeavePlanRequest(request: WeavePlanRequest): WeavePlanRequest {
+export function validateWeavePlanRequest(
+  request: WeavePlanRequest,
+  settings?: WeaverSettings | null,
+): WeavePlanRequest {
   const rootPath = typeof request.rootPath === 'string' ? request.rootPath.trim() : '';
 
   if (!rootPath) {
@@ -637,7 +670,7 @@ export function validateWeavePlanRequest(request: WeavePlanRequest): WeavePlanRe
   }
 
   const cardUid = normalizeCardUid(request.cardUid, 'Weaver cardUid');
-  const maxOperations = Math.min(MAX_ALLOWED_OPERATIONS, Math.max(1, Math.trunc(request.maxOperations ?? DEFAULT_MAX_OPERATIONS)));
+  const maxOperations = Math.min(MAX_ALLOWED_OPERATIONS, Math.max(1, Math.trunc(request.maxOperations ?? resolveDefaultMaxOperations(request, settings))));
   const preferredModel = normalizeOptionalString(request.preferredModel);
   const activeNotePath = request.activeNotePath
     ? normalizeVaultRelativePath(rootPath, request.activeNotePath, { noteOnly: true })
@@ -686,7 +719,11 @@ export function validateWeavePlanRequest(request: WeavePlanRequest): WeavePlanRe
   };
 }
 
-export function validateWeavePlanResult(result: WeavePlanResult, request: WeavePlanRequest): WeavePlanResult {
+export function validateWeavePlanResult(
+  result: WeavePlanResult,
+  request: WeavePlanRequest,
+  settings?: WeaverSettings | null,
+): WeavePlanResult {
   if (!isRecord(result)) {
     throw new Error('Weaver result must be an object.');
   }
@@ -704,7 +741,7 @@ export function validateWeavePlanResult(result: WeavePlanResult, request: WeaveP
   }
 
   return {
-    plan: validatePlan(result.plan, request),
+    plan: validatePlan(result.plan, request, settings),
     model: result.model.trim(),
     provider: result.provider,
     usage: result.usage,

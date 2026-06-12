@@ -132,7 +132,8 @@ export async function generateWeavePlan(
   request: WeavePlanRequest,
   onProgress?: WeaveProgressCallback,
 ) {
-  const validatedRequest = validateWeavePlanRequest(request);
+  const settings = await getWeaverSettings();
+  const validatedRequest = validateWeavePlanRequest(request, settings);
   const resolvedRoot = await assertVaultRoot(validatedRequest.rootPath);
   const configuredLogsDirectory = await getWeaverRequestLogsDirectory();
   const requestLogDirectory = configuredLogsDirectory ?? path.join(resolvedRoot, '.crashweaver', 'weaver-request-logs');
@@ -161,10 +162,7 @@ export async function generateWeavePlan(
     requestLogDirectory,
     onProgress,
   });
-  return validateWeavePlanResult(result, {
-    ...validatedRequest,
-    rootPath: resolvedRoot,
-  });
+  return validateWeavePlanResult(result, normalizedRequest, settings);
 }
 
 export function checkWeaveProvider() {

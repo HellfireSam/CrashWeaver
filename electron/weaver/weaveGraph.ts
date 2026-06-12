@@ -168,6 +168,7 @@ export async function runWeaveGraph(
   toolRuntime: WeaveContextToolRuntime,
   logger?: WeaveRequestSessionLogger,
   onProgress?: WeaveProgressCallback,
+  settings?: import('../vault-contract').WeaverSettings | null,
 ): Promise<WeavePlanResult> {
   const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
 
@@ -182,7 +183,7 @@ export async function runWeaveGraph(
       ),
     ),
     userMsg(
-      buildInitialUserTurn(request, contextSnapshot, effectiveBudget),
+      buildInitialUserTurn(request, contextSnapshot, effectiveBudget, settings),
     ),
   ];
 

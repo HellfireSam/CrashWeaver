@@ -18,10 +18,11 @@
  *  10. REPAIR MESSAGES     — targeted correction prompts (dynamic: error type)
  */
 
-import type { WeavePlanRequest, WeaveStrength } from '../vault-contract';
+import type { WeavePlanRequest, WeaveStrength, WeaverSettings } from '../vault-contract';
 import type { WeaveContextSnapshot } from './weaveContextService';
 import type { WeaveFullModelProfile } from './weaveModelProfiles';
 import type { WeaveEffectiveBudget } from './weaveGraph';
+import { resolveDefaultMaxOperations } from './weavePlanSchema';
 
 /** The request kind needed to select the right operation schema layer. */
 export type WeavePromptRequestKind = WeavePlanRequest['kind'];
@@ -377,12 +378,15 @@ function getStrengthDescription(strength: WeaveStrength): string {
  * Describes what kind of planning is requested, what permissions apply,
  * and what the user intends.
  */
-export function buildRequestSpecification(request: WeavePlanRequest): string {
+export function buildRequestSpecification(
+  request: WeavePlanRequest,
+  settings?: WeaverSettings | null,
+): string {
   const lines: string[] = ['# REQUEST SPECIFICATION'];
 
   lines.push(`Kind: ${request.kind}`);
   lines.push(`Focused card UID: ${request.cardUid}`);
-  lines.push(`Max operations: ${request.maxOperations ?? 8}`);
+  lines.push(`Max operations: ${request.maxOperations ?? resolveDefaultMaxOperations(request, settings)}`);
 
   if (request.kind === 'guided-insert') {
     const editAllowed = request.permissions.editContent ? 'ALLOWED' : 'FORBIDDEN';
@@ -517,10 +521,11 @@ export function buildInitialUserTurn(
   request: WeavePlanRequest,
   snapshot: WeaveContextSnapshot,
   _effectiveBudget: WeaveEffectiveBudget,
+  settings?: WeaverSettings | null,
 ): string {
   // Budget limits are already stated in the system prompt's TOOL LOOP layer.
   // The user turn focuses on the request and context only — no redundant budget repetition.
-  const sections = [buildRequestSpecification(request), buildContextLayer(snapshot)];
+  const sections = [buildRequestSpecification(request, settings), buildContextLayer(snapshot)];
 
   return sections.join('\n\n');
 }

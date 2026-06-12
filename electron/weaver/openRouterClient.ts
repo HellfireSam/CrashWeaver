@@ -154,6 +154,7 @@ export class OpenRouterWeaveProvider {
       toolRuntime,
       sessionLogger,
       options?.onProgress,
+      settings,
     );
   }
 

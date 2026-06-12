@@ -27,6 +27,10 @@ interface PersistedSettings {
   weaverIntelligentGoHamMaxTokens?: number;
   weaverIntelligentGoHamTimeoutMs?: number;
   weaverIntelligentGoHamIterationLimit?: number;
+  weaverGuidedInsertMaxOperations?: number;
+  weaverIntelligentLightMaxOperations?: number;
+  weaverIntelligentStandardMaxOperations?: number;
+  weaverIntelligentGoHamMaxOperations?: number;
 }
 
 const WEAVER_BUDGET_BOUNDS = {
@@ -36,6 +40,8 @@ const WEAVER_BUDGET_BOUNDS = {
   maxTimeoutMs: 600_000,
   minIterations: 1,
   maxIterations: 20,
+  minOperations: 1,
+  maxOperations: 20,
 } as const;
 
 function normalizeBoundedNumber(
@@ -200,6 +206,14 @@ async function readSettings(): Promise<PersistedSettings> {
         typeof parsed.weaverIntelligentGoHamTimeoutMs === 'number' ? parsed.weaverIntelligentGoHamTimeoutMs : undefined,
       weaverIntelligentGoHamIterationLimit:
         typeof parsed.weaverIntelligentGoHamIterationLimit === 'number' ? parsed.weaverIntelligentGoHamIterationLimit : undefined,
+      weaverGuidedInsertMaxOperations:
+        typeof parsed.weaverGuidedInsertMaxOperations === 'number' ? parsed.weaverGuidedInsertMaxOperations : undefined,
+      weaverIntelligentLightMaxOperations:
+        typeof parsed.weaverIntelligentLightMaxOperations === 'number' ? parsed.weaverIntelligentLightMaxOperations : undefined,
+      weaverIntelligentStandardMaxOperations:
+        typeof parsed.weaverIntelligentStandardMaxOperations === 'number' ? parsed.weaverIntelligentStandardMaxOperations : undefined,
+      weaverIntelligentGoHamMaxOperations:
+        typeof parsed.weaverIntelligentGoHamMaxOperations === 'number' ? parsed.weaverIntelligentGoHamMaxOperations : undefined,
     };
   } catch (error) {
     const code = getFsErrorCode(error);
@@ -402,6 +416,18 @@ function buildWeaverSettingsResponse(settings: PersistedSettings): WeaverSetting
   if (settings.weaverIntelligentGoHamIterationLimit !== undefined) {
     result.intelligentGoHamIterationLimit = settings.weaverIntelligentGoHamIterationLimit;
   }
+  if (settings.weaverGuidedInsertMaxOperations !== undefined) {
+    result.guidedInsertMaxOperations = settings.weaverGuidedInsertMaxOperations;
+  }
+  if (settings.weaverIntelligentLightMaxOperations !== undefined) {
+    result.intelligentLightMaxOperations = settings.weaverIntelligentLightMaxOperations;
+  }
+  if (settings.weaverIntelligentStandardMaxOperations !== undefined) {
+    result.intelligentStandardMaxOperations = settings.weaverIntelligentStandardMaxOperations;
+  }
+  if (settings.weaverIntelligentGoHamMaxOperations !== undefined) {
+    result.intelligentGoHamMaxOperations = settings.weaverIntelligentGoHamMaxOperations;
+  }
 
   return result;
 }
@@ -532,6 +558,38 @@ export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Pr
         'intelligentGoHamIterationLimit',
         WEAVER_BUDGET_BOUNDS.minIterations,
         WEAVER_BUDGET_BOUNDS.maxIterations,
+      );
+    }
+    if (updates.guidedInsertMaxOperations !== undefined) {
+      settings.weaverGuidedInsertMaxOperations = normalizeBoundedNumber(
+        updates.guidedInsertMaxOperations,
+        'guidedInsertMaxOperations',
+        WEAVER_BUDGET_BOUNDS.minOperations,
+        WEAVER_BUDGET_BOUNDS.maxOperations,
+      );
+    }
+    if (updates.intelligentLightMaxOperations !== undefined) {
+      settings.weaverIntelligentLightMaxOperations = normalizeBoundedNumber(
+        updates.intelligentLightMaxOperations,
+        'intelligentLightMaxOperations',
+        WEAVER_BUDGET_BOUNDS.minOperations,
+        WEAVER_BUDGET_BOUNDS.maxOperations,
+      );
+    }
+    if (updates.intelligentStandardMaxOperations !== undefined) {
+      settings.weaverIntelligentStandardMaxOperations = normalizeBoundedNumber(
+        updates.intelligentStandardMaxOperations,
+        'intelligentStandardMaxOperations',
+        WEAVER_BUDGET_BOUNDS.minOperations,
+        WEAVER_BUDGET_BOUNDS.maxOperations,
+      );
+    }
+    if (updates.intelligentGoHamMaxOperations !== undefined) {
+      settings.weaverIntelligentGoHamMaxOperations = normalizeBoundedNumber(
+        updates.intelligentGoHamMaxOperations,
+        'intelligentGoHamMaxOperations',
+        WEAVER_BUDGET_BOUNDS.minOperations,
+        WEAVER_BUDGET_BOUNDS.maxOperations,
       );
     }
 

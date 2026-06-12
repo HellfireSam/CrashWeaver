@@ -464,6 +464,10 @@ export interface WeaverSettings {
   intelligentGoHamMaxTokens?: number;
   intelligentGoHamTimeoutMs?: number;
   intelligentGoHamIterationLimit?: number;
+  guidedInsertMaxOperations?: number;
+  intelligentLightMaxOperations?: number;
+  intelligentStandardMaxOperations?: number;
+  intelligentGoHamMaxOperations?: number;
 }
 
 export interface WeaverKeyStatus {

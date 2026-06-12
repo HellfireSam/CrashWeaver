@@ -476,6 +476,66 @@ export function SettingsModal({
                           />
                         </div>
                       </div>
+
+                      {/* Max Operations Settings */}
+                      <div style={{ marginTop: '0.4rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-soft)' }}>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 0.5rem' }}>Max Plan Operations (1–20)</p>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Limits how many operations a generated plan may contain. Higher values allow more complex restructuring proposals.</p>
+                        <div style={{ display: 'grid', gap: '0.45rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Guided Insert</span>
+                            <input
+                              className="notePathInput"
+                              style={{ flex: 1, minWidth: 0 }}
+                              type="number"
+                              placeholder="8"
+                              min="1"
+                              max="20"
+                              value={weaverSettings?.guidedInsertMaxOperations ?? ''}
+                              onChange={(e) => void onUpdateWeaverSettings({ guidedInsertMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Light</span>
+                            <input
+                              className="notePathInput"
+                              style={{ flex: 1, minWidth: 0 }}
+                              type="number"
+                              placeholder="6"
+                              min="1"
+                              max="20"
+                              value={weaverSettings?.intelligentLightMaxOperations ?? ''}
+                              onChange={(e) => void onUpdateWeaverSettings({ intelligentLightMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Standard</span>
+                            <input
+                              className="notePathInput"
+                              style={{ flex: 1, minWidth: 0 }}
+                              type="number"
+                              placeholder="10"
+                              min="1"
+                              max="20"
+                              value={weaverSettings?.intelligentStandardMaxOperations ?? ''}
+                              onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Go Ham</span>
+                            <input
+                              className="notePathInput"
+                              style={{ flex: 1, minWidth: 0 }}
+                              type="number"
+                              placeholder="16"
+                              min="1"
+                              max="20"
+                              value={weaverSettings?.intelligentGoHamMaxOperations ?? ''}
+                              onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
