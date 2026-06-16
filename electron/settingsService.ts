@@ -44,6 +44,54 @@ const WEAVER_BUDGET_BOUNDS = {
   maxOperations: 20,
 } as const;
 
+type WeaverBudgetCategory = 'tokens' | 'timeoutMs' | 'iterations' | 'operations';
+
+interface WeaverBudgetFieldDescriptor {
+  /** Key in PersistedSettings (snake_case). */
+  settingsKey: keyof PersistedSettings;
+  /** Key in the WeaverSettings response object (camelCase). */
+  responseKey: keyof WeaverSettings;
+  /** Which validation bound category applies. */
+  boundCategory: WeaverBudgetCategory;
+}
+
+/**
+ * Single source of truth for every Weaver budget field.
+ *
+ * Adding a new budget knob requires ONLY adding an entry here —
+ * readSettings, buildWeaverSettingsResponse, and updateWeaverSettings
+ * all derive their behaviour from this registry.
+ */
+const WEAVER_BUDGET_FIELD_REGISTRY: WeaverBudgetFieldDescriptor[] = [
+  { settingsKey: 'weaverGuidedInsertBaseMaxTokens',       responseKey: 'guidedInsertBaseMaxTokens',       boundCategory: 'tokens' },
+  { settingsKey: 'weaverGuidedInsertBaseTimeoutMs',       responseKey: 'guidedInsertBaseTimeoutMs',       boundCategory: 'timeoutMs' },
+  { settingsKey: 'weaverGuidedInsertExpandedMaxTokens',   responseKey: 'guidedInsertExpandedMaxTokens',   boundCategory: 'tokens' },
+  { settingsKey: 'weaverGuidedInsertExpandedTimeoutMs',   responseKey: 'guidedInsertExpandedTimeoutMs',   boundCategory: 'timeoutMs' },
+  { settingsKey: 'weaverIntelligentLightMaxTokens',       responseKey: 'intelligentLightMaxTokens',       boundCategory: 'tokens' },
+  { settingsKey: 'weaverIntelligentLightTimeoutMs',       responseKey: 'intelligentLightTimeoutMs',       boundCategory: 'timeoutMs' },
+  { settingsKey: 'weaverIntelligentLightIterationLimit',  responseKey: 'intelligentLightIterationLimit',  boundCategory: 'iterations' },
+  { settingsKey: 'weaverIntelligentStandardMaxTokens',    responseKey: 'intelligentStandardMaxTokens',    boundCategory: 'tokens' },
+  { settingsKey: 'weaverIntelligentStandardTimeoutMs',    responseKey: 'intelligentStandardTimeoutMs',    boundCategory: 'timeoutMs' },
+  { settingsKey: 'weaverIntelligentStandardIterationLimit', responseKey: 'intelligentStandardIterationLimit', boundCategory: 'iterations' },
+  { settingsKey: 'weaverIntelligentGoHamMaxTokens',       responseKey: 'intelligentGoHamMaxTokens',       boundCategory: 'tokens' },
+  { settingsKey: 'weaverIntelligentGoHamTimeoutMs',       responseKey: 'intelligentGoHamTimeoutMs',       boundCategory: 'timeoutMs' },
+  { settingsKey: 'weaverIntelligentGoHamIterationLimit',  responseKey: 'intelligentGoHamIterationLimit',  boundCategory: 'iterations' },
+  { settingsKey: 'weaverGuidedInsertMaxOperations',       responseKey: 'guidedInsertMaxOperations',       boundCategory: 'operations' },
+  { settingsKey: 'weaverIntelligentLightMaxOperations',   responseKey: 'intelligentLightMaxOperations',   boundCategory: 'operations' },
+  { settingsKey: 'weaverIntelligentStandardMaxOperations', responseKey: 'intelligentStandardMaxOperations', boundCategory: 'operations' },
+  { settingsKey: 'weaverIntelligentGoHamMaxOperations',   responseKey: 'intelligentGoHamMaxOperations',   boundCategory: 'operations' },
+];
+
+/** Returns the {min, max} bound pair for a budget category. */
+function getBoundsForCategory(category: WeaverBudgetCategory): { min: number; max: number } {
+  switch (category) {
+    case 'tokens':     return { min: WEAVER_BUDGET_BOUNDS.minTokens,     max: WEAVER_BUDGET_BOUNDS.maxTokens };
+    case 'timeoutMs':  return { min: WEAVER_BUDGET_BOUNDS.minTimeoutMs,  max: WEAVER_BUDGET_BOUNDS.maxTimeoutMs };
+    case 'iterations': return { min: WEAVER_BUDGET_BOUNDS.minIterations, max: WEAVER_BUDGET_BOUNDS.maxIterations };
+    case 'operations': return { min: WEAVER_BUDGET_BOUNDS.minOperations, max: WEAVER_BUDGET_BOUNDS.maxOperations };
+  }
+}
+
 function normalizeBoundedNumber(
   value: unknown,
   label: string,
@@ -146,7 +194,8 @@ async function readSettings(): Promise<PersistedSettings> {
     const raw = await fs.readFile(getSettingsFilePath(), 'utf8');
     const parsed = JSON.parse(raw) as Partial<PersistedSettings>;
 
-    return {
+    // Build the settings object, pulling budget fields from the registry.
+    const settings: PersistedSettings = {
       version: 1,
       cardStoreByVault:
         parsed.cardStoreByVault && typeof parsed.cardStoreByVault === 'object'
@@ -180,41 +229,16 @@ async function readSettings(): Promise<PersistedSettings> {
           : createDefaultSettings().crashpadDeletePreferences,
       weaverDisableBudgetRestrictions:
         typeof parsed.weaverDisableBudgetRestrictions === 'boolean' ? parsed.weaverDisableBudgetRestrictions : undefined,
-      weaverGuidedInsertBaseMaxTokens:
-        typeof parsed.weaverGuidedInsertBaseMaxTokens === 'number' ? parsed.weaverGuidedInsertBaseMaxTokens : undefined,
-      weaverGuidedInsertBaseTimeoutMs:
-        typeof parsed.weaverGuidedInsertBaseTimeoutMs === 'number' ? parsed.weaverGuidedInsertBaseTimeoutMs : undefined,
-      weaverGuidedInsertExpandedMaxTokens:
-        typeof parsed.weaverGuidedInsertExpandedMaxTokens === 'number' ? parsed.weaverGuidedInsertExpandedMaxTokens : undefined,
-      weaverGuidedInsertExpandedTimeoutMs:
-        typeof parsed.weaverGuidedInsertExpandedTimeoutMs === 'number' ? parsed.weaverGuidedInsertExpandedTimeoutMs : undefined,
-      weaverIntelligentLightMaxTokens:
-        typeof parsed.weaverIntelligentLightMaxTokens === 'number' ? parsed.weaverIntelligentLightMaxTokens : undefined,
-      weaverIntelligentLightTimeoutMs:
-        typeof parsed.weaverIntelligentLightTimeoutMs === 'number' ? parsed.weaverIntelligentLightTimeoutMs : undefined,
-      weaverIntelligentLightIterationLimit:
-        typeof parsed.weaverIntelligentLightIterationLimit === 'number' ? parsed.weaverIntelligentLightIterationLimit : undefined,
-      weaverIntelligentStandardMaxTokens:
-        typeof parsed.weaverIntelligentStandardMaxTokens === 'number' ? parsed.weaverIntelligentStandardMaxTokens : undefined,
-      weaverIntelligentStandardTimeoutMs:
-        typeof parsed.weaverIntelligentStandardTimeoutMs === 'number' ? parsed.weaverIntelligentStandardTimeoutMs : undefined,
-      weaverIntelligentStandardIterationLimit:
-        typeof parsed.weaverIntelligentStandardIterationLimit === 'number' ? parsed.weaverIntelligentStandardIterationLimit : undefined,
-      weaverIntelligentGoHamMaxTokens:
-        typeof parsed.weaverIntelligentGoHamMaxTokens === 'number' ? parsed.weaverIntelligentGoHamMaxTokens : undefined,
-      weaverIntelligentGoHamTimeoutMs:
-        typeof parsed.weaverIntelligentGoHamTimeoutMs === 'number' ? parsed.weaverIntelligentGoHamTimeoutMs : undefined,
-      weaverIntelligentGoHamIterationLimit:
-        typeof parsed.weaverIntelligentGoHamIterationLimit === 'number' ? parsed.weaverIntelligentGoHamIterationLimit : undefined,
-      weaverGuidedInsertMaxOperations:
-        typeof parsed.weaverGuidedInsertMaxOperations === 'number' ? parsed.weaverGuidedInsertMaxOperations : undefined,
-      weaverIntelligentLightMaxOperations:
-        typeof parsed.weaverIntelligentLightMaxOperations === 'number' ? parsed.weaverIntelligentLightMaxOperations : undefined,
-      weaverIntelligentStandardMaxOperations:
-        typeof parsed.weaverIntelligentStandardMaxOperations === 'number' ? parsed.weaverIntelligentStandardMaxOperations : undefined,
-      weaverIntelligentGoHamMaxOperations:
-        typeof parsed.weaverIntelligentGoHamMaxOperations === 'number' ? parsed.weaverIntelligentGoHamMaxOperations : undefined,
     };
+
+    // All budget fields from the registry — single loop, no per-field boilerplate.
+    for (const field of WEAVER_BUDGET_FIELD_REGISTRY) {
+      const raw = (parsed as Record<string, unknown>)[field.settingsKey];
+      (settings as unknown as Record<string, unknown>)[field.settingsKey] =
+        typeof raw === 'number' ? raw : undefined;
+    }
+
+    return settings;
   } catch (error) {
     const code = getFsErrorCode(error);
 
@@ -320,7 +344,15 @@ export async function setCrashpadDeletePreferences(
 
 function encryptApiKey(key: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
-    // safeStorage unavailable (rare on Electron 35+); store as-is with a prefix so we can detect it
+    // safeStorage unavailable (rare on Electron 35+).
+    // Store with a plain: prefix — this is NOT secure and the user
+    // should be warned. The key will be readable by anyone with
+    // filesystem access to the settings JSON file.
+    console.warn(
+      'CrashWeaver SECURITY: OS-level encryption is unavailable on this system. ' +
+      'The OpenRouter API key will be stored in plaintext in the settings file. ' +
+      'Anyone with access to this machine can read it.',
+    );
     return `plain:${key}`;
   }
 
@@ -329,11 +361,20 @@ function encryptApiKey(key: string): string {
 
 function decryptApiKey(encrypted: string): string {
   if (encrypted.startsWith('plain:')) {
+    // One-time warning per process lifetime.
+    if (!decryptApiKey._warnedPlaintext) {
+      console.warn(
+        'CrashWeaver SECURITY: Reading OpenRouter API key from plaintext storage. ' +
+        'Re-save your API key in Settings → Weaver to attempt OS-level encryption.',
+      );
+      decryptApiKey._warnedPlaintext = true;
+    }
     return encrypted.slice('plain:'.length);
   }
 
   return safeStorage.decryptString(Buffer.from(encrypted, 'base64'));
 }
+decryptApiKey._warnedPlaintext = false;
 
 export async function setOpenRouterApiKey(key: string): Promise<void> {
   const trimmed = key.trim();
@@ -369,7 +410,7 @@ export async function getOpenRouterApiKeyDecrypted(): Promise<string | null> {
 }
 
 function buildWeaverSettingsResponse(settings: PersistedSettings): WeaverSettings {
-  const result: any = {
+  const result: Record<string, unknown> = {
     configured: Boolean(settings.openrouterApiKeyEncrypted),
     preferredModel: settings.weaverPreferredModel ?? null,
   };
@@ -377,59 +418,16 @@ function buildWeaverSettingsResponse(settings: PersistedSettings): WeaverSetting
   if (settings.weaverDisableBudgetRestrictions !== undefined) {
     result.disableBudgetRestrictions = settings.weaverDisableBudgetRestrictions;
   }
-  if (settings.weaverGuidedInsertBaseMaxTokens !== undefined) {
-    result.guidedInsertBaseMaxTokens = settings.weaverGuidedInsertBaseMaxTokens;
-  }
-  if (settings.weaverGuidedInsertBaseTimeoutMs !== undefined) {
-    result.guidedInsertBaseTimeoutMs = settings.weaverGuidedInsertBaseTimeoutMs;
-  }
-  if (settings.weaverGuidedInsertExpandedMaxTokens !== undefined) {
-    result.guidedInsertExpandedMaxTokens = settings.weaverGuidedInsertExpandedMaxTokens;
-  }
-  if (settings.weaverGuidedInsertExpandedTimeoutMs !== undefined) {
-    result.guidedInsertExpandedTimeoutMs = settings.weaverGuidedInsertExpandedTimeoutMs;
-  }
-  if (settings.weaverIntelligentLightMaxTokens !== undefined) {
-    result.intelligentLightMaxTokens = settings.weaverIntelligentLightMaxTokens;
-  }
-  if (settings.weaverIntelligentLightTimeoutMs !== undefined) {
-    result.intelligentLightTimeoutMs = settings.weaverIntelligentLightTimeoutMs;
-  }
-  if (settings.weaverIntelligentLightIterationLimit !== undefined) {
-    result.intelligentLightIterationLimit = settings.weaverIntelligentLightIterationLimit;
-  }
-  if (settings.weaverIntelligentStandardMaxTokens !== undefined) {
-    result.intelligentStandardMaxTokens = settings.weaverIntelligentStandardMaxTokens;
-  }
-  if (settings.weaverIntelligentStandardTimeoutMs !== undefined) {
-    result.intelligentStandardTimeoutMs = settings.weaverIntelligentStandardTimeoutMs;
-  }
-  if (settings.weaverIntelligentStandardIterationLimit !== undefined) {
-    result.intelligentStandardIterationLimit = settings.weaverIntelligentStandardIterationLimit;
-  }
-  if (settings.weaverIntelligentGoHamMaxTokens !== undefined) {
-    result.intelligentGoHamMaxTokens = settings.weaverIntelligentGoHamMaxTokens;
-  }
-  if (settings.weaverIntelligentGoHamTimeoutMs !== undefined) {
-    result.intelligentGoHamTimeoutMs = settings.weaverIntelligentGoHamTimeoutMs;
-  }
-  if (settings.weaverIntelligentGoHamIterationLimit !== undefined) {
-    result.intelligentGoHamIterationLimit = settings.weaverIntelligentGoHamIterationLimit;
-  }
-  if (settings.weaverGuidedInsertMaxOperations !== undefined) {
-    result.guidedInsertMaxOperations = settings.weaverGuidedInsertMaxOperations;
-  }
-  if (settings.weaverIntelligentLightMaxOperations !== undefined) {
-    result.intelligentLightMaxOperations = settings.weaverIntelligentLightMaxOperations;
-  }
-  if (settings.weaverIntelligentStandardMaxOperations !== undefined) {
-    result.intelligentStandardMaxOperations = settings.weaverIntelligentStandardMaxOperations;
-  }
-  if (settings.weaverIntelligentGoHamMaxOperations !== undefined) {
-    result.intelligentGoHamMaxOperations = settings.weaverIntelligentGoHamMaxOperations;
+
+  // All budget fields from the registry — single loop.
+  for (const field of WEAVER_BUDGET_FIELD_REGISTRY) {
+    const value = settings[field.settingsKey];
+    if (value !== undefined) {
+      result[field.responseKey] = value;
+    }
   }
 
-  return result;
+  return result as unknown as WeaverSettings;
 }
 
 export async function getWeaverSettings(): Promise<WeaverSettings> {
@@ -456,141 +454,19 @@ export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Pr
     if (updates.disableBudgetRestrictions !== undefined) {
       settings.weaverDisableBudgetRestrictions = updates.disableBudgetRestrictions;
     }
-    if (updates.guidedInsertBaseMaxTokens !== undefined) {
-      settings.weaverGuidedInsertBaseMaxTokens = normalizeBoundedNumber(
-        updates.guidedInsertBaseMaxTokens,
-        'guidedInsertBaseMaxTokens',
-        WEAVER_BUDGET_BOUNDS.minTokens,
-        WEAVER_BUDGET_BOUNDS.maxTokens,
-      );
-    }
-    if (updates.guidedInsertBaseTimeoutMs !== undefined) {
-      settings.weaverGuidedInsertBaseTimeoutMs = normalizeBoundedNumber(
-        updates.guidedInsertBaseTimeoutMs,
-        'guidedInsertBaseTimeoutMs',
-        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
-        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
-      );
-    }
-    if (updates.guidedInsertExpandedMaxTokens !== undefined) {
-      settings.weaverGuidedInsertExpandedMaxTokens = normalizeBoundedNumber(
-        updates.guidedInsertExpandedMaxTokens,
-        'guidedInsertExpandedMaxTokens',
-        WEAVER_BUDGET_BOUNDS.minTokens,
-        WEAVER_BUDGET_BOUNDS.maxTokens,
-      );
-    }
-    if (updates.guidedInsertExpandedTimeoutMs !== undefined) {
-      settings.weaverGuidedInsertExpandedTimeoutMs = normalizeBoundedNumber(
-        updates.guidedInsertExpandedTimeoutMs,
-        'guidedInsertExpandedTimeoutMs',
-        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
-        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
-      );
-    }
-    if (updates.intelligentLightMaxTokens !== undefined) {
-      settings.weaverIntelligentLightMaxTokens = normalizeBoundedNumber(
-        updates.intelligentLightMaxTokens,
-        'intelligentLightMaxTokens',
-        WEAVER_BUDGET_BOUNDS.minTokens,
-        WEAVER_BUDGET_BOUNDS.maxTokens,
-      );
-    }
-    if (updates.intelligentLightTimeoutMs !== undefined) {
-      settings.weaverIntelligentLightTimeoutMs = normalizeBoundedNumber(
-        updates.intelligentLightTimeoutMs,
-        'intelligentLightTimeoutMs',
-        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
-        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
-      );
-    }
-    if (updates.intelligentLightIterationLimit !== undefined) {
-      settings.weaverIntelligentLightIterationLimit = normalizeBoundedNumber(
-        updates.intelligentLightIterationLimit,
-        'intelligentLightIterationLimit',
-        WEAVER_BUDGET_BOUNDS.minIterations,
-        WEAVER_BUDGET_BOUNDS.maxIterations,
-      );
-    }
-    if (updates.intelligentStandardMaxTokens !== undefined) {
-      settings.weaverIntelligentStandardMaxTokens = normalizeBoundedNumber(
-        updates.intelligentStandardMaxTokens,
-        'intelligentStandardMaxTokens',
-        WEAVER_BUDGET_BOUNDS.minTokens,
-        WEAVER_BUDGET_BOUNDS.maxTokens,
-      );
-    }
-    if (updates.intelligentStandardTimeoutMs !== undefined) {
-      settings.weaverIntelligentStandardTimeoutMs = normalizeBoundedNumber(
-        updates.intelligentStandardTimeoutMs,
-        'intelligentStandardTimeoutMs',
-        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
-        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
-      );
-    }
-    if (updates.intelligentStandardIterationLimit !== undefined) {
-      settings.weaverIntelligentStandardIterationLimit = normalizeBoundedNumber(
-        updates.intelligentStandardIterationLimit,
-        'intelligentStandardIterationLimit',
-        WEAVER_BUDGET_BOUNDS.minIterations,
-        WEAVER_BUDGET_BOUNDS.maxIterations,
-      );
-    }
-    if (updates.intelligentGoHamMaxTokens !== undefined) {
-      settings.weaverIntelligentGoHamMaxTokens = normalizeBoundedNumber(
-        updates.intelligentGoHamMaxTokens,
-        'intelligentGoHamMaxTokens',
-        WEAVER_BUDGET_BOUNDS.minTokens,
-        WEAVER_BUDGET_BOUNDS.maxTokens,
-      );
-    }
-    if (updates.intelligentGoHamTimeoutMs !== undefined) {
-      settings.weaverIntelligentGoHamTimeoutMs = normalizeBoundedNumber(
-        updates.intelligentGoHamTimeoutMs,
-        'intelligentGoHamTimeoutMs',
-        WEAVER_BUDGET_BOUNDS.minTimeoutMs,
-        WEAVER_BUDGET_BOUNDS.maxTimeoutMs,
-      );
-    }
-    if (updates.intelligentGoHamIterationLimit !== undefined) {
-      settings.weaverIntelligentGoHamIterationLimit = normalizeBoundedNumber(
-        updates.intelligentGoHamIterationLimit,
-        'intelligentGoHamIterationLimit',
-        WEAVER_BUDGET_BOUNDS.minIterations,
-        WEAVER_BUDGET_BOUNDS.maxIterations,
-      );
-    }
-    if (updates.guidedInsertMaxOperations !== undefined) {
-      settings.weaverGuidedInsertMaxOperations = normalizeBoundedNumber(
-        updates.guidedInsertMaxOperations,
-        'guidedInsertMaxOperations',
-        WEAVER_BUDGET_BOUNDS.minOperations,
-        WEAVER_BUDGET_BOUNDS.maxOperations,
-      );
-    }
-    if (updates.intelligentLightMaxOperations !== undefined) {
-      settings.weaverIntelligentLightMaxOperations = normalizeBoundedNumber(
-        updates.intelligentLightMaxOperations,
-        'intelligentLightMaxOperations',
-        WEAVER_BUDGET_BOUNDS.minOperations,
-        WEAVER_BUDGET_BOUNDS.maxOperations,
-      );
-    }
-    if (updates.intelligentStandardMaxOperations !== undefined) {
-      settings.weaverIntelligentStandardMaxOperations = normalizeBoundedNumber(
-        updates.intelligentStandardMaxOperations,
-        'intelligentStandardMaxOperations',
-        WEAVER_BUDGET_BOUNDS.minOperations,
-        WEAVER_BUDGET_BOUNDS.maxOperations,
-      );
-    }
-    if (updates.intelligentGoHamMaxOperations !== undefined) {
-      settings.weaverIntelligentGoHamMaxOperations = normalizeBoundedNumber(
-        updates.intelligentGoHamMaxOperations,
-        'intelligentGoHamMaxOperations',
-        WEAVER_BUDGET_BOUNDS.minOperations,
-        WEAVER_BUDGET_BOUNDS.maxOperations,
-      );
+
+    // All budget fields — single loop over the registry with validation.
+    for (const field of WEAVER_BUDGET_FIELD_REGISTRY) {
+      const updateValue = (updates as Record<string, unknown>)[field.responseKey];
+      if (updateValue !== undefined) {
+        const bounds = getBoundsForCategory(field.boundCategory);
+        (settings as unknown as Record<string, unknown>)[field.settingsKey] = normalizeBoundedNumber(
+          updateValue,
+          field.responseKey,
+          bounds.min,
+          bounds.max,
+        );
+      }
     }
 
     return buildWeaverSettingsResponse(settings);

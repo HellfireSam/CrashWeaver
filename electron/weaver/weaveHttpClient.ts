@@ -139,8 +139,26 @@ function redactSensitiveLoggingData(data: unknown, maxLength = 300): unknown {
 
 // ── Retry helpers ────────────────────────────────────────────────────────────
 
+/**
+ * Max retry attempts for transient HTTP errors (429 rate-limit, 5xx server).
+ * 2 retries = 3 total attempts. Beyond this, the user-facing timeout budget
+ * is better spent surfacing the error than retrying into a degraded backend.
+ */
 const DEFAULT_MAX_RETRIES = 2;
+
+/**
+ * Base delay for exponential-backoff retries, in ms.
+ * 800ms is long enough to let rate-limit windows reset on most providers
+ * but short enough that 2 retries won't exceed typical user patience (~5s).
+ */
 const RETRY_BASE_DELAY_MS = 800;
+
+/**
+ * Hard cap on exponential-backoff delay, in ms.
+ * 8s prevents unbounded growth from the 2^attempt multiplier.
+ * With base=800ms and max=8s: delays are ~0.6s, ~1.6s for attempts 0 and 1
+ * (with full-jitter randomization).
+ */
 const RETRY_MAX_DELAY_MS = 8_000;
 
 /**

@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from 'node:fs';
+import chokidar, { type FSWatcher } from 'chokidar';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -63,12 +63,6 @@ const LOCAL_ASSET_SCHEME = 'crashweaver-local';
 let vaultWatcher: FSWatcher | null = null;
 let watchedVaultRoot: string | null = null;
 let watchedCardStorePath: string | null = null;
-let watcherTimer: NodeJS.Timeout | null = null;
-let watcherRestartTimer: NodeJS.Timeout | null = null;
-let watcherSessionId = 0;
-let pendingNotePaths = new Set<string>();
-let watcherFlushPromise: Promise<void> | null = null;
-let watchVaultQueue: Promise<void> = Promise.resolve();
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -88,151 +82,44 @@ function isPathWithin(parentPath: string, childPath: string) {
   return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
 }
 
-function resetWatcherQueue() {
-  pendingNotePaths = new Set<string>();
-
-  if (watcherTimer) {
-    clearTimeout(watcherTimer);
-    watcherTimer = null;
-  }
-}
-
-function resetWatcherRestart() {
-  if (watcherRestartTimer) {
-    clearTimeout(watcherRestartTimer);
-    watcherRestartTimer = null;
-  }
-}
-
-function isCurrentWatcherSession(sessionId: number, rootPath: string, cardStorePath: string) {
-  return watcherSessionId === sessionId && watchedVaultRoot === rootPath && watchedCardStorePath === cardStorePath;
-}
-
 function stopVaultWatcher() {
   vaultWatcher?.close();
   vaultWatcher = null;
   watchedVaultRoot = null;
   watchedCardStorePath = null;
-  watcherSessionId += 1;
-  watcherFlushPromise = null;
-  resetWatcherRestart();
-  resetWatcherQueue();
 }
 
-function scheduleWatcherFlush(sessionId: number, rootPath: string, cardStorePath: string, delayMs = 250) {
-  if (!isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-    return;
-  }
-
-  if (watcherTimer) {
-    clearTimeout(watcherTimer);
-  }
-
-  watcherTimer = setTimeout(() => {
-    watcherTimer = null;
-    void flushWatchedNotes(sessionId, rootPath, cardStorePath);
-  }, delayMs);
-}
-
-function enqueueWatchVault(rootPath: string) {
-  const queued = watchVaultQueue.then(() => watchVault(rootPath));
-  watchVaultQueue = queued.then(
-    () => undefined,
-    () => undefined,
-  );
-  return queued;
-}
-
-function scheduleWatcherRestart(sessionId: number, rootPath: string, cardStorePath: string) {
-  if (watcherRestartTimer || vaultWatcher || !isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-    return;
-  }
-
-  watcherRestartTimer = setTimeout(() => {
-    watcherRestartTimer = null;
-
-    if (vaultWatcher || !isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
+/**
+ * Handles a single file event from chokidar.
+ * chokidar handles debouncing, atomic-write detection, and cross-platform
+ * edge cases internally — we just sync the note to the card store.
+ */
+async function handleWatcherEvent(filePath: string, rootPath: string, cardStorePath: string) {
+  const relativePath = toPosixPath(path.relative(rootPath, filePath));
+  try {
+    const content = await fs.readFile(filePath, 'utf8');
+    await syncNoteToCardStore(cardStorePath, relativePath, content);
+  } catch (error) {
+    const code = getFsErrorCode(error);
+    if (code === 'ENOENT') {
+      await removeNoteReferencesFromCardStore(cardStorePath, relativePath);
       return;
     }
-
-    void watchVault(rootPath).catch((error) => {
-      console.error('CrashWeaver watcher restart error', error);
-    });
-  }, 500);
-}
-
-async function flushWatchedNotes(sessionId: number, rootPath: string, cardStorePath: string) {
-  if (!isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-    return;
-  }
-
-  if (watcherFlushPromise) {
-    return watcherFlushPromise;
-  }
-
-  watcherFlushPromise = (async () => {
-    while (isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-      const notePaths = [...pendingNotePaths];
-      resetWatcherQueue();
-
-      if (!notePaths.length) {
-        break;
-      }
-
-      for (const notePath of notePaths) {
-        if (!isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-          return;
-        }
-
-        const absolutePath = path.resolve(rootPath, notePath);
-
-        try {
-          const stats = await fs.stat(absolutePath);
-
-          if (!stats.isFile() || path.extname(absolutePath).toLowerCase() !== '.md') {
-            continue;
-          }
-
-          const content = await fs.readFile(absolutePath, 'utf8');
-
-          if (!isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-            return;
-          }
-
-          await syncNoteToCardStore(cardStorePath, notePath, content);
-        } catch (error) {
-          if (!isCurrentWatcherSession(sessionId, rootPath, cardStorePath)) {
-            return;
-          }
-
-          const code = getFsErrorCode(error);
-
-          if (code === 'ENOENT') {
-            await removeNoteReferencesFromCardStore(cardStorePath, notePath);
-            continue;
-          }
-
-          console.error('CrashWeaver watcher sync error', error);
-        }
-      }
-
-      if (!pendingNotePaths.size) {
-        break;
-      }
-    }
-
-    if (isCurrentWatcherSession(sessionId, rootPath, cardStorePath) && pendingNotePaths.size) {
-      scheduleWatcherFlush(sessionId, rootPath, cardStorePath, 0);
-    }
-  })();
-
-  try {
-    await watcherFlushPromise;
-  } finally {
-    watcherFlushPromise = null;
+    console.error('CrashWeaver watcher sync error', error);
   }
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Starts (or restarts) a chokidar watcher on the vault root.
+ *
+ * chokidar uses OS-native recursive watching (FSEvents on macOS,
+ * inotify on Linux, ReadDirectoryChangesW on Windows) and handles
+ * debouncing via `awaitWriteFinish` — no manual timers or queues needed.
+ */
 async function watchVault(rootPath: string) {
   const resolvedRoot = path.resolve(rootPath);
   const cardStore = await getVaultCardStore(resolvedRoot);
@@ -244,44 +131,35 @@ async function watchVault(rootPath: string) {
   stopVaultWatcher();
   watchedVaultRoot = resolvedRoot;
   watchedCardStorePath = cardStore.cardStorePath;
-  const sessionId = watcherSessionId;
-  const nextWatcher = watch(resolvedRoot, { recursive: true }, (_eventType, filename) => {
-    if (!filename) {
-      return;
-    }
 
-    const relativePath = toPosixPath(filename.toString());
-    const absolutePath = path.resolve(resolvedRoot, relativePath);
-
-    if (path.extname(absolutePath).toLowerCase() !== '.md') {
-      return;
-    }
-
-    if (isPathWithin(cardStore.cardStorePath, absolutePath)) {
-      return;
-    }
-
-    pendingNotePaths.add(relativePath);
-    scheduleWatcherFlush(sessionId, resolvedRoot, cardStore.cardStorePath);
+  vaultWatcher = chokidar.watch(resolvedRoot, {
+    ignored: [
+      /(^|[\\/])\./,                     // dotfiles / dot-directories
+      '**/.crashweaver/**',              // internal CrashWeaver metadata
+      new RegExp(`^${escapeRegExp(cardStore.cardStorePath)}`), // card store JSON files
+    ],
+    ignoreInitial: true,
+    awaitWriteFinish: {
+      stabilityThreshold: 300,           // 300ms after last write before emitting
+      pollInterval: 100,
+    },
+    persistent: true,
+    depth: 99,                           // effectively unlimited for practical vaults
   });
 
-  nextWatcher.on('error', (error) => {
-    if (!isCurrentWatcherSession(sessionId, resolvedRoot, cardStore.cardStorePath)) {
-      return;
-    }
+  vaultWatcher.on('add',    (filePath: string) => { void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath); });
+  vaultWatcher.on('change', (filePath: string) => { void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath); });
+  vaultWatcher.on('unlink', (filePath: string) => { void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath); });
 
+  vaultWatcher.on('error', (error: unknown) => {
     console.error('CrashWeaver watcher error', error);
-    nextWatcher.close();
-
-    if (vaultWatcher === nextWatcher) {
-      vaultWatcher = null;
-    }
-
-    resetWatcherQueue();
-    scheduleWatcherRestart(sessionId, resolvedRoot, cardStore.cardStorePath);
   });
+}
 
-  vaultWatcher = nextWatcher;
+function enqueueWatchVault(rootPath: string) {
+  return watchVault(rootPath).catch((error) => {
+    console.error('CrashWeaver: failed to start vault watcher', error);
+  });
 }
 
 function createMainWindow() {

@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import 'katex/dist/katex.min.css';
 import type {
   CardDocument,
-  CrashpadDeletePreferences,
-  CrashpadDocument,
-  CrashpadSummary,
   VaultDescriptor,
   VaultNoteDocument,
   WeaveKind,
@@ -16,7 +13,7 @@ import type {
 } from '../electron/vault-contract';
 import { CardsWorkspace } from './components/CardsWorkspace';
 import { CrashpadWorkspace } from './components/CrashpadWorkspace';
-import { ExplorerTree } from './components/ExplorerTree';
+import { AppSidebar } from './components/AppSidebar';
 import { InspectorPane } from './components/InspectorPane';
 import type { WeaverSessionSummary, WeaverSessionDetail } from './components/WeaverSessionHistory';
 import { SettingsModal } from './components/SettingsModal';
@@ -30,12 +27,6 @@ import {
   toCardViewRecordFromCard,
   toCardViewRecordFromParsedCard,
 } from './lib/cards';
-import { buildExplorerTree, type ExplorerEntry } from './lib/explorerTree';
-import type { CrashpadHistoryEntry } from './lib/crashpadHistory';
-import {
-  isPathInsideVault,
-  normalizeRelativePath,
-} from './lib/editorPaths';
 import { formatCardRestoreStatus } from './lib/crashpadStatus';
 import { renderMarkdownPreview } from './lib/markdownPreview';
 import { useCardDetailState } from './hooks/useCardDetailState';
@@ -60,18 +51,24 @@ import { useEditorTabs } from './hooks/useEditorTabs';
 import { usePaneLayout } from './hooks/usePaneLayout';
 import { useStoredScrollSync } from './hooks/useStoredScrollSync';
 
-const defaultDraftPath = 'Inbox/Stage-2-scratch.md';
-const defaultWeaveModel = 'openai/gpt-4o';
-const defaultDraftContent = [
+// ── Shared state contexts (replaces 47 local useState calls) ─────────────────
+import { useVaultState } from './state/VaultContext';
+import { useEditorState } from './state/EditorContext';
+import type { EditorDocumentKind, MarkdownViewMode } from './state/EditorContext';
+import { useWeaverState } from './state/WeaverContext';
+import { useUIState } from './state/UIContext';
+import type { WidgetTool } from './state/UIContext';
+
+// ── Constants / helpers that don't belong in state ───────────────────────────
+
+const DEFAULT_DRAFT_PATH = 'Inbox/Stage-2-scratch.md';
+const DEFAULT_DRAFT_CONTENT = [
   '# Stage 2 Scratch Note',
   '',
   'CrashWeaver vault write validation note.',
   '',
   '#stage2 #vault',
 ].join('\n');
-type WidgetTool = 'explorer' | 'daily-crashpad' | 'extensions';
-type EditorDocumentKind = 'markdown' | 'crashpad' | 'card';
-type MarkdownViewMode = 'source' | 'preview' | 'cards';
 
 function getDefaultWeaveCardUid(cards: CardViewRecord[], focusedUid: string | null) {
   if (focusedUid && cards.some((card) => card.uid === focusedUid)) {
@@ -98,62 +95,64 @@ function getSelectedTextareaText(element: HTMLTextAreaElement | null) {
 }
 
 export default function App() {
-  const [vaultPath, setVaultPath] = useState<string | null>(null);
-  const [vault, setVault] = useState<VaultDescriptor | null>(null);
-  const [activeEditorKind, setActiveEditorKind] = useState<EditorDocumentKind>('markdown');
-  const [activeCardFilePath, setActiveCardFilePath] = useState('');
-  const [activeCardFileUid, setActiveCardFileUid] = useState<string | null>(null);
-  const [selectedExplorerPath, setSelectedExplorerPath] = useState('');
-  const [selectedNotePath, setSelectedNotePath] = useState('');
-  const [draftPath, setDraftPath] = useState(defaultDraftPath);
-  const [draftContent, setDraftContent] = useState(defaultDraftContent);
-  const [activeNote, setActiveNote] = useState<VaultNoteDocument | null>(null);
-  const [isPicking, setIsPicking] = useState(false);
-  const [isReading, setIsReading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isRefreshingIndex, setIsRefreshingIndex] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [weaveModel, setWeaveModel] = useState(defaultWeaveModel);
-  const [weaveKind, setWeaveKind] = useState<WeaveKind>('guided-insert');
-  const [weaveEditContent, setWeaveEditContent] = useState(false);
-  const [weaveCreateNote, setWeaveCreateNote] = useState(false);
-  const [weaveStrength, setWeaveStrength] = useState<WeaveStrength>('standard');
-  const [weaveIntent, setWeaveIntent] = useState('');
-  const [weavePlanResult, setWeavePlanResult] = useState<WeavePlanResult | null>(null);
-  const [weaveProviderHealth, setWeaveProviderHealth] = useState<WeaveProviderHealth | null>(null);
-  const [isCheckingWeaveProvider, setIsCheckingWeaveProvider] = useState(false);
-  const [isGeneratingWeavePlan, setIsGeneratingWeavePlan] = useState(false);
-  const [weaveEvaluatingCardUid, setWeaveEvaluatingCardUid] = useState<string | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'explorer' | 'search'>('explorer');
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
-  const [isInspectorVisible, setIsInspectorVisible] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [vaultAlias, setVaultAlias] = useState('My Vault');
-  const [openFirstNoteOnVaultOpen, setOpenFirstNoteOnVaultOpen] = useState(true);
-  const [showHiddenEntries, setShowHiddenEntries] = useState(false);
-  const [editorFontSize, setEditorFontSize] = useState(15);
-  const [viewMode, setViewMode] = useState<MarkdownViewMode>('source');
-  const [savedContent, setSavedContent] = useState(defaultDraftContent);
-  const [allCards, setAllCards] = useState<CardDocument[]>([]);
-  const [internalDirectories, setInternalDirectories] = useState<string[]>([]);
-  const [cardScope, setCardScope] = useState<CardScope>('current-note');
-  const [crashpadSummaries, setCrashpadSummaries] = useState<CrashpadSummary[]>([]);
-  const [activeCrashpad, setActiveCrashpad] = useState<CrashpadDocument | null>(null);
-  const [crashpadDeletePreferences, setCrashpadDeletePreferences] = useState<CrashpadDeletePreferences>({
-    removeNoteBoundariesByDefault: true,
-    requireConfirmationForNewCards: true,
-    requireStrictConfirmationForExistingCards: true,
-  });
-  const [weaverSettings, setWeaverSettings] = useState<WeaverSettings | undefined>(undefined);
-  const [weaveSessions, setWeaveSessions] = useState<WeaverSessionSummary[]>([]);
-  const [weaveActiveSessionId, setWeaveActiveSessionId] = useState<string | null>(null);
-  const [crashpadPast, setCrashpadPast] = useState<CrashpadHistoryEntry[]>([]);
-  const [crashpadFuture, setCrashpadFuture] = useState<CrashpadHistoryEntry[]>([]);
-  const [focusedCardUid, setFocusedCardUid] = useState<string | null>(null);
-  const [focusedWindow, setFocusedWindow] = useState<FocusWindow>('explorer');
-  const [activeWidgetTool, setActiveWidgetTool] = useState<WidgetTool>('explorer');
+  // ── Consume shared state from contexts (replaces 47 useState calls) ──────
+
+  const {
+    vaultPath, vault, vaultAlias,
+    allCards, internalDirectories,
+    crashpadSummaries, activeCrashpad, crashpadDeletePreferences,
+    setVaultPath, setVault, setVaultAlias,
+    setAllCards, setInternalDirectories,
+    setCrashpadSummaries, setActiveCrashpad, setCrashpadDeletePreferences,
+  } = useVaultState();
+
+  const {
+    activeEditorKind, activeCardFilePath, activeCardFileUid,
+    selectedExplorerPath, selectedNotePath,
+    draftPath, draftContent, savedContent,
+    activeNote, viewMode, cardScope,
+    isPicking, isReading, isSaving, isRefreshingIndex,
+    statusMessage, errorMessage, editorFontSize,
+    setActiveEditorKind, setActiveCardFilePath, setActiveCardFileUid,
+    setSelectedExplorerPath, setSelectedNotePath,
+    setDraftPath, setDraftContent, setSavedContent,
+    setActiveNote, setViewMode, setCardScope,
+    setIsPicking, setIsReading, setIsSaving, setIsRefreshingIndex,
+    setStatusMessage, setErrorMessage, setEditorFontSize,
+    clearEditorState,
+  } = useEditorState();
+
+  const {
+    weaveModel, weaveKind, weaveEditContent, weaveCreateNote,
+    weaveStrength, weaveIntent,
+    weavePlanResult, weaveProviderHealth,
+    isCheckingWeaveProvider, isGeneratingWeavePlan,
+    weaveEvaluatingCardUid,
+    weaverSettings, weaveSessions, weaveActiveSessionId,
+    setWeaveModel, setWeaveKind, setWeaveEditContent, setWeaveCreateNote,
+    setWeaveStrength, setWeaveIntent,
+    setWeavePlanResult, setWeaveProviderHealth,
+    setIsCheckingWeaveProvider, setIsGeneratingWeavePlan,
+    setWeaveEvaluatingCardUid,
+    setWeaverSettings, setWeaveSessions, setWeaveActiveSessionId,
+  } = useWeaverState();
+
+  const {
+    expandedFolders, activeSidebarTab,
+    isSidebarVisible, isInspectorVisible, isSettingsOpen,
+    openFirstNoteOnVaultOpen, showHiddenEntries,
+    focusedCardUid, focusedWindow, activeWidgetTool,
+    crashpadPast, crashpadFuture,
+    setExpandedFolders, setActiveSidebarTab,
+    setIsSidebarVisible, setIsInspectorVisible, setIsSettingsOpen,
+    setOpenFirstNoteOnVaultOpen, setShowHiddenEntries,
+    setFocusedCardUid, setFocusedWindow, setActiveWidgetTool,
+    setCrashpadPast, setCrashpadFuture,
+    pushCrashpadHistory,
+  } = useUIState();
+
+  // ── Refs (component-local, not shared state) ──────────────────────────────
+
   const layoutRef = useRef<HTMLElement | null>(null);
   const editorPaneRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -163,6 +162,8 @@ export default function App() {
   const isSettingsOpenRef = useRef(false);
   const vaultPathRef = useRef<string | null>(null);
   const saveCurrentNoteRef = useRef<() => Promise<void>>(async () => {});
+
+  // ── Derived editors & tabs ────────────────────────────────────────────────
 
   const {
     displayTabs,
@@ -176,49 +177,9 @@ export default function App() {
     handleTabDragEnd,
   } = useEditorTabs();
 
-  const explorerItems = useMemo<ExplorerEntry[]>(() => {
-    const noteEntries = (vault?.notes ?? []).map((note) => ({
-      kind: 'file' as const,
-      path: note.filePath,
-      fileKind: 'markdown' as const,
-    }));
-    const crashpadEntries = crashpadSummaries.map((crashpad) => ({
-      kind: 'file' as const,
-      path: normalizeRelativePath(vaultPath, crashpad.filePath),
-      fileKind: 'crashpad' as const,
-    }));
-    const cardEntries: ExplorerEntry[] = [];
-
-    for (const card of allCards) {
-      const cardStorePath = vault?.cardStore?.cardStorePath;
-
-      if (!cardStorePath || !vaultPath) {
-        continue;
-      }
-
-      const relativePath = normalizeRelativePath(vaultPath, `${cardStorePath.replace(/\\/g, '/')}/${card.uid}.json`);
-
-      if (!isPathInsideVault(relativePath)) {
-        continue;
-      }
-
-      cardEntries.push({
-        kind: 'file',
-        path: relativePath,
-        fileKind: 'card',
-      });
-    }
-    const directoryEntries = internalDirectories.map((directoryPath) => ({
-      kind: 'folder' as const,
-      path: directoryPath,
-    }));
-
-    return [...directoryEntries, ...noteEntries, ...crashpadEntries, ...cardEntries];
-  }, [allCards, crashpadSummaries, internalDirectories, vault, vaultPath]);
-  const treeNodes = useMemo(() => buildExplorerTree(explorerItems, { showHiddenEntries }), [explorerItems, showHiddenEntries]);
   const hasUnsavedChanges =
-    activeEditorKind === 'markdown' && (draftContent !== savedContent || draftPath !== (activeNote?.filePath ?? defaultDraftPath));
-  const currentMarkdownEditorPath = draftPath || activeNote?.filePath || defaultDraftPath;
+    activeEditorKind === 'markdown' && (draftContent !== savedContent || draftPath !== (activeNote?.filePath ?? DEFAULT_DRAFT_PATH));
+  const currentMarkdownEditorPath = draftPath || activeNote?.filePath || DEFAULT_DRAFT_PATH;
   const currentEditorPath =
     activeEditorKind === 'crashpad'
       ? activeCrashpad?.filePath ?? ''
@@ -364,17 +325,7 @@ export default function App() {
     { enabled: isMarkdownEditor && viewMode === 'preview' },
   );
 
-  function clearEditorState() {
-    setActiveEditorKind('markdown');
-    setActiveCardFilePath('');
-    setActiveCardFileUid(null);
-    setActiveNote(null);
-    setSelectedExplorerPath('');
-    setSelectedNotePath('');
-    setDraftPath(defaultDraftPath);
-    setDraftContent(defaultDraftContent);
-    setSavedContent(defaultDraftContent);
-  }
+  // clearEditorState is provided by EditorContext
 
   useEffect(() => {
     if (!visibleCards.length) {
@@ -392,10 +343,7 @@ export default function App() {
     setInternalDirectories,
   });
 
-  function pushCrashpadHistory(entry: CrashpadHistoryEntry) {
-    setCrashpadPast((previous) => [...previous, entry]);
-    setCrashpadFuture([]);
-  }
+  // pushCrashpadHistory is provided by UIContext
 
   const {
     refreshCrashpadCatalog,
@@ -542,8 +490,8 @@ export default function App() {
 
   const { loadVault } = useVaultLoadActions({
     openFirstNoteOnVaultOpen,
-    defaultDraftPath,
-    defaultDraftContent,
+    defaultDraftPath: DEFAULT_DRAFT_PATH,
+    defaultDraftContent: DEFAULT_DRAFT_CONTENT,
     defaultMarkdownTabViewState: DEFAULT_MARKDOWN_TAB_VIEW_STATE,
     refreshCardsCatalog,
     refreshInternalDirectories,
@@ -678,7 +626,7 @@ export default function App() {
     setWeavePlanResult(null);
     setWeaveProviderHealth(null);
     setWeaveIntent('');
-    setWeaveModel(weaverSettings?.preferredModel ?? defaultWeaveModel);
+    setWeaveModel(weaverSettings?.preferredModel ?? 'openai/gpt-4o');
     setWeaveKind('guided-insert');
     setWeaveEditContent(false);
     setWeaveCreateNote(false);
@@ -799,7 +747,7 @@ export default function App() {
       if (settings.preferredModel) {
         setWeaveModel(settings.preferredModel);
       } else {
-        setWeaveModel(defaultWeaveModel);
+        setWeaveModel('openai/gpt-4o');
       }
     }).catch(() => undefined);
   }, []);
@@ -953,61 +901,10 @@ export default function App() {
           </button>
         </aside>
 
-        <aside
-          className={`sidebar ${isSidebarVisible ? '' : 'paneHidden'}`}
-          onMouseDown={() => setFocusedWindow('explorer')}
-        >
-          <div className="sidebarTabs">
-            <button
-              type="button"
-              className={`tabButton ${activeSidebarTab === 'explorer' ? 'active' : ''}`}
-              onClick={() => setActiveSidebarTab('explorer')}
-            >
-              Explorer
-            </button>
-            <button
-              type="button"
-              className={`tabButton ${activeSidebarTab === 'search' ? 'active' : ''}`}
-              onClick={() => setActiveSidebarTab('search')}
-            >
-              Vault
-            </button>
-          </div>
-
-          {activeSidebarTab === 'explorer' ? (
-            <div className="sidebarPanel">
-              <p className="panelTitle">Files</p>
-              {treeNodes.length ? (
-                <ExplorerTree
-                  nodes={treeNodes}
-                  expandedFolders={expandedFolders}
-                  onToggleFolder={handleToggleFolder}
-                  onSelectFile={handleOpenExplorerFile}
-                  selectedFilePath={selectedExplorerPath}
-                  isReading={isReading}
-                />
-              ) : (
-                <p className="emptyText">Select a vault to load markdown notes and crashpad files.</p>
-              )}
-            </div>
-          ) : (
-            <div className="sidebarPanel">
-              <p className="panelTitle">Vault Info</p>
-              <p className="detailKey">Path</p>
-              <p className="detailValue">{vaultPath ?? 'No vault selected.'}</p>
-              <p className="detailKey">Card store</p>
-              <p className="detailValue">{vault?.cardStore?.cardStorePath ?? 'Uses the default card store path when a vault is opened.'}</p>
-              <p className="detailKey">Markdown files</p>
-              <p className="detailValue">{vault?.notes.length ?? 0}</p>
-              <p className="detailKey">Crashpads</p>
-              <p className="detailValue">{crashpadSummaries.length}</p>
-              <p className="detailKey">Indexed entries</p>
-              <p className="detailValue">{vault?.index.entries.length ?? 0}</p>
-              <p className="detailKey">Last rebuild</p>
-              <p className="detailValue">{formatCardRebuildSummary(vault?.lastCardRebuild) ?? 'Card sync has not run yet.'}</p>
-            </div>
-          )}
-        </aside>
+        <AppSidebar
+          onToggleFolder={handleToggleFolder}
+          onSelectFile={handleOpenExplorerFile}
+        />
 
         <div
           className={`splitter splitterLeft ${activeResizer === 'left' ? 'active' : ''} ${isSidebarVisible ? '' : 'paneHidden'}`}

@@ -123,3 +123,36 @@ export function buildExplorerTree(entries: ExplorerEntry[], options: BuildExplor
 
   return sortNodes(root.children);
 }
+
+// ── Virtualization helpers ───────────────────────────────────────────────────
+
+/** A single visible row in the flattened tree. */
+export interface FlatTreeRow {
+  node: ExplorerNode;
+  depth: number;
+}
+
+/**
+ * Flattens the explorer tree into a linear list of visible rows,
+ * respecting folder expand/collapse state.
+ *
+ * Used by the virtualized ExplorerTree to map a scroll offset to
+ * the correct tree nodes without rendering the entire tree.
+ */
+export function flattenVisibleNodes(
+  nodes: ExplorerNode[],
+  expandedFolders: Record<string, boolean>,
+  depth = 0,
+): FlatTreeRow[] {
+  const result: FlatTreeRow[] = [];
+
+  for (const node of nodes) {
+    result.push({ node, depth });
+
+    if (node.kind === 'folder' && expandedFolders[node.path]) {
+      result.push(...flattenVisibleNodes(node.children, expandedFolders, depth + 1));
+    }
+  }
+
+  return result;
+}

@@ -24,8 +24,28 @@ import {
 
 const INTERNAL_DIRECTORY_NAME = '.crashweaver';
 const INDEX_FILE_NAME = 'index.json';
+
+/**
+ * Max characters of a card's raw_content to include in the Weaver context.
+ * 600 chars captures the core idea of most cards without bloating the prompt.
+ * Typical crash cards are 100–500 chars; 600 gives headroom for longer ones
+ * while keeping the context snapshot compact enough for 8–16 candidate notes.
+ */
 const CARD_RAW_CONTENT_EXCERPT_CHARS = 600;
+
+/**
+ * Max characters of user-selected text from the active editor to include.
+ * Same rationale as CARD_RAW_CONTENT_EXCERPT_CHARS — the selection provides
+ * situational context ("insert near this paragraph") without needing the full note.
+ */
 const SELECTED_TEXT_EXCERPT_CHARS = 600;
+
+/**
+ * Lines of surrounding content to include when excerpting a note reference.
+ * 4 lines above and below the referenced boundary gives the LLM enough
+ * surrounding context to understand where the card sits in the note
+ * without pulling in the entire note body.
+ */
 const REFERENCE_EXCERPT_PADDING_LINES = 4;
 
 const STOP_WORDS = new Set([

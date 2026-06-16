@@ -308,9 +308,17 @@
 }
 
 .sidebarPanel {
+  display: flex;
+  flex-direction: column;
   padding: 0.6rem 0.5rem 0.9rem;
   min-height: 0;
+  overflow: hidden;
+}
+
+/* Scrollable wrapper for non-virtualized sidebar content (e.g. Vault Info tab). */
+.sidebarPanelScroller {
   overflow: auto;
+  min-height: 0;
 }
 
 .panelTitle {
