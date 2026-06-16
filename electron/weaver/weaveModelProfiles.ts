@@ -232,7 +232,8 @@ function resolveBudget(request: WeavePlanRequest, settings?: WeaverSettings | nu
       maxTokens: BUDGET_VALIDATION_BOUNDS.maxTokens,
       timeoutMs: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs,
       temperature: request.kind === 'guided-insert' ? 0.15 : (request.strength === 'go-ham' ? 0.5 : request.strength === 'standard' ? 0.3 : 0.18),
-      iterationLimit: BUDGET_VALIDATION_BOUNDS.maxIterations,
+      // When unrestricted, allow up to 200 tool calls (still has a safety cap)
+      iterationLimit: 200,
     };
   }
 

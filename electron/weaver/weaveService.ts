@@ -157,7 +157,10 @@ export async function generateWeavePlan(
     // No API key configured — embeddings are unavailable, keyword ranking only
   }
 
-  const context = await buildWeaveContextSnapshot(normalizedRequest, embeddingOptions ? { embedding: embeddingOptions } : undefined);
+  const context = await buildWeaveContextSnapshot(normalizedRequest, {
+    ...(embeddingOptions ? { embedding: embeddingOptions } : {}),
+    settings,
+  });
   const result = await activeProvider.generatePlan(normalizedRequest, context, {
     requestLogDirectory,
     onProgress,
@@ -171,35 +174,36 @@ export function checkWeaveProvider() {
 
 // ── Session history ───────────────────────────────────────────────────────────
 
-export type { WeaverSessionSummary, WeaverSessionDetail } from './weaverSessionHistory';
+export type { WeaverSessionSummary, WeaverSessionDetail, WeaverSessionStep } from './weaverSessionHistory';
 
-async function resolveSessionLogsDirectory(): Promise<string | null> {
+async function resolveSessionLogsDirectory(rootPath?: string): Promise<string | null> {
   const configuredDirectory = await getWeaverRequestLogsDirectory();
   if (configuredDirectory) return configuredDirectory;
-  // If no explicit logs directory is configured, sessions are not available
+  // Fall back to the vault's default weaver-request-logs directory
+  if (rootPath) return path.join(rootPath, '.crashweaver', 'weaver-request-logs');
   return null;
 }
 
-export async function listSessions(): Promise<WeaverSessionSummary[]> {
-  const logsDir = await resolveSessionLogsDirectory();
+export async function listSessions(rootPath?: string): Promise<WeaverSessionSummary[]> {
+  const logsDir = await resolveSessionLogsDirectory(rootPath);
   if (!logsDir) return [];
   return listWeaverSessions(logsDir);
 }
 
-export async function getSession(sessionId: string): Promise<WeaverSessionDetail | null> {
-  const logsDir = await resolveSessionLogsDirectory();
+export async function getSession(sessionId: string, rootPath?: string): Promise<WeaverSessionDetail | null> {
+  const logsDir = await resolveSessionLogsDirectory(rootPath);
   if (!logsDir) return null;
   return getWeaverSession(logsDir, sessionId);
 }
 
-export async function deleteSession(sessionId: string): Promise<boolean> {
-  const logsDir = await resolveSessionLogsDirectory();
+export async function deleteSession(sessionId: string, rootPath?: string): Promise<boolean> {
+  const logsDir = await resolveSessionLogsDirectory(rootPath);
   if (!logsDir) return false;
   return deleteWeaverSession(logsDir, sessionId);
 }
 
-export async function clearSessions(): Promise<number> {
-  const logsDir = await resolveSessionLogsDirectory();
+export async function clearSessions(rootPath?: string): Promise<number> {
+  const logsDir = await resolveSessionLogsDirectory(rootPath);
   if (!logsDir) return 0;
   return clearWeaverSessions(logsDir);
 }

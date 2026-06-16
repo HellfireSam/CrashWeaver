@@ -387,7 +387,19 @@ function scoreCandidateNote(
   return score;
 }
 
-function resolveRetrievalBudget(request: WeavePlanRequest): WeaveRetrievalBudget {
+function resolveRetrievalBudget(request: WeavePlanRequest, settings?: import('../vault-contract').WeaverSettings | null): WeaveRetrievalBudget {
+  // When budget restrictions are disabled, return generous unlimited-like values
+  if (settings?.disableBudgetRestrictions) {
+    return {
+      maxCandidateNotes: 60,
+      maxDirectorySummaries: 40,
+      maxNoteReads: 30,
+      maxExcerptChars: 10000,
+      maxFullNoteChars: 50000,
+      maxRetrievedChars: 200000,
+    };
+  }
+
   if (request.kind === 'guided-insert') {
     const expanded = request.permissions.editContent || request.permissions.createNote;
 
@@ -640,6 +652,8 @@ export interface BuildWeaveContextOptions {
     appUrl?: string;
     now?: () => number;
   };
+  /** Weaver settings, used to determine if budget restrictions are disabled. */
+  settings?: import('../vault-contract').WeaverSettings | null;
 }
 
 export async function buildWeaveContextSnapshot(
@@ -647,7 +661,7 @@ export async function buildWeaveContextSnapshot(
   options?: BuildWeaveContextOptions,
 ): Promise<WeaveContextSnapshot> {
   const warnings: string[] = [];
-  const retrievalBudget = resolveRetrievalBudget(request);
+  const retrievalBudget = resolveRetrievalBudget(request, options?.settings);
   const cardStore = await getVaultCardStore(request.rootPath);
   const card = await readCardDocument(cardStore.cardStorePath, request.cardUid);
 

@@ -219,7 +219,50 @@ export function buildToolLoopLayer(
   maxToolCalls: number,
   maxNoteReads?: number,
   maxRetrievedChars?: number,
+  unrestricted?: boolean,
 ): string {
+  // When budget restrictions are disabled, don't confuse the LLM with artificial limits
+  if (unrestricted) {
+    return `# READ-ONLY RETRIEVAL TOOL LOOP
+You may use a read-only retrieval loop before returning the final plan.
+There are no strict limits on tool calls — use as many as you need to gather sufficient context, then finalize when ready.
+
+Each assistant turn must be exactly ONE of these JSON shapes:
+
+Tool request (when you need more context):
+  {
+    "type": "tool",
+    "thought": "<one-sentence explanation of what you are searching for or analyzing>",
+    "toolName": "read_note_excerpt",
+    "arguments": { "filePath": "path/to/note.md", "maxChars": 1400 }
+  }
+
+Final plan (when ready):
+  {
+    "type": "final",
+    "thought": "<one-sentence explanation of why the final plan is complete>",
+    "plan": { <Stage 5 plan matching the output format above> }
+  }
+
+Available tools for toolName:
+  - list_candidate_notes (arguments: { limit?, directoryPath? })
+  - search_notes (arguments: { query, limit?, directoryPath? })
+  - list_directory_summary (arguments: { limit? })
+  - read_note_excerpt (arguments: { filePath, maxChars? })
+  - read_note_full (arguments: { filePath, maxChars? })
+  - read_note_span (arguments: { filePath, startAnchor, endAnchor, maxChars? })
+  - refresh_candidates (arguments: {}) — expands the candidate note set with lower-ranked notes from the vault. Use when the initial candidates don't cover what you need. Can only be called once per session.
+
+Tool constraints:
+- Tools are strictly read-only. Never request write-capable tools.
+- Request at most one tool per turn.
+- If the pre-loaded context is already sufficient, skip tools and output type="final" immediately.
+
+# WHEN TO STOP SEARCHING AND FINALIZE
+Finalize when you have enough context to justify your proposed operations.
+Do not call tools just to be thorough — finalize as soon as the plan is clear.`.trim();
+  }
+
   const noteReadLine = typeof maxNoteReads === 'number'
     ? `Note-read budget: at most ${maxNoteReads} note read${maxNoteReads === 1 ? '' : 's'} via read_note_excerpt/read_note_full/read_note_span.`
     : '';
@@ -329,6 +372,7 @@ export function buildSystemPrompt(
   maxToolCalls: number,
   maxNoteReads?: number,
   maxRetrievedChars?: number,
+  unrestricted?: boolean,
 ): string {
   const operationSchema =
     requestKind === 'guided-insert'
@@ -340,7 +384,7 @@ export function buildSystemPrompt(
     SAFETY_POLICY_LAYER,
     operationSchema,
     OUTPUT_FORMAT_LAYER,
-    buildToolLoopLayer(maxToolCalls, maxNoteReads, maxRetrievedChars),
+    buildToolLoopLayer(maxToolCalls, maxNoteReads, maxRetrievedChars, unrestricted),
   ];
 
   const overlay = buildModelOverlayLayer(profile);
@@ -386,7 +430,10 @@ export function buildRequestSpecification(
 
   lines.push(`Kind: ${request.kind}`);
   lines.push(`Focused card UID: ${request.cardUid}`);
-  lines.push(`Max operations: ${request.maxOperations ?? resolveDefaultMaxOperations(request, settings)}`);
+  // When budget restrictions are disabled, don't confuse the LLM with artificial limits
+  if (!settings?.disableBudgetRestrictions) {
+    lines.push(`Max operations: ${request.maxOperations ?? resolveDefaultMaxOperations(request, settings)}`);
+  }
 
   if (request.kind === 'guided-insert') {
     const editAllowed = request.permissions.editContent ? 'ALLOWED' : 'FORBIDDEN';

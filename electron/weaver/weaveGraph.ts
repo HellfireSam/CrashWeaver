@@ -171,6 +171,8 @@ export async function runWeaveGraph(
   settings?: import('../vault-contract').WeaverSettings | null,
 ): Promise<WeavePlanResult> {
   const effectiveBudget = resolveWeaveEffectiveBudget(modelProfile, contextSnapshot);
+  const sessionId = logger?.sessionId;
+  const unrestricted = settings?.disableBudgetRestrictions === true;
 
   const initialMessages = [
     systemMsg(
@@ -180,6 +182,7 @@ export async function runWeaveGraph(
         effectiveBudget.promptToolCalls,
         effectiveBudget.runtimeNoteReads,
         effectiveBudget.maxRetrievedChars,
+        unrestricted,
       ),
     ),
     userMsg(
@@ -200,7 +203,7 @@ export async function runWeaveGraph(
     });
   }
 
-  onProgress?.({ phase: 'graph-start', model: resolvedModel, toolBudget: effectiveBudget.promptToolCalls });
+  onProgress?.({ phase: 'graph-start', model: resolvedModel, toolBudget: effectiveBudget.promptToolCalls, sessionId });
 
   // Instantiate the node handlers injected with dependencies
   const callModel = makeCallModelNode(httpClient, logger, onProgress);
@@ -236,14 +239,17 @@ export async function runWeaveGraph(
   let step: WeaveGraphStep = 'callModel';
   let stepCount = 0;
 
+  // When budget restrictions are disabled, raise the safety cap significantly
+  const effectiveMaxSteps = settings?.disableBudgetRestrictions ? 200 : MAX_TOTAL_STEPS;
+
   while (step !== 'done') {
     stepCount += 1;
 
     // Hard cap — prevents infinite oscillation between repair & callModel
-    if (stepCount > MAX_TOTAL_STEPS) {
+    if (stepCount > effectiveMaxSteps) {
       state = updateState(state, {
         pendingRoute: 'fail' as WeaveAgentRoute,
-        errorMessage: `Weaver exceeded the maximum ${MAX_TOTAL_STEPS} loop steps.`,
+        errorMessage: `Weaver exceeded the maximum ${effectiveMaxSteps} loop steps.`,
         errorCategory: 'provider-error' as WeaveErrorCategory,
       });
       step = 'fail';

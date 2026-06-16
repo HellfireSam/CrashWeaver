@@ -479,13 +479,13 @@ ipcMain.handle('weave:set-api-key', async (_event, key: string) => setWeaveApiKe
 
 ipcMain.handle('weave:clear-api-key', async () => clearWeaveApiKey());
 
-ipcMain.handle('weave:list-sessions', async () => listSessions());
+ipcMain.handle('weave:list-sessions', async (_event, rootPath?: string) => listSessions(rootPath));
 
-ipcMain.handle('weave:get-session', async (_event, sessionId: string) => getSession(sessionId));
+ipcMain.handle('weave:get-session', async (_event, sessionId: string, rootPath?: string) => getSession(sessionId, rootPath));
 
-ipcMain.handle('weave:delete-session', async (_event, sessionId: string) => deleteSession(sessionId));
+ipcMain.handle('weave:delete-session', async (_event, sessionId: string, rootPath?: string) => deleteSession(sessionId, rootPath));
 
-ipcMain.handle('weave:clear-sessions', async () => clearSessions());
+ipcMain.handle('weave:clear-sessions', async (_event, rootPath?: string) => clearSessions(rootPath));
 
 ipcMain.handle('crashpad:get-delete-preferences', async (_event, rootPath: string) =>
   getVaultCrashpadDeletePreferences(rootPath),

@@ -90,10 +90,10 @@ contextBridge.exposeInMainWorld('crashWeaver', {
   },
 
   // Weaver session history
-  listWeaverSessions: () => ipcRenderer.invoke('weave:list-sessions') as Promise<unknown[]>,
-  getWeaverSession: (sessionId: string) =>
-    ipcRenderer.invoke('weave:get-session', sessionId) as Promise<unknown | null>,
-  deleteWeaverSession: (sessionId: string) =>
-    ipcRenderer.invoke('weave:delete-session', sessionId) as Promise<boolean>,
-  clearWeaverSessions: () => ipcRenderer.invoke('weave:clear-sessions') as Promise<number>,
+  listWeaverSessions: (rootPath?: string) => ipcRenderer.invoke('weave:list-sessions', rootPath) as Promise<unknown[]>,
+  getWeaverSession: (sessionId: string, rootPath?: string) =>
+    ipcRenderer.invoke('weave:get-session', sessionId, rootPath) as Promise<unknown | null>,
+  deleteWeaverSession: (sessionId: string, rootPath?: string) =>
+    ipcRenderer.invoke('weave:delete-session', sessionId, rootPath) as Promise<boolean>,
+  clearWeaverSessions: (rootPath?: string) => ipcRenderer.invoke('weave:clear-sessions', rootPath) as Promise<number>,
 });

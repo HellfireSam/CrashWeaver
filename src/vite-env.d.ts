@@ -72,13 +72,13 @@ declare global {
       /** Subscribe to live Weaver plan generation progress. Returns an unsubscribe function. */
       onWeavePlanProgress: (callback: (event: unknown) => void) => () => void;
       /** List all past Weaver sessions from the logs directory, newest first. */
-      listWeaverSessions: () => Promise<unknown[]>;
+      listWeaverSessions: (rootPath?: string) => Promise<unknown[]>;
       /** Get full detail for a single Weaver session by its ID. */
-      getWeaverSession: (sessionId: string) => Promise<unknown | null>;
+      getWeaverSession: (sessionId: string, rootPath?: string) => Promise<unknown | null>;
       /** Delete a single Weaver session log file. */
-      deleteWeaverSession: (sessionId: string) => Promise<boolean>;
+      deleteWeaverSession: (sessionId: string, rootPath?: string) => Promise<boolean>;
       /** Delete all Weaver session log files. Returns count of files deleted. */
-      clearWeaverSessions: () => Promise<number>;
+      clearWeaverSessions: (rootPath?: string) => Promise<number>;
     };
   }
 }

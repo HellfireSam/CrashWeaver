@@ -62,15 +62,21 @@ const DEFAULT_MAX_OPERATIONS_BY_STRENGTH: Record<WeaveStrength, number> = {
   'go-ham': 16,
 };
 const MAX_ALLOWED_OPERATIONS = 20;
+/** Operation cap used when the user has disabled all budget restrictions. */
+const UNRESTRICTED_MAX_OPERATIONS = 100;
 
 /**
  * Resolves the effective max operation count for a request.
  * Checks user settings first, falls back to strength-scaled defaults.
+ * When budget restrictions are disabled, returns a generous unrestricted cap.
  */
 export function resolveDefaultMaxOperations(
   request: WeavePlanRequest,
   settings?: WeaverSettings | null,
 ): number {
+  if (settings?.disableBudgetRestrictions) {
+    return UNRESTRICTED_MAX_OPERATIONS;
+  }
   if (request.kind === 'guided-insert') {
     return settings?.guidedInsertMaxOperations ?? DEFAULT_MAX_OPERATIONS_GUIDED;
   }
@@ -670,7 +676,9 @@ export function validateWeavePlanRequest(
   }
 
   const cardUid = normalizeCardUid(request.cardUid, 'Weaver cardUid');
-  const maxOperations = Math.min(MAX_ALLOWED_OPERATIONS, Math.max(1, Math.trunc(request.maxOperations ?? resolveDefaultMaxOperations(request, settings))));
+  const effectiveMax = resolveDefaultMaxOperations(request, settings);
+  const absoluteCap = settings?.disableBudgetRestrictions ? UNRESTRICTED_MAX_OPERATIONS : MAX_ALLOWED_OPERATIONS;
+  const maxOperations = Math.min(absoluteCap, Math.max(1, Math.trunc(request.maxOperations ?? effectiveMax)));
   const preferredModel = normalizeOptionalString(request.preferredModel);
   const activeNotePath = request.activeNotePath
     ? normalizeVaultRelativePath(rootPath, request.activeNotePath, { noteOnly: true })

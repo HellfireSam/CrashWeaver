@@ -109,11 +109,11 @@ export function assistantMsg(content: string): WeaveMessage {
  * (which is incompatible with SSE token streaming).
  */
 export type WeaveProgressEvent =
-  | { phase: 'graph-start'; model: string; toolBudget: number }
+  | { phase: 'graph-start'; model: string; toolBudget: number; sessionId?: string }
   | { phase: 'call-model-start'; turn: number }
   | { phase: 'call-model-end'; turn: number; parsedAs: 'tool' | 'final' | 'unparseable' | 'invalid-shape'; thought?: string }
-  | { phase: 'execute-tool-start'; toolName: string; turn: number }
-  | { phase: 'execute-tool-end'; toolName: string; ok: boolean; callsRemaining: number }
+  | { phase: 'execute-tool-start'; toolName: string; toolTarget?: string; toolArgs?: Record<string, unknown>; turn: number }
+  | { phase: 'execute-tool-end'; toolName: string; ok: boolean; callsRemaining: number; observationSummary?: string; toolArgs?: Record<string, unknown> }
   | { phase: 'repair'; repairType: string; repairAttempt: number }
   | { phase: 'finalize-start' }
   | { phase: 'validate-start' }

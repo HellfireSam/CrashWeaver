@@ -7,6 +7,9 @@ import type {
   WeaveProviderHealth,
   WeaveStrength,
 } from '../../electron/vault-contract';
+import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
+import { traceToLiveEntries } from './WeaverProgressFeed';
+import { WeaverSessionHistory, type WeaverSessionSummary, type WeaverSessionDetail } from './WeaverSessionHistory';
 
 type WeaverProposalPanelProps = {
   canGenerate: boolean;
@@ -24,6 +27,8 @@ type WeaverProposalPanelProps = {
   intent: string;
   planResult: WeavePlanResult | null;
   providerHealth: WeaveProviderHealth | null;
+  sessions: WeaverSessionSummary[];
+  activeSessionId: string | null;
   onClose: () => void;
   onGenerate: () => Promise<void> | void;
   onIntentChange: (value: string) => void;
@@ -34,6 +39,14 @@ type WeaverProposalPanelProps = {
   onStrengthChange: (value: WeaveStrength) => void;
   /** Called when the user wants to apply selected plan operations. */
   onApplyOperations?: (operations: WeavePlanResult['plan']['operations']) => void;
+  /** Called when the user wants to re-run a historical session. */
+  onReRunFromHistory?: (session: WeaverSessionDetail) => void;
+  /** Called when a session is deleted (to refresh the list). */
+  onDeleteSession?: (sessionId: string) => void;
+  /** Called when all sessions should be cleared. */
+  onClearSessions?: () => void;
+  /** The current vault root path, for resolving session log files. */
+  vaultPath?: string;
 };
 
 type WeaverDockId = 'model' | 'workflow' | 'options';
@@ -299,6 +312,12 @@ export function WeaverProposalPanel({
   onCreateNoteChange,
   onStrengthChange,
   onApplyOperations,
+  sessions,
+  activeSessionId,
+  onReRunFromHistory,
+  onDeleteSession,
+  onClearSessions,
+  vaultPath,
 }: WeaverProposalPanelProps) {
   const controlSurfaceRef = useRef<HTMLDivElement | null>(null);
   const toolbarHostRef = useRef<HTMLDivElement | null>(null);
@@ -307,6 +326,7 @@ export function WeaverProposalPanel({
     workflow: null,
     options: null,
   });
+  const [view, setView] = useState<'composer' | 'history'>('composer');
   const [activeDock, setActiveDock] = useState<WeaverDockId | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ left: number; width: number } | null>(null);
   const [modelList, setModelList] = useState<WeaveModelInfo[]>([]);
@@ -314,7 +334,10 @@ export function WeaverProposalPanel({
   const [modelSearch, setModelSearch] = useState('');
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [traceExpanded, setTraceExpanded] = useState(false);
-  const [progressPhase, setProgressPhase] = useState<string | null>(null);
+  const [liveEntries, setLiveEntries] = useState<WeaverLiveEntry[]>([]);
+  const [progressFeedCollapsed, setProgressFeedCollapsed] = useState(false);
+  const [toolBudget, setToolBudget] = useState<number | undefined>(undefined);
+  const [internalActiveSessionId, setInternalActiveSessionId] = useState<string | null>(null);
   const [isStubProvider, setIsStubProvider] = useState(false);
   const [selectedOps, setSelectedOps] = useState<Set<number>>(new Set());
   const healthChecked = useRef(false);
@@ -415,23 +438,87 @@ export function WeaverProposalPanel({
     };
   }, [activeDock]);
 
-  // Subscribe to live progress events during generation
+  // Subscribe to live progress events during generation — accumulate into live feed
   useEffect(() => {
     if (!isGenerating) {
-      setProgressPhase(null);
+      setLiveEntries([]);
+      setToolBudget(undefined);
+      setProgressFeedCollapsed(false);
+      setInternalActiveSessionId(null);
       return;
     }
     const unsubscribe = window.crashWeaver.onWeavePlanProgress((event: unknown) => {
-      const e = event as { phase?: string; toolName?: string; operations?: number };
-      if (e.phase) {
-        const label = e.phase === 'execute-tool-start' ? `Reading ${e.toolName ?? 'note'}…`
-          : e.phase === 'call-model-start' ? 'Thinking…'
-          : e.phase === 'validate-start' ? 'Validating plan…'
-          : e.phase === 'graph-complete' ? `Done — ${e.operations ?? '?'} ops`
-          : e.phase === 'graph-fail' ? 'Generation failed'
-          : e.phase;
-        setProgressPhase(label);
+      const e = event as {
+        phase?: string;
+        turn?: number;
+        thought?: string;
+        toolName?: string;
+        toolTarget?: string;
+        toolArgs?: Record<string, unknown>;
+        toolBudget?: number;
+        ok?: boolean;
+        parsedAs?: string;
+        callsRemaining?: number;
+        observationSummary?: string;
+        repairType?: string;
+        repairAttempt?: number;
+        operations?: number;
+        latencyMs?: number;
+        error?: string;
+        errorCategory?: string;
+        model?: string;
+        sessionId?: string;
+      };
+
+      if (e.phase === 'graph-start') {
+        if (e.toolBudget !== undefined) setToolBudget(e.toolBudget);
+        if (e.sessionId) setInternalActiveSessionId(e.sessionId);
       }
+
+      const phase = e.phase ?? 'unknown';
+      let status: WeaverLiveEntry['status'] = 'running';
+      let detail: string | undefined;
+
+      if (phase === 'call-model-end') {
+        if (e.parsedAs === 'tool') { detail = 'Calling tool…'; status = 'ok'; }
+        else if (e.parsedAs === 'final') { detail = 'Finalizing…'; status = 'ok'; }
+        else if (e.parsedAs === 'unparseable' || e.parsedAs === 'invalid-shape') { detail = 'Parse issue — repairing'; status = 'error'; }
+        else { status = 'ok'; }
+      } else if (phase === 'execute-tool-end') {
+        status = e.ok ? 'ok' : 'error';
+        detail = e.ok ? (e.observationSummary ?? 'Tool succeeded') : 'Tool failed';
+      } else if (phase === 'repair') {
+        status = 'info';
+      } else if (phase === 'validate-end') {
+        status = e.ok ? 'ok' : 'error';
+      } else if (phase === 'graph-complete') {
+        status = 'ok';
+        detail = `${e.operations ?? '?'} ops · ${e.latencyMs ?? '?'}ms`;
+      } else if (phase === 'graph-fail') {
+        status = 'error';
+      }
+
+      const entry: WeaverLiveEntry = {
+        id: `${phase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        ts: Date.now(),
+        phase,
+        turn: e.turn,
+        thought: e.thought,
+        toolName: e.toolName,
+        toolTarget: e.toolTarget,
+        toolArguments: e.toolArgs,
+        status,
+        detail,
+        callsRemaining: e.callsRemaining,
+        repairType: e.repairType,
+        repairAttempt: e.repairAttempt,
+        operations: e.operations,
+        latencyMs: e.latencyMs,
+        errorMessage: e.error,
+        errorCategory: e.errorCategory,
+      };
+
+      setLiveEntries((prev) => [...prev, entry]);
     });
     return unsubscribe;
   }, [isGenerating]);
@@ -688,6 +775,34 @@ export function WeaverProposalPanel({
     );
   }
 
+  const handleReRun = useCallback((session: WeaverSessionDetail) => {
+    onReRunFromHistory?.(session);
+    setView('composer');
+  }, [onReRunFromHistory]);
+
+  const handleHistoryBack = useCallback(() => {
+    setView('composer');
+  }, []);
+
+  // ── History view ──────────────────────────────────────────────────────────
+
+  if (view === 'history') {
+    return (
+      <section className="weaverPanel" aria-label="Weaver session history">
+        <WeaverSessionHistory
+          sessions={sessions}
+          activeSessionId={activeSessionId ?? internalActiveSessionId}
+          isGenerating={isGenerating}
+          vaultPath={vaultPath}
+          onBack={handleHistoryBack}
+          onReRun={handleReRun}
+          onDeleteSession={(id) => onDeleteSession?.(id)}
+          onClearAll={() => onClearSessions?.()}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="weaverPanel" aria-label="Weaver proposal panel">
       <div ref={controlSurfaceRef} className="weaverComposer">
@@ -708,6 +823,18 @@ export function WeaverProposalPanel({
             <span className="weaverStatusDot" />
             <span>{providerStatusLabel}</span>
           </span>
+          <button
+            type="button"
+            className="weaverIconButton"
+            onClick={() => setView('history')}
+            aria-label="View session history"
+            title="Session history"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          </button>
           <button type="button" className="weaverIconButton" onClick={onClose} aria-label="Close Weaver panel" title="Close Weaver panel">
             <WeaverIcon name="close" />
           </button>
@@ -783,11 +910,15 @@ export function WeaverProposalPanel({
           </div>
         ) : null}
 
-        {isGenerating && progressPhase ? (
-          <div className="weaverProgressBar">
-            <span className="weaverProgressLabel">{progressPhase}</span>
-            <span className="weaverProgressDots"><span /><span /><span /></span>
-          </div>
+        {liveEntries.length > 0 ? (
+          <WeaverProgressFeed
+            entries={liveEntries}
+            isGenerating={isGenerating}
+            isCollapsed={progressFeedCollapsed && isGenerating}
+            model={model}
+            toolBudget={toolBudget}
+            onToggleCollapse={() => setProgressFeedCollapsed((v) => !v)}
+          />
         ) : null}
 
         <label className="weaverComposerField">
@@ -846,61 +977,14 @@ export function WeaverProposalPanel({
           ) : null}
 
           {planResult.trace && planResult.trace.length > 0 ? (
-            <div className="weaverTraceList">
-              <div className="weaverTraceHeadingRow">
-                <h3 className="weaverTraceHeading">ReAct Loop Trace</h3>
-                <button
-                  type="button"
-                  className="weaverTraceToggle"
-                  onClick={() => setTraceExpanded((v) => !v)}
-                >
-                  {traceExpanded ? 'Collapse All' : 'Expand All'}
-                </button>
-              </div>
-              {planResult.trace.map((step, idx) => {
-                const diagnosticCode = getTraceDiagnosticCode(step);
-
-                return (
-                  <details key={`trace-step-${idx}`} className="weaverTraceItem" open={traceExpanded}>
-                    <summary className="weaverTraceSummary">
-                      <span className="weaverTraceHeader">
-                        <span className="weaverTraceStepBadge">Step {idx + 1}</span>
-                        {diagnosticCode ? (
-                          <span className="weaverTraceDiagnosticBadge" title={diagnosticCode}>
-                            {getDiagnosticLabel(diagnosticCode)}
-                          </span>
-                        ) : null}
-                        <span className="weaverTraceStepActionBrief">
-                          {step.thought ? (step.thought.length > 55 ? step.thought.substring(0, 55) + '...' : step.thought) : step.action ? (step.action.length > 55 ? step.action.substring(0, 55) + '...' : step.action) : 'Reasoning...'}
-                        </span>
-                      </span>
-                      <span className="weaverOperationChevron">
-                        <WeaverIcon name="chevron" />
-                      </span>
-                    </summary>
-                    <div className="weaverTraceBody">
-                      {step.thought ? (
-                        <div className="weaverTraceField">
-                          <span className="weaverTraceFieldLabel">Thought</span>
-                          <p className="weaverTraceFieldText italic">{step.thought}</p>
-                        </div>
-                      ) : null}
-                      {step.action ? (
-                        <div className="weaverTraceField">
-                          <span className="weaverTraceFieldLabel">Action</span>
-                          <pre className="weaverTracePre">{step.action}</pre>
-                        </div>
-                      ) : null}
-                      {step.observation ? (
-                        <div className="weaverTraceField">
-                          <span className="weaverTraceFieldLabel">Observation</span>
-                          <pre className="weaverTracePre">{step.observation}</pre>
-                        </div>
-                      ) : null}
-                    </div>
-                  </details>
-                );
-              })}
+            <div className="weaverSessionSteps">
+              <WeaverProgressFeed
+                entries={traceToLiveEntries(planResult.trace)}
+                isGenerating={false}
+                isCollapsed={!traceExpanded}
+                model={planResult.model}
+                onToggleCollapse={() => setTraceExpanded((v) => !v)}
+              />
             </div>
           ) : null}
 

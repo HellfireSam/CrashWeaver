@@ -18,6 +18,7 @@ import { CardsWorkspace } from './components/CardsWorkspace';
 import { CrashpadWorkspace } from './components/CrashpadWorkspace';
 import { ExplorerTree } from './components/ExplorerTree';
 import { InspectorPane } from './components/InspectorPane';
+import type { WeaverSessionSummary, WeaverSessionDetail } from './components/WeaverSessionHistory';
 import { SettingsModal } from './components/SettingsModal';
 import {
   type CardScope,
@@ -146,6 +147,8 @@ export default function App() {
     requireStrictConfirmationForExistingCards: true,
   });
   const [weaverSettings, setWeaverSettings] = useState<WeaverSettings | undefined>(undefined);
+  const [weaveSessions, setWeaveSessions] = useState<WeaverSessionSummary[]>([]);
+  const [weaveActiveSessionId, setWeaveActiveSessionId] = useState<string | null>(null);
   const [crashpadPast, setCrashpadPast] = useState<CrashpadHistoryEntry[]>([]);
   const [crashpadFuture, setCrashpadFuture] = useState<CrashpadHistoryEntry[]>([]);
   const [focusedCardUid, setFocusedCardUid] = useState<string | null>(null);
@@ -841,6 +844,67 @@ export default function App() {
     setWeaverSettings(updated);
   }, []);
 
+  // ── Session history handlers ─────────────────────────────────────────────
+
+  const fetchWeaverSessions = useCallback(async () => {
+    try {
+      const list = await window.crashWeaver.listWeaverSessions(vaultPath ?? undefined) as WeaverSessionSummary[];
+      setWeaveSessions(list);
+    } catch {
+      // Silently fail — sessions are not critical
+    }
+  }, [vaultPath]);
+
+  const handleDeleteWeaverSession = useCallback(async (sessionId: string) => {
+    try {
+      await window.crashWeaver.deleteWeaverSession(sessionId, vaultPath ?? undefined);
+      setWeaveSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+    } catch {
+      // Silently fail
+    }
+  }, [vaultPath]);
+
+  const handleClearWeaverSessions = useCallback(async () => {
+    try {
+      await window.crashWeaver.clearWeaverSessions(vaultPath ?? undefined);
+      setWeaveSessions([]);
+    } catch {
+      // Silently fail
+    }
+  }, [vaultPath]);
+
+  const handleReRunFromHistory = useCallback((session: WeaverSessionDetail) => {
+    if (!session.request) return;
+    const req = session.request as Record<string, unknown>;
+    if (typeof req.kind === 'string') setWeaveKind(req.kind as WeaveKind);
+    if (typeof req.intent === 'string') setWeaveIntent(req.intent);
+    if (typeof req.preferredModel === 'string') setWeaveModel(req.preferredModel);
+    if (req.kind === 'guided-insert') {
+      const perms = req.permissions as Record<string, boolean> | undefined;
+      if (perms) {
+        if (typeof perms.editContent === 'boolean') setWeaveEditContent(perms.editContent);
+        if (typeof perms.createNote === 'boolean') setWeaveCreateNote(perms.createNote);
+      }
+    } else if (req.kind === 'intelligent') {
+      if (typeof req.strength === 'string') setWeaveStrength(req.strength as WeaveStrength);
+    }
+    setStatusMessage('Re-loaded settings from session. Press Generate to re-run.');
+  }, []);
+
+  // Fetch sessions on mount and after each generation
+  useEffect(() => {
+    if (vaultPath) {
+      void fetchWeaverSessions();
+    }
+  }, [vaultPath, fetchWeaverSessions]);
+
+  // Refresh sessions after a plan completes
+  useEffect(() => {
+    if (!isGeneratingWeavePlan && weavePlanResult) {
+      void fetchWeaverSessions();
+    }
+  }, [isGeneratingWeavePlan, weavePlanResult, fetchWeaverSessions]);
+
   return (
     <main className="appShell" style={layoutStyle}>
       <div className={`windowUtilityStrip ${isInspectorVisible ? 'inspectorAware' : ''}`}>
@@ -1231,6 +1295,8 @@ export default function App() {
           weavePlanResult={weavePlanResult}
           weaveProviderHealth={weaveProviderHealth}
           weaveStrength={weaveStrength}
+          weaveSessions={weaveSessions}
+          weaveActiveSessionId={weaveActiveSessionId}
           onGenerateWeavePlan={handleGenerateWeavePlan}
           onPrepareWeavePanel={handlePrepareWeavePanel}
           onSetFocusedWindow={setFocusedWindow}
@@ -1240,6 +1306,9 @@ export default function App() {
           onWeaveEditContentChange={setWeaveEditContent}
           onWeaveCreateNoteChange={setWeaveCreateNote}
           onWeaveStrengthChange={setWeaveStrength}
+          onWeaveReRunFromHistory={handleReRunFromHistory}
+          onWeaveDeleteSession={handleDeleteWeaverSession}
+          onWeaveClearSessions={handleClearWeaverSessions}
         />
       </section>
 

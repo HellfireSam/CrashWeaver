@@ -384,17 +384,32 @@ export function makeExecuteToolNode(
     }
 
     const turnNumber = toolCallCount + 1;
-    onProgress?.({ phase: 'execute-tool-start', toolName: pendingToolName, turn: turnNumber });
+    const toolTarget = typeof pendingToolArgs?.filePath === 'string' ? pendingToolArgs.filePath : undefined;
+    const toolArgs = pendingToolArgs && Object.keys(pendingToolArgs).length > 0 ? { ...pendingToolArgs } : undefined;
+    onProgress?.({ phase: 'execute-tool-start', toolName: pendingToolName, toolTarget, toolArgs, turn: turnNumber });
 
     const toolResult = await toolRuntime.execute(pendingToolName, pendingToolArgs ?? {});
     const newToolCount = toolCallCount + 1;
     const callsRemaining = Math.max(0, (modelProfile?.iterationLimit ?? 0) - newToolCount);
+
+    // Extract a brief observation summary for the progress feed
+    let observationSummary: string | undefined;
+    if (toolResult.ok && toolResult.data) {
+      const dataKeys = Object.keys(toolResult.data);
+      if (dataKeys.length > 0) {
+        observationSummary = `Found data: ${dataKeys.join(', ')}`;
+      }
+    } else if (!toolResult.ok) {
+      observationSummary = toolResult.error?.slice(0, 120);
+    }
 
     onProgress?.({
       phase: 'execute-tool-end',
       toolName: pendingToolName,
       ok: (toolResult as { ok?: boolean }).ok !== false,
       callsRemaining,
+      observationSummary,
+      toolArgs,
     });
 
     const observationMsg = buildObservationMessage(pendingToolName, toolResult, callsRemaining);
@@ -567,6 +582,14 @@ export function makeValidateNode(
           operations: validated.plan.operations.length,
           warnings: validated.plan.warnings,
           latencyMs: Date.now() - startTimeMs,
+          usage: validated.usage,
+        });
+        // Store the full plan so session history can reconstruct the operations list
+        void logger.log('plan-final', {
+          plan: validated.plan,
+          model: validated.model,
+          provider: validated.provider,
+          latencyMs: validated.latencyMs,
           usage: validated.usage,
         });
       }

@@ -11,6 +11,7 @@ import type {
 import type { CardViewRecord, FocusWindow } from '../lib/cards';
 import { formatCardSyncSummary, formatFocusWindow } from '../lib/cards';
 import { WeaverProposalPanel } from './WeaverProposalPanel';
+import type { WeaverSessionSummary, WeaverSessionDetail } from './WeaverSessionHistory';
 
 type InspectorPaneProps = {
   activeCrashpad: CrashpadDocument | null;
@@ -34,6 +35,8 @@ type InspectorPaneProps = {
   weavePlanResult: WeavePlanResult | null;
   weaveProviderHealth: WeaveProviderHealth | null;
   weaveStrength: WeaveStrength;
+  weaveSessions: WeaverSessionSummary[];
+  weaveActiveSessionId: string | null;
   onGenerateWeavePlan: () => Promise<void> | void;
   onPrepareWeavePanel: () => Promise<void> | void;
   onSetFocusedWindow: (windowName: FocusWindow) => void;
@@ -43,6 +46,9 @@ type InspectorPaneProps = {
   onWeaveEditContentChange: (value: boolean) => void;
   onWeaveCreateNoteChange: (value: boolean) => void;
   onWeaveStrengthChange: (value: WeaveStrength) => void;
+  onWeaveReRunFromHistory?: (session: WeaverSessionDetail) => void;
+  onWeaveDeleteSession?: (sessionId: string) => void;
+  onWeaveClearSessions?: () => void;
 };
 
 export function InspectorPane({
@@ -67,6 +73,8 @@ export function InspectorPane({
   weavePlanResult,
   weaveProviderHealth,
   weaveStrength,
+  weaveSessions,
+  weaveActiveSessionId,
   onGenerateWeavePlan,
   onPrepareWeavePanel,
   onSetFocusedWindow,
@@ -76,6 +84,9 @@ export function InspectorPane({
   onWeaveEditContentChange,
   onWeaveCreateNoteChange,
   onWeaveStrengthChange,
+  onWeaveReRunFromHistory,
+  onWeaveDeleteSession,
+  onWeaveClearSessions,
 }: InspectorPaneProps) {
   const inspectorPanelsRef = useRef<HTMLDivElement | null>(null);
   const [isContextPanelOpen, setIsContextPanelOpen] = useState(true);
@@ -367,6 +378,9 @@ export function InspectorPane({
               planResult={weavePlanResult}
               providerHealth={weaveProviderHealth}
               strength={weaveStrength}
+              sessions={weaveSessions}
+              activeSessionId={weaveActiveSessionId}
+              vaultPath={vault?.rootPath}
               onClose={() => updatePanelVisibility(isContextPanelOpen, false)}
               onGenerate={onGenerateWeavePlan}
               onIntentChange={onWeaveIntentChange}
@@ -375,6 +389,9 @@ export function InspectorPane({
               onEditContentChange={onWeaveEditContentChange}
               onCreateNoteChange={onWeaveCreateNoteChange}
               onStrengthChange={onWeaveStrengthChange}
+              onReRunFromHistory={onWeaveReRunFromHistory}
+              onDeleteSession={onWeaveDeleteSession}
+              onClearSessions={onWeaveClearSessions}
             />
           </section>
         ) : null}
