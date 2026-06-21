@@ -4,7 +4,7 @@
 
 **Date:** 2026-06-12  
 **Author:** GitHub Copilot (DeepSeek V4 Pro)  
-**Status:** Proposal
+**Status:** Implemented (core features shipped 2026-06-19 in commit 2d65327)
 
 ---
 

@@ -116,8 +116,9 @@ Example TypeScript shape:
 
 ```ts
 export interface WeaveModelProvider {
-  generatePlan(input: WeavePlanInput): Promise<WeavePlanResult>;
-  healthCheck(): Promise<{ ok: boolean; message?: string }>;
+  generatePlan(request: WeavePlanRequest): Promise<WeavePlanResult>;
+  healthCheck(): Promise<WeaveProviderHealth>;
+  listModels(): Promise<WeaveModelInfo[]>;
 }
 ```
 
@@ -136,7 +137,7 @@ Router service:
 
 Use strict request and response contracts in `vault-contract.ts`.
 
-Suggested request contract:
+Request contract (discriminated union — see `vault-contract.ts` for full types):
 
 ```ts
 export type WeaveKind = 'guided-insert' | 'intelligent';
@@ -147,55 +148,64 @@ export interface GuidedInsertPermissions {
   createNote: boolean;
 }
 
-export interface WeavePlanRequest {
+interface WeavePlanRequestBase {
   rootPath: string;
   kind: WeaveKind;
   preferredModel?: string;
   intent: string;
   cardUid: string;
-  activeCrashpadId?: string;
-  activeCrashpadPath?: string;
   activeNotePath?: string;
+  activeCrashpadId: string;
+  activeCrashpadPath: string;
   selectedText?: string;
-  permissions?: GuidedInsertPermissions;
-  strength?: WeaveStrength;
   maxOperations?: number;
 }
+
+export interface GuidedInsertWeavePlanRequest extends WeavePlanRequestBase {
+  kind: 'guided-insert';
+  permissions: GuidedInsertPermissions;
+}
+
+export interface IntelligentWeavePlanRequest extends WeavePlanRequestBase {
+  kind: 'intelligent';
+  strength: WeaveStrength;
+}
+
+export type WeavePlanRequest = GuidedInsertWeavePlanRequest | IntelligentWeavePlanRequest;
 ```
 
-Suggested response contract for Stage 5:
+Response contract (discriminated union — see `vault-contract.ts` for full payload types):
 ```ts
-export interface WeavePlanOperation {
-  kind:
-    | 'insert-boundary-pair'
-    | 'edit-note-content'
-    | 'create-note'
-    | 'rename-note'
-    | 'move-note'
-    | 'delete-note'
-    | 'create-directory'
-    | 'rename-directory'
-    | 'move-directory'
-    | 'delete-directory';
-  targetPath?: string;
-  payload: Record<string, unknown>;
-  rationale: string;
-}
+export type WeavePlanOperationKind =
+  | 'insert-boundary-pair'
+  | 'edit-note-content'
+  | 'create-note'
+  | 'rename-note'
+  | 'move-note'
+  | 'delete-note'
+  | 'create-directory'
+  | 'rename-directory'
+  | 'move-directory'
+  | 'delete-directory';
 
-export interface WeavePlan {
-  kind: WeaveKind;
-  permissions?: GuidedInsertPermissions;
-  strength?: WeaveStrength;
-  summary: string;
-  operations: WeavePlanOperation[];
-  warnings: string[];
-  referencedCards: string[];
-}
+export type WeavePlanOperation =
+  | InsertBoundaryPairOperation
+  | EditNoteContentOperation
+  | CreateNoteOperation
+  | RenameNoteOperation
+  | MoveNoteOperation
+  | DeleteNoteOperation
+  | CreateDirectoryOperation
+  | RenameDirectoryOperation
+  | MoveDirectoryOperation
+  | DeleteDirectoryOperation;
+
+export type WeavePlan = GuidedInsertWeavePlan | IntelligentWeavePlan;
 
 export interface WeavePlanResult {
   plan: WeavePlan;
   model: string;
-  provider: 'openrouter';
+  provider: WeaveProviderName;  // 'stub' | 'openrouter'
   trace?: WeaveReActStep[];
   usage?: {
     promptTokens?: number;
@@ -205,27 +215,26 @@ export interface WeavePlanResult {
   latencyMs: number;
 }
 
-export type WeaveReActStepKind =
-  | 'thought'
-  | 'action'
-  | 'observation'
-  | 'validation'
-  | 'repair'
-  | 'error';
-
 export interface WeaveReActStep {
-  kind: WeaveReActStepKind;
-  message: string;
-  details?: Record<string, unknown>;
-  ts?: string;
+  thought?: string;
+  action?: string;
+  observation?: string;
+  diagnostics?: {
+    code: 'budget-note-reads-exhausted' | 'budget-chars-exhausted'
+      | 'note-outside-candidates' | 'invalid-arguments'
+      | 'unsupported-tool' | 'runtime-error';
+    recoverable: boolean;
+  };
 }
 
 export interface WeaverSettings {
-  preferredModel?: string;
+  configured: boolean;
+  preferredModel: string | null;
   disableBudgetRestrictions?: boolean;
-  budgetMaxTokens?: number;
-  budgetTimeoutMs?: number;
-  budgetIterationLimit?: number;
+  // Per-strength token/timeout/iteration/operation overrides (18 fields total)
+  guidedInsertBaseMaxTokens?: number;
+  guidedInsertBaseTimeoutMs?: number;
+  // … (see vault-contract.ts for all fields)
 }
 ```
 
@@ -291,20 +300,37 @@ Context minimization:
 
 ## 10. IPC And Preload Surface
 
-Add IPC channels in main process:
-- `weave:generate-plan`
-- `weave:health-check`
-- `weave:update-settings`
+IPC channels in main process:
 
-Optional for streaming status:
-- `weave:generate-plan-stream-start`
-- `weave:generate-plan-stream-cancel`
-- event channel `weave:status`
+**Plan generation & provider:**
+- `weave:generate-plan` — run Weaver agent loop
+- `weave:health-check` — provider availability
+- `weave:is-stub-provider` — detect demo/stub mode
+- `weave:list-models` — available models from OpenRouter
 
-Preload additions should mirror existing style:
+**Settings & API key:**
+- `weave:get-settings` / `weave:update-settings` — persisted WeaverSettings
+- `weave:set-preferred-model` — convenience for model persistence
+- `weave:set-api-key` / `weave:clear-api-key` — encrypted API key storage
+
+**Request logs:**
+- `weave:get-request-logs-directory` / `weave:set-request-logs-directory`
+
+**Session history:**
+- `weave:list-sessions` / `weave:get-session` / `weave:delete-session` / `weave:clear-sessions`
+
+**Push events (renderer subscribes):**
+- `weave:plan-progress` — `WeaveProgressEvent` stream (11 event variants) during generation
+
+Preload surface mirrors these via `contextBridge.exposeInMainWorld('crashWeaver', { … })`:
 - `generateWeavePlan(request)`
-- `checkWeaveProvider()`
-- `updateWeaverSettings(partialSettings)`
+- `checkWeaveProvider()` / `isStubWeaveProvider()`
+- `listWeaveModels()`
+- `getWeaverSettings()` / `updateWeaverSettings(partial)` / `setWeaverPreferredModel(model)`
+- `setWeaverApiKey(key)` / `clearWeaverApiKey()`
+- `getWeaverRequestLogsDirectory()` / `setWeaverRequestLogsDirectory(path)`
+- `listWeaverSessions(rootPath?)` / `getWeaverSession(id, rootPath?)` / `deleteWeaverSession(id, rootPath?)` / `clearWeaverSessions(rootPath?)`
+- `onWeavePlanProgress(callback)` — returns unsubscribe function
 
 Renderer should consume typed responses only.
 
@@ -386,7 +412,7 @@ Unit tests:
 Test files (under `tests/electron/`):
 - `weaveGraphState.test.cjs`, `weaveGraph.test.cjs`, `weaveGraphNodes.test.cjs`
 - `weaveHttpClient.test.cjs`, `openRouterClient.test.cjs`, `stubWeaveProvider.test.cjs`
-- `weavePlanSchema.test.cjs`, `weavePromptBuilder.test.cjs`
+- `weavePlanSchema.test.cjs`, `weavePromptBuilder.test.cjs` (tests weavePlanPrompts — legacy filename)
 - `weaveModelProfiles.test.cjs`, `weaveContextService.test.cjs`
 - `weaveTraceCompactor.test.cjs`
 - `weaverEmbeddingService.test.cjs` (NEW)

@@ -93,6 +93,23 @@ Stage 5 services (`electron/weaver/`):
 Planned services:
 - `reviewService.ts`: future scheduling and familiarity updates over the shared card schema.
 
+Renderer architecture (`src/`):
+- `App.tsx`: root component wired to state contexts and error boundary.
+- `components/ErrorBoundary.tsx` / `components/AppErrorFallback.tsx`: React error boundaries preventing white-screen crashes; catch renderer exceptions and display recovery UI.
+- `components/AppSidebar.tsx`: right-panel container hosting Inspector, Weaver, and session history subpanels with independent collapse/expand.
+- `components/ExplorerTree.tsx`: virtualized vault file tree using `react-window` `FixedSizeList` + `ResizeObserver` self-measuring; DOM node count stays constant (~30–50) regardless of vault size.
+- `components/WeaverProposalPanel.tsx`: Weaver composer, live progress feed, ReAct trace inspection, apply-plan checkboxes.
+- `components/WeaverProgressFeed.tsx`: step-timeline UI for live generation progress and post-hoc trace rendering (icon markers, vertical connectors, thought text, tool args disclosure).
+- `components/WeaverSessionHistory.tsx`: grouped session list (Today/Yesterday/Older), detail view, filter/search, re-run from history, delete/clear-all.
+- `components/SettingsModal.tsx`: Weaver budget controls per strength mode (Guided Insert / Light / Standard / Go Ham) with min/max bounds.
+- `components/CardsWorkspace.tsx` / `components/CrashpadWorkspace.tsx` / `components/CardMetadataPanel.tsx` / `components/InspectorPane.tsx`: card authoring, crashpad canvas, and vault inspection surfaces.
+- `state/AppStateProvider.tsx`: root context provider composing Vault, Editor, Weaver, and UI contexts.
+- `state/VaultContext.tsx` / `state/EditorContext.tsx` / `state/WeaverContext.tsx` / `state/UIContext.tsx`: React contexts replacing 47 useState calls with structured state management (error boundaries, sidebar visibility, vault descriptor, editor mode, weaver state).
+
+Key renderer dependencies:
+- `react-window`: virtualized list rendering for ExplorerTree and other large lists.
+- `chokidar` (main process): cross-platform file watcher replacing fragile `fs.watch` + manual debounce/queue/restart (~180→~50 lines).
+
 ## 3. Functional Areas
 
 Crashpad:
