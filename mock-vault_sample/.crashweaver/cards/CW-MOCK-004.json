@@ -1,0 +1,30 @@
+{
+  "uid": "CW-MOCK-004",
+  "type": [],
+  "raw_content": "### Composition Favors Flexibility\nComposition lets behavior be swapped by replacing collaborators instead of subclass trees.\nIt often produces smaller units with clearer responsibilities.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "architecture/coupling - Copy.md",
+      "start_line": 6,
+      "end_line": 10
+    },
+    {
+      "note_path": "architecture/coupling.md",
+      "start_line": 8,
+      "end_line": 15
+    },
+    {
+      "note_path": "programming/oop.md",
+      "start_line": 16,
+      "end_line": 24
+    }
+  ]
+}

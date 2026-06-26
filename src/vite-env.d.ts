@@ -14,6 +14,8 @@ import type {
   CrashpadSummary,
   VaultDescriptor,
   VaultNoteDocument,
+  WeaveApplyResult,
+  WeavePlanOperation,
   WeavePlanRequest,
   WeavePlanResult,
   WeaveModelInfo,
@@ -79,6 +81,10 @@ declare global {
       deleteWeaverSession: (sessionId: string, rootPath?: string) => Promise<boolean>;
       /** Delete all Weaver session log files. Returns count of files deleted. */
       clearWeaverSessions: (rootPath?: string) => Promise<number>;
+      /** Apply a list of Weaver plan operations to the vault. Returns per-operation results. */
+      applyWeavePlan: (rootPath: string, operations: WeavePlanOperation[]) => Promise<WeaveApplyResult>;
+      /** Subscribe to external vault file changes (chokidar). Returns an unsubscribe function. */
+      onVaultExternalChange: (callback: (changedPaths: string[]) => void) => () => void;
     };
   }
 }

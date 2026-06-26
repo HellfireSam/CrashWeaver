@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-007",
+  "type": [],
+  "raw_content": "## Circuit Breaker States\n\nCircuit breakers protect dependencies by stopping calls when failure rates cross thresholds.\nA half-open probe window checks whether downstream health has recovered before closing again.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "architecture/reliability-playbook.md",
+      "start_line": 14,
+      "end_line": 21
+    }
+  ]
+}

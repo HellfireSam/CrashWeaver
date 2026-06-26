@@ -19,8 +19,10 @@
     "start": "npm run build && electron ."
   },
   "dependencies": {
+    "@types/diff": "^7.0.2",
     "@types/react-window": "^1.8.8",
     "chokidar": "^5.0.0",
+    "diff": "^9.0.0",
     "katex": "^0.16.47",
     "markdown-it": "^14.1.1",
     "markdown-it-texmath": "^1.0.0",

@@ -176,23 +176,52 @@ export class OpenRouterWeaveProvider {
       ]);
 
       if (response.status === 401 || response.status === 403) {
+        let detail = '';
+        try {
+          const body = await response.text();
+          const parsed = JSON.parse(body) as { error?: { message?: string } };
+          if (parsed.error?.message) detail = ` — ${parsed.error.message}`;
+        } catch { /* ignore parse failures */ }
         return {
           ok: false,
           provider: 'openrouter',
           configured: true,
           model,
-          message: 'Invalid API key. Update your key in Settings → Weaver.',
+          message: `Invalid API key${detail}. Update your key in Settings → Weaver.`,
           errorCategory: 'auth-error',
         };
       }
 
-      if (!response.ok) {
+      if (response.status === 402) {
+        let detail = '';
+        try {
+          const body = await response.text();
+          const parsed = JSON.parse(body) as { error?: { message?: string } };
+          if (parsed.error?.message) detail = ` — ${parsed.error.message}`;
+        } catch { /* ignore parse failures */ }
         return {
           ok: false,
           provider: 'openrouter',
           configured: true,
           model,
-          message: `OpenRouter returned ${response.status}.`,
+          message: `OpenRouter requires credits${detail}. Add credits at openrouter.ai/credits or use a free model.`,
+          errorCategory: 'provider-error',
+        };
+      }
+
+      if (!response.ok) {
+        let detail = '';
+        try {
+          const body = await response.text();
+          const parsed = JSON.parse(body) as { error?: { message?: string } };
+          if (parsed.error?.message) detail = ` — ${parsed.error.message}`;
+        } catch { /* ignore parse failures */ }
+        return {
+          ok: false,
+          provider: 'openrouter',
+          configured: true,
+          model,
+          message: `OpenRouter returned ${response.status}${detail}.`,
           errorCategory: 'provider-error',
         };
       }

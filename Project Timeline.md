@@ -13,6 +13,7 @@ Completed:
 - Stage 3: card boundary parser and card-store synchronization
 - Stage 4: crashpad canvas and card authoring workflows
 - Stage 5: Weaver planning — guided insert + intelligent restructuring, live OpenRouter path, session history, live progress feed, budget controls, schema/repair hardening, embedding search
+- Stage 6: approval layer and diff UX — accept/reject diff gate, apply service for 10 operation kinds, per-operation diff previews, destructive-op confirmation dialog, apply result feedback
 
 Planned:
 - Stage 6: accept/reject diff gate and apply or reject UX for Weaver changes
@@ -28,7 +29,7 @@ Planned:
 | 3. Crash Card Parser and Card Store Sync | complete | Strict UID parser and reference sync |
 | 4. Crashpad Canvas and Card Authoring | complete | Crashpad files, card CRUD flows, undo/redo |
 | 5. Weaver Planning and Guided Insert | complete | Guided insert with optional `edit-content` / `create-note` permissions, intelligent light/standard/go ham restructuring, live OpenRouter, session history, progress feed, budget controls, embedding search; read-only proposal staging |
-| 6. Approval Layer and Diff UX | planned | Explicit accept/reject diff review before any Weaver writes |
+| 6. Approval Layer and Diff UX | complete | Explicit accept/reject diff review before any Weaver writes |
 | 7. Card-Level Scheduling and Review | planned | Familiarity and next-review loop |
 | 8. Test Hardening and Release Prep | planned | Integration coverage and release checks |
 

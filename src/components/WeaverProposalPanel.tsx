@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   WeaveKind,
   WeaveModelInfo,
-  WeavePlanOperationKind,
   WeavePlanResult,
   WeaveProviderHealth,
   WeaveStrength,
@@ -10,6 +9,10 @@ import type {
 import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
 import { traceToLiveEntries } from './WeaverProgressFeed';
 import { WeaverSessionHistory, type WeaverSessionSummary, type WeaverSessionDetail } from './WeaverSessionHistory';
+import { WeaverDiffPreview } from './WeaverDiffPreview';
+import { WeaverUnifiedDiffModal } from './WeaverUnifiedDiffModal';
+import { WeaverOperationItem, WEAVE_OPERATION_META } from './WeaverOperationItem';
+import type { WeaveApplyResult, WeavePlanOperation } from '../../electron/vault-contract';
 
 type WeaverProposalPanelProps = {
   canGenerate: boolean;
@@ -38,7 +41,13 @@ type WeaverProposalPanelProps = {
   onCreateNoteChange: (value: boolean) => void;
   onStrengthChange: (value: WeaveStrength) => void;
   /** Called when the user wants to apply selected plan operations. */
-  onApplyOperations?: (operations: WeavePlanResult['plan']['operations']) => void;
+  onApplyOperations?: (operations: WeavePlanOperation[]) => void;
+  /** Called when the user wants to start a fresh session (clears current plan). */
+  onNewSession?: () => void;
+  /** Apply result from the last apply action, if any. */
+  applyResult?: WeaveApplyResult | null;
+  /** Whether an apply is currently in progress. */
+  isApplying?: boolean;
   /** Called when the user wants to re-run a historical session. */
   onReRunFromHistory?: (session: WeaverSessionDetail) => void;
   /** Called when a session is deleted (to refresh the list). */
@@ -102,19 +111,6 @@ const WEAVE_STRENGTHS: Array<{ value: WeaveStrength; label: string; caption: str
   { value: 'standard', label: 'Standard', caption: 'Balanced restructuring.' },
   { value: 'go-ham', label: 'Go Ham', caption: 'Aggressive vault reorganization.' },
 ];
-
-const WEAVE_OPERATION_META: Record<WeavePlanOperationKind, { label: string; icon: WeaverIconName }> = {
-  'insert-boundary-pair': { label: 'Embed into note', icon: 'insert' },
-  'edit-note-content': { label: 'Edit note content', icon: 'edit' },
-  'create-note': { label: 'Create vault note', icon: 'note' },
-  'rename-note': { label: 'Rename note', icon: 'rename' },
-  'move-note': { label: 'Move note', icon: 'move' },
-  'delete-note': { label: 'Delete note', icon: 'delete' },
-  'create-directory': { label: 'Create directory', icon: 'folder' },
-  'rename-directory': { label: 'Rename directory', icon: 'rename' },
-  'move-directory': { label: 'Move directory', icon: 'move' },
-  'delete-directory': { label: 'Delete directory', icon: 'delete' },
-};
 
 function WeaverIcon({ name }: { name: WeaverIconName }) {
   switch (name) {
@@ -312,12 +308,15 @@ export function WeaverProposalPanel({
   onCreateNoteChange,
   onStrengthChange,
   onApplyOperations,
+  applyResult,
+  isApplying,
   sessions,
   activeSessionId,
   onReRunFromHistory,
   onDeleteSession,
   onClearSessions,
   vaultPath,
+  onNewSession,
 }: WeaverProposalPanelProps) {
   const controlSurfaceRef = useRef<HTMLDivElement | null>(null);
   const toolbarHostRef = useRef<HTMLDivElement | null>(null);
@@ -339,7 +338,43 @@ export function WeaverProposalPanel({
   const [toolBudget, setToolBudget] = useState<number | undefined>(undefined);
   const [internalActiveSessionId, setInternalActiveSessionId] = useState<string | null>(null);
   const [isStubProvider, setIsStubProvider] = useState(false);
-  const [selectedOps, setSelectedOps] = useState<Set<number>>(new Set());
+  const [acceptedOps, setAcceptedOps] = useState<Set<number>>(new Set());
+  const [rejectedOps, setRejectedOps] = useState<Set<number>>(new Set());
+  const [appliedOps, setAppliedOps] = useState<Set<number>>(new Set());
+  const [expandedOps, setExpandedOps] = useState<Set<number>>(new Set([0])); // first op expanded by default
+  const [modalOpIndex, setModalOpIndex] = useState<number | null>(null);
+
+  // Track which original plan indices are being applied, so we can map
+  // applyWeavePlan's filtered-array operationIndex back to the plan index.
+  const pendingApplyOriginalIndicesRef = useRef<number[]>([]);
+
+  // When apply results come in, mark successfully applied operations
+  useEffect(() => {
+    if (applyResult && applyResult.results.length > 0) {
+      const originalIndices = pendingApplyOriginalIndicesRef.current;
+      setAppliedOps((prev) => {
+        const next = new Set(prev);
+        for (const r of applyResult.results) {
+          if (r.ok) {
+            // r.operationIndex is the position in the filtered array sent to
+            // applyWeavePlan.  Map it back to the original plan index.
+            const planIndex = originalIndices[r.operationIndex] ?? r.operationIndex;
+            next.add(planIndex);
+          }
+        }
+        return next;
+      });
+      // Clear accept/reject for applied ops since they're now committed
+      setAcceptedOps((prev) => {
+        const next = new Set(prev);
+        for (const r of applyResult.results) {
+          if (r.ok) next.delete(r.operationIndex);
+        }
+        return next;
+      });
+    }
+  }, [applyResult]);
+
   const healthChecked = useRef(false);
   const modelListFetched = useRef(false);
   const isIntelligent = kind === 'intelligent';
@@ -826,6 +861,18 @@ export function WeaverProposalPanel({
           <button
             type="button"
             className="weaverIconButton"
+            onClick={() => onNewSession?.()}
+            aria-label="Start new session"
+            title="New session — clears current proposal"
+            disabled={isGenerating}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="weaverIconButton"
             onClick={() => setView('history')}
             aria-label="View session history"
             title="Session history"
@@ -989,47 +1036,40 @@ export function WeaverProposalPanel({
           ) : null}
 
           <div className="weaverOperationList">
-            {planResult.plan.operations.map((operation, index) => {
-              const operationMeta = WEAVE_OPERATION_META[operation.kind];
-              const isSelected = selectedOps.has(index);
-
-              return (
-                <details key={`${operation.kind}-${operation.targetPath ?? 'none'}-${index}`} className="weaverOperationItem" open={index === 0}>
-                  <summary className="weaverOperationSummary">
-                    {onApplyOperations ? (
-                      <label className="weaverOperationCheck" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {
-                            setSelectedOps((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(index)) next.delete(index);
-                              else next.add(index);
-                              return next;
-                            });
-                          }}
-                        />
-                      </label>
-                    ) : null}
-                    <span className={`weaverOperationGlyph ${operation.kind}`}>
-                      <WeaverIcon name={operationMeta.icon} />
-                    </span>
-                    <span className="weaverOperationCopy">
-                      <strong>{operationMeta.label}</strong>
-                      <span>{operation.targetPath ?? compactContextLabel}</span>
-                    </span>
-                    <span className="weaverOperationChevron">
-                      <WeaverIcon name="chevron" />
-                    </span>
-                  </summary>
-                  <div className="weaverOperationBody">
-                    <p className="weaverOperationReason">{operation.rationale}</p>
-                    <pre className="weaverPayload">{JSON.stringify(operation.payload, null, 2)}</pre>
-                  </div>
-                </details>
-              );
-            })}
+            {planResult.plan.operations.map((operation, index) => (
+              <WeaverOperationItem
+                key={`${operation.kind}-${operation.targetPath ?? 'none'}-${index}`}
+                operation={operation}
+                index={index}
+                isAccepted={acceptedOps.has(index)}
+                isRejected={rejectedOps.has(index)}
+                isApplied={appliedOps.has(index)}
+                isExpanded={expandedOps.has(index)}
+                contextLabel={compactContextLabel}
+                onClickSummary={setModalOpIndex}
+                onToggleExpand={(i) => setExpandedOps((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(i)) next.delete(i); else next.add(i);
+                  return next;
+                })}
+                onAccept={onApplyOperations ? (i) => {
+                  setAcceptedOps((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(i)) next.delete(i);
+                    else { next.add(i); setRejectedOps((r) => { const nr = new Set(r); nr.delete(i); return nr; }); }
+                    return next;
+                  });
+                } : undefined}
+                onReject={onApplyOperations ? (i) => {
+                  setRejectedOps((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(i)) next.delete(i);
+                    else { next.add(i); setAcceptedOps((a) => { const na = new Set(a); na.delete(i); return na; }); }
+                    return next;
+                  });
+                } : undefined}
+              />
+            ))}
           </div>
 
           {onApplyOperations && planResult.plan.operations.length > 0 ? (
@@ -1037,21 +1077,62 @@ export function WeaverProposalPanel({
               <button
                 type="button"
                 className="weaverApplyButton"
-                disabled={selectedOps.size === 0}
+                disabled={acceptedOps.size === 0 || isApplying}
                 onClick={() => {
-                  const ops = planResult.plan.operations.filter((_, i) => selectedOps.has(i));
+                  const indices: number[] = [];
+                  const ops = planResult.plan.operations.filter((_, i) => {
+                    if (acceptedOps.has(i)) { indices.push(i); return true; }
+                    return false;
+                  });
+                  pendingApplyOriginalIndicesRef.current = indices;
                   onApplyOperations(ops);
                 }}
               >
-                Apply Selected{selectedOps.size > 0 ? ` (${selectedOps.size})` : ''}
+                {isApplying ? 'Applying…' : `Apply accepted${acceptedOps.size > 0 ? ` (${acceptedOps.size})` : ''}`}
               </button>
               <button
                 type="button"
                 className="weaverApplyButton secondary"
-                onClick={() => onApplyOperations(planResult.plan.operations)}
+                disabled={isApplying}
+                onClick={() => {
+                  const indices: number[] = [];
+                  const ops = planResult.plan.operations.filter((_, i) => {
+                    if (!rejectedOps.has(i)) { indices.push(i); return true; }
+                    return false;
+                  });
+                  pendingApplyOriginalIndicesRef.current = indices;
+                  onApplyOperations(ops);
+                }}
               >
-                Apply All
+                {isApplying ? 'Applying…' : 'Apply all (except rejected)'}
               </button>
+            </div>
+          ) : null}
+
+          {applyResult ? (
+            <div className={`weaverApplyResultBanner ${applyResult.allOk ? 'weaverApplySuccess' : 'weaverApplyPartial'}`}>
+              <span className="weaverApplyResultIcon">{applyResult.allOk ? '✓' : '⚠'}</span>
+              <span className="weaverApplyResultText">
+                {applyResult.appliedCount} applied, {applyResult.failedCount} failed
+              </span>
+              {applyResult.results.some((r) => !r.ok) ? (
+                <div className="weaverApplyResultErrors">
+                  {applyResult.results.filter((r) => !r.ok).map((r, i) => (
+                    <div key={i} className="weaverApplyErrorItem">
+                      <span className="weaverApplyErrorKind">{r.kind}</span>
+                      <code className="weaverApplyErrorPath">{r.targetPath}</code>
+                      <span className="weaverApplyErrorMessage">{r.error}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {applyResult.warnings.length > 0 ? (
+                <div className="weaverApplyResultWarnings">
+                  {applyResult.warnings.map((w, i) => (
+                    <p key={i} className="weaverWarningItem">{w}</p>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -1060,6 +1141,14 @@ export function WeaverProposalPanel({
           <p>{emptyStateMessage}</p>
         </div>
       )}
+
+      {modalOpIndex !== null && planResult ? (
+        <WeaverUnifiedDiffModal
+          operation={planResult.plan.operations[modalOpIndex]}
+          onClose={() => setModalOpIndex(null)}
+          vaultPath={vaultPath}
+        />
+      ) : null}
     </section>
   );
 }

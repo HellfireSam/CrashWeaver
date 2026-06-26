@@ -15,6 +15,7 @@ import {
   type SetStateAction,
 } from 'react';
 import type {
+  WeaveApplyResult,
   WeaveKind,
   WeavePlanResult,
   WeaveProviderHealth,
@@ -42,6 +43,9 @@ export interface WeaverState {
   weaverSettings: WeaverSettings | undefined;
   weaveSessions: WeaverSessionSummary[];
   weaveActiveSessionId: string | null;
+  weaveApplyResult: WeaveApplyResult | null;
+  isApplyingWeavePlan: boolean;
+  weaveApplyError: string | null;
 }
 
 export interface WeaverActions {
@@ -59,6 +63,9 @@ export interface WeaverActions {
   setWeaverSettings: Dispatch<SetStateAction<WeaverSettings | undefined>>;
   setWeaveSessions: Dispatch<SetStateAction<WeaverSessionSummary[]>>;
   setWeaveActiveSessionId: Dispatch<SetStateAction<string | null>>;
+  setWeaveApplyResult: Dispatch<SetStateAction<WeaveApplyResult | null>>;
+  setIsApplyingWeavePlan: Dispatch<SetStateAction<boolean>>;
+  setWeaveApplyError: Dispatch<SetStateAction<string | null>>;
 }
 
 export type WeaverContextValue = WeaverState & WeaverActions;
@@ -82,6 +89,9 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
   const [weaverSettings, setWeaverSettings] = useState<WeaverSettings | undefined>(undefined);
   const [weaveSessions, setWeaveSessions] = useState<WeaverSessionSummary[]>([]);
   const [weaveActiveSessionId, setWeaveActiveSessionId] = useState<string | null>(null);
+  const [weaveApplyResult, setWeaveApplyResult] = useState<WeaveApplyResult | null>(null);
+  const [isApplyingWeavePlan, setIsApplyingWeavePlan] = useState(false);
+  const [weaveApplyError, setWeaveApplyError] = useState<string | null>(null);
 
   const value = useMemo<WeaverContextValue>(
     () => ({
@@ -99,6 +109,9 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
       weaverSettings,
       weaveSessions,
       weaveActiveSessionId,
+      weaveApplyResult,
+      isApplyingWeavePlan,
+      weaveApplyError,
       setWeaveModel,
       setWeaveKind,
       setWeaveEditContent,
@@ -113,6 +126,9 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
       setWeaverSettings,
       setWeaveSessions,
       setWeaveActiveSessionId,
+      setWeaveApplyResult,
+      setIsApplyingWeavePlan,
+      setWeaveApplyError,
     }),
     [
       weaveModel,
@@ -129,6 +145,9 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
       weaverSettings,
       weaveSessions,
       weaveActiveSessionId,
+      weaveApplyResult,
+      isApplyingWeavePlan,
+      weaveApplyError,
     ],
   );
 

@@ -1,0 +1,20 @@
+{
+  "uid": "CW-MOCK-011",
+  "type": [],
+  "raw_content": "## ETag Revalidation\n\nETag revalidation uses conditional requests so unchanged resources return lightweight 304 responses.\nThis reduces payload transfer while preserving freshness guarantees.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "web/caching-primitives.md",
+      "start_line": 14,
+      "end_line": 21
+    }
+  ]
+}

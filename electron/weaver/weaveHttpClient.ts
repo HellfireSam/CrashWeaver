@@ -65,11 +65,23 @@ function makeWeaveError(message: string, category: WeaveErrorCategory): Error {
   return Object.assign(new Error(message), { errorCategory: category });
 }
 
-function categorizeHttpError(status: number): { category: WeaveErrorCategory; message: string } {
+function categorizeHttpError(status: number, responseBody?: string): { category: WeaveErrorCategory; message: string } {
   if (status === 401 || status === 403) {
+    const detail = extractOpenRouterErrorMessage(responseBody);
     return {
       category: 'auth-error',
-      message: 'Invalid or expired OpenRouter API key. Update your key in Settings → Weaver.',
+      message: detail
+        ? `OpenRouter auth error: ${detail}`
+        : 'Invalid or expired OpenRouter API key. Update your key in Settings → Weaver.',
+    };
+  }
+  if (status === 402) {
+    const detail = extractOpenRouterErrorMessage(responseBody);
+    return {
+      category: 'provider-error',
+      message: detail
+        ? `OpenRouter payment required: ${detail}`
+        : 'OpenRouter requires credits for this model. Add credits at openrouter.ai/credits or use a free model (DeepSeek, Gemma).',
     };
   }
   if (status === 429) {
@@ -84,10 +96,30 @@ function categorizeHttpError(status: number): { category: WeaveErrorCategory; me
       message: `OpenRouter returned a server error (${status}). Try again shortly.`,
     };
   }
+  const detail = extractOpenRouterErrorMessage(responseBody);
   return {
     category: 'provider-error',
-    message: `Unexpected response from OpenRouter (${status}).`,
+    message: detail
+      ? `OpenRouter error (${status}): ${detail}`
+      : `Unexpected response from OpenRouter (${status}).`,
   };
+}
+
+/** Extract a human-readable error message from an OpenRouter JSON error response. */
+function extractOpenRouterErrorMessage(responseBody?: string): string | null {
+  if (!responseBody) return null;
+  try {
+    const parsed = JSON.parse(responseBody) as { error?: { message?: string; code?: number } };
+    if (parsed.error?.message) {
+      return parsed.error.message;
+    }
+  } catch {
+    // Not JSON — return the raw body if it's short enough to be useful
+    if (responseBody.length <= 200) {
+      return responseBody.trim();
+    }
+  }
+  return null;
 }
 
 /**
@@ -350,7 +382,7 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
     }
 
     if (!response.ok) {
-      const { message, category } = categorizeHttpError(response.status);
+      const { message, category } = categorizeHttpError(response.status, responseText);
       console.error(`CrashWeaver Weaver: OpenRouter error ${response.status}`, responseText.slice(0, 500));
       throw makeWeaveError(message, category);
     }

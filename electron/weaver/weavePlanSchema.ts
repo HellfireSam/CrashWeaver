@@ -167,19 +167,12 @@ function assertBoundaryBlockIncludesCard(boundaryBlock: string, cardUid: string,
   }
 }
 
-function assertCreateNoteHasSubstantiveContent(content: string, cardUid: string) {
-  const startMarker = `%%CW_CARD_START uid:${cardUid}%%`;
-  const endMarker = `%%CW_CARD_END uid:${cardUid}%%`;
-
-  assertBoundaryBlockIncludesCard(content, cardUid, 'Create-note content');
-
-  const withoutMarkers = content
-    .replace(new RegExp(escapeRegExp(startMarker), 'g'), '')
-    .replace(new RegExp(escapeRegExp(endMarker), 'g'), '')
-    .trim();
-
-  if (withoutMarkers.length < 20) {
-    throw new Error('Create-note content must include substantive markdown prose, not only a bare boundary wrapper.');
+function assertCreateNoteHasSubstantiveContent(content: string, _cardUid: string) {
+  // Boundary markers are now optional — just verify the content has
+  // enough prose to be meaningful (at least 20 chars of non-whitespace).
+  const stripped = content.trim();
+  if (stripped.length < 20) {
+    throw new Error('Create-note content must include substantive markdown prose (at least 20 chars).');
   }
 }
 

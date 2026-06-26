@@ -3,7 +3,9 @@ import type {
   CrashpadDocument,
   VaultDescriptor,
   VaultNoteDocument,
+  WeaveApplyResult,
   WeaveKind,
+  WeavePlanOperation,
   WeavePlanResult,
   WeaveProviderHealth,
   WeaveStrength,
@@ -37,6 +39,8 @@ type InspectorPaneProps = {
   weaveStrength: WeaveStrength;
   weaveSessions: WeaverSessionSummary[];
   weaveActiveSessionId: string | null;
+  weaveApplyResult: WeaveApplyResult | null;
+  isApplyingWeavePlan: boolean;
   onGenerateWeavePlan: () => Promise<void> | void;
   onPrepareWeavePanel: () => Promise<void> | void;
   onSetFocusedWindow: (windowName: FocusWindow) => void;
@@ -46,6 +50,8 @@ type InspectorPaneProps = {
   onWeaveEditContentChange: (value: boolean) => void;
   onWeaveCreateNoteChange: (value: boolean) => void;
   onWeaveStrengthChange: (value: WeaveStrength) => void;
+  onWeaveApplyOperations?: (operations: WeavePlanOperation[]) => void;
+  onWeaveNewSession?: () => void;
   onWeaveReRunFromHistory?: (session: WeaverSessionDetail) => void;
   onWeaveDeleteSession?: (sessionId: string) => void;
   onWeaveClearSessions?: () => void;
@@ -75,6 +81,8 @@ export function InspectorPane({
   weaveStrength,
   weaveSessions,
   weaveActiveSessionId,
+  weaveApplyResult,
+  isApplyingWeavePlan,
   onGenerateWeavePlan,
   onPrepareWeavePanel,
   onSetFocusedWindow,
@@ -84,6 +92,8 @@ export function InspectorPane({
   onWeaveEditContentChange,
   onWeaveCreateNoteChange,
   onWeaveStrengthChange,
+  onWeaveApplyOperations,
+  onWeaveNewSession,
   onWeaveReRunFromHistory,
   onWeaveDeleteSession,
   onWeaveClearSessions,
@@ -389,9 +399,13 @@ export function InspectorPane({
               onEditContentChange={onWeaveEditContentChange}
               onCreateNoteChange={onWeaveCreateNoteChange}
               onStrengthChange={onWeaveStrengthChange}
+              onApplyOperations={onWeaveApplyOperations}
+              applyResult={weaveApplyResult}
+              isApplying={isApplyingWeavePlan}
               onReRunFromHistory={onWeaveReRunFromHistory}
               onDeleteSession={onWeaveDeleteSession}
               onClearSessions={onWeaveClearSessions}
+              onNewSession={onWeaveNewSession}
             />
           </section>
         ) : null}

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import 'katex/dist/katex.min.css';
 import type {
   CardDocument,
   VaultDescriptor,
   VaultNoteDocument,
+  WeaveApplyResult,
   WeaveKind,
+  WeavePlanOperation,
   WeavePlanResult,
   WeaveProviderHealth,
   WeaverSettings,
@@ -16,6 +18,7 @@ import { CrashpadWorkspace } from './components/CrashpadWorkspace';
 import { AppSidebar } from './components/AppSidebar';
 import { InspectorPane } from './components/InspectorPane';
 import type { WeaverSessionSummary, WeaverSessionDetail } from './components/WeaverSessionHistory';
+import { WeaverConfirmDialog, isDestructiveOperation } from './components/WeaverConfirmDialog';
 import { SettingsModal } from './components/SettingsModal';
 import {
   type CardScope,
@@ -129,12 +132,14 @@ export default function App() {
     isCheckingWeaveProvider, isGeneratingWeavePlan,
     weaveEvaluatingCardUid,
     weaverSettings, weaveSessions, weaveActiveSessionId,
+    weaveApplyResult, isApplyingWeavePlan, weaveApplyError,
     setWeaveModel, setWeaveKind, setWeaveEditContent, setWeaveCreateNote,
     setWeaveStrength, setWeaveIntent,
     setWeavePlanResult, setWeaveProviderHealth,
     setIsCheckingWeaveProvider, setIsGeneratingWeavePlan,
     setWeaveEvaluatingCardUid,
     setWeaverSettings, setWeaveSessions, setWeaveActiveSessionId,
+    setWeaveApplyResult, setIsApplyingWeavePlan, setWeaveApplyError,
   } = useWeaverState();
 
   const {
@@ -150,6 +155,11 @@ export default function App() {
     setCrashpadPast, setCrashpadFuture,
     pushCrashpadHistory,
   } = useUIState();
+
+  // ── Confirm dialog state (Stage 6) ────────────────────────────────────────
+
+  const [pendingDestructiveOps, setPendingDestructiveOps] = useState<WeavePlanOperation[] | null>(null);
+  const pendingApplyOpsRef = useRef<WeavePlanOperation[]>([]);
 
   // ── Refs (component-local, not shared state) ──────────────────────────────
 
@@ -622,16 +632,23 @@ export default function App() {
     '--editor-font-size': `${editorFontSize}px`,
   } as CSSProperties;
 
+  // Reset Weaver composer when switching crashpads (but preserve plan results
+  // so the user can still accept/reject proposals after switching tabs).
   useEffect(() => {
-    setWeavePlanResult(null);
-    setWeaveProviderHealth(null);
     setWeaveIntent('');
-    setWeaveModel(weaverSettings?.preferredModel ?? 'openai/gpt-4o');
     setWeaveKind('guided-insert');
     setWeaveEditContent(false);
     setWeaveCreateNote(false);
     setWeaveStrength('standard');
-  }, [activeCrashpad?.id, activeEditorKind, weaverSettings?.preferredModel]);
+    // Only clear the plan result when the crashpad itself changes — not on
+    // editor-kind switches, so the user can navigate away and come back.
+    setWeavePlanResult(null);
+  }, [activeCrashpad?.id]);
+
+  // Sync preferred model from settings on first load
+  useEffect(() => {
+    setWeaveModel(weaverSettings?.preferredModel ?? 'openai/gpt-4o');
+  }, [weaverSettings?.preferredModel]);
 
   const refreshWeaveProviderHealth = useCallback(async () => {
     setIsCheckingWeaveProvider(true);
@@ -741,6 +758,60 @@ export default function App() {
     weaveStrength,
   ]);
 
+  // ── Stage 6: Apply operations callback ────────────────────────────────────
+
+  const handleApplyWeaveOperations = useCallback(async (operations: WeavePlanOperation[]) => {
+    if (!vaultPath) {
+      setErrorMessage('No vault open.');
+      return;
+    }
+
+    if (operations.length === 0) {
+      setErrorMessage('No operations selected to apply.');
+      return;
+    }
+
+    // Check for destructive operations
+    const destructiveOps = operations.filter((op) => isDestructiveOperation(op.kind));
+    if (destructiveOps.length > 0 && !pendingDestructiveOps) {
+      pendingApplyOpsRef.current = operations;
+      setPendingDestructiveOps(destructiveOps);
+      return;
+    }
+
+    setIsApplyingWeavePlan(true);
+    setWeaveApplyResult(null);
+    setWeaveApplyError(null);
+
+    try {
+      const result = await window.crashWeaver.applyWeavePlan(vaultPath, operations);
+      setWeaveApplyResult(result);
+
+      if (result.allOk) {
+        setStatusMessage(`Applied ${result.appliedCount} Weaver operation(s) successfully.`);
+        // Refresh vault state and all catalogs to reflect changes
+        if (vaultPath) {
+          const updatedVault = await window.crashWeaver.updateIndex(vaultPath);
+          setVault(updatedVault);
+          await refreshCardsCatalog(vaultPath);
+          await refreshInternalDirectories(vaultPath);
+          await refreshCrashpadCatalog(vaultPath, activeCrashpad?.id ?? null);
+        }
+      } else {
+        setErrorMessage(
+          `Applied ${result.appliedCount}/${operations.length} operation(s). ${result.failedCount} failed. Check the results for details.`,
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to apply Weaver operations.';
+      setWeaveApplyError(message);
+      setErrorMessage(message);
+    } finally {
+      setIsApplyingWeavePlan(false);
+      setPendingDestructiveOps(null);
+    }
+  }, [vaultPath, pendingDestructiveOps, setIsApplyingWeavePlan, setWeaveApplyResult, setWeaveApplyError, setStatusMessage, setErrorMessage, setVault, refreshCardsCatalog, refreshInternalDirectories, refreshCrashpadCatalog, activeCrashpad]);
+
   useEffect(() => {
     void window.crashWeaver.getWeaverSettings().then((settings) => {
       setWeaverSettings(settings);
@@ -751,6 +822,26 @@ export default function App() {
       }
     }).catch(() => undefined);
   }, []);
+
+  // ── External vault change subscription (chokidar → renderer) ───────────
+
+  useEffect(() => {
+    if (!vaultPath) return;
+
+    const unsubscribe = window.crashWeaver.onVaultExternalChange(async () => {
+      try {
+        const refreshedVault = await window.crashWeaver.updateIndex(vaultPath);
+        setVault(refreshedVault);
+        await refreshCardsCatalog(vaultPath);
+        await refreshInternalDirectories(vaultPath);
+        await refreshCrashpadCatalog(vaultPath, activeCrashpad?.id ?? null);
+      } catch {
+        // Silently ignore — the next manual refresh will catch up
+      }
+    });
+
+    return unsubscribe;
+  }, [vaultPath, setVault, refreshCardsCatalog, refreshInternalDirectories, refreshCrashpadCatalog, activeCrashpad]);
 
   const handleWeaveModelChange = useCallback((nextModel: string) => {
     const previousModel = weaveModel;
@@ -837,6 +928,14 @@ export default function App() {
       if (typeof req.strength === 'string') setWeaveStrength(req.strength as WeaveStrength);
     }
     setStatusMessage('Re-loaded settings from session. Press Generate to re-run.');
+  }, []);
+
+  const handleNewWeaverSession = useCallback(() => {
+    setWeavePlanResult(null);
+    setWeaveApplyResult(null);
+    setWeaveApplyError(null);
+    setWeaveIntent('');
+    setStatusMessage('Started a new Weaver session.');
   }, []);
 
   // Fetch sessions on mount and after each generation
@@ -1194,6 +1293,8 @@ export default function App() {
           weaveStrength={weaveStrength}
           weaveSessions={weaveSessions}
           weaveActiveSessionId={weaveActiveSessionId}
+          weaveApplyResult={weaveApplyResult}
+          isApplyingWeavePlan={isApplyingWeavePlan}
           onGenerateWeavePlan={handleGenerateWeavePlan}
           onPrepareWeavePanel={handlePrepareWeavePanel}
           onSetFocusedWindow={setFocusedWindow}
@@ -1203,11 +1304,28 @@ export default function App() {
           onWeaveEditContentChange={setWeaveEditContent}
           onWeaveCreateNoteChange={setWeaveCreateNote}
           onWeaveStrengthChange={setWeaveStrength}
+          onWeaveApplyOperations={handleApplyWeaveOperations}
+          onWeaveNewSession={handleNewWeaverSession}
           onWeaveReRunFromHistory={handleReRunFromHistory}
           onWeaveDeleteSession={handleDeleteWeaverSession}
           onWeaveClearSessions={handleClearWeaverSessions}
         />
       </section>
+
+      {pendingDestructiveOps ? (
+        <WeaverConfirmDialog
+          destructiveOps={pendingDestructiveOps}
+          onConfirm={() => {
+            const opsToApply = pendingApplyOpsRef.current;
+            setPendingDestructiveOps(null);
+            handleApplyWeaveOperations(opsToApply);
+          }}
+          onCancel={() => {
+            setPendingDestructiveOps(null);
+            pendingApplyOpsRef.current = [];
+          }}
+        />
+      ) : null}
 
       <SettingsModal
         activeNote={activeNote}

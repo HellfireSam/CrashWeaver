@@ -1,0 +1,19 @@
+{
+  "uid": "testy",
+  "type": [],
+  "raw_content": "Insert this into both reliability playbook and con currecy pattern notes.",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": [
+      {
+        "q": "How are you?",
+        "a": "I am fine thank you."
+      }
+    ]
+  },
+  "referenced_in": []
+}

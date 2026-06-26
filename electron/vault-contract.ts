@@ -473,3 +473,23 @@ export interface WeaverSettings {
 export interface WeaverKeyStatus {
   configured: boolean;
 }
+
+// ── Stage 6: Apply result types ───────────────────────────────────────────
+
+export interface WeaveApplyOperationResult {
+  operationIndex: number;
+  kind: WeavePlanOperationKind;
+  targetPath: string;
+  ok: boolean;
+  error?: string;
+  warning?: string;
+  affectedPaths?: string[];
+}
+
+export interface WeaveApplyResult {
+  results: WeaveApplyOperationResult[];
+  allOk: boolean;
+  appliedCount: number;
+  failedCount: number;
+  warnings: string[];
+}

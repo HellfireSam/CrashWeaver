@@ -1,0 +1,25 @@
+{
+  "uid": "Green",
+  "type": [],
+  "raw_content": "this is \nplaceholder\n![C:\\\\Users\\\\USER\\\\Pictures\\\\Screenshots\\\\Screenshot (59).png](C:\\\\Users\\\\USER\\\\Pictures\\\\Screenshots\\\\Screenshot (59).png)\n\n**hi**",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "hihi",
+    "qa_pairs": []
+  },
+  "referenced_in": [
+    {
+      "note_path": "mathematics/green-theorem.md",
+      "start_line": 5,
+      "end_line": 11
+    },
+    {
+      "note_path": "mathematics/greens-theorem-detailed.md",
+      "start_line": 5,
+      "end_line": 7
+    }
+  ]
+}

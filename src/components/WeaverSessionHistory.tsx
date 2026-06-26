@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { WeaverLiveEntry } from './WeaverProgressFeed';
+import { WeaverOperationItem } from './WeaverOperationItem';
+import type { WeavePlanOperation } from '../../electron/vault-contract';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -161,23 +163,6 @@ function getStepDetail(step: WeaverSessionStep): string | null {
       return null;
   }
 }
-// ── Operation rendering (shared with session detail) ─────────────────────────
-
-type WeavePlanOpKind = 'insert-boundary-pair' | 'edit-note-content' | 'create-note' | 'rename-note' | 'move-note' | 'delete-note' | 'create-directory' | 'rename-directory' | 'move-directory' | 'delete-directory';
-
-const OPERATION_META: Record<string, { label: string }> = {
-  'insert-boundary-pair': { label: 'Embed into note' },
-  'edit-note-content': { label: 'Edit note content' },
-  'create-note': { label: 'Create vault note' },
-  'rename-note': { label: 'Rename note' },
-  'move-note': { label: 'Move note' },
-  'delete-note': { label: 'Delete note' },
-  'create-directory': { label: 'Create directory' },
-  'rename-directory': { label: 'Rename directory' },
-  'move-directory': { label: 'Move directory' },
-  'delete-directory': { label: 'Delete directory' },
-};
-
 interface PlanExtract {
   kind?: string;
   summary?: string;
@@ -195,6 +180,7 @@ function extractPlan(obj: unknown): PlanExtract | null {
     warnings: Array.isArray(p.warnings) ? p.warnings as string[] : undefined,
   };
 }
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function WeaverSessionHistory({
@@ -211,6 +197,7 @@ export function WeaverSessionHistory({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionDetail, setSessionDetail] = useState<WeaverSessionDetail | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [expandedSessionOps, setExpandedSessionOps] = useState<Set<number>>(new Set([0]));
 
   // Group sessions by time period
   const groupedSessions = useMemo(() => {
@@ -374,32 +361,20 @@ export function WeaverSessionHistory({
                   <div className="weaverSessionOps">
                     <h4 className="weaverSessionSectionTitle">Operations ({plan.operations.length})</h4>
                     <div className="weaverOperationList">
-                      {plan.operations.map((op, i) => {
-                        const meta = OPERATION_META[op.kind] ?? { label: op.kind };
-                        return (
-                          <details key={`${op.kind}-${op.targetPath ?? 'none'}-${i}`} className="weaverOperationItem" open={i === 0}>
-                            <summary className="weaverOperationSummary">
-                              <span className={`weaverOperationGlyph ${op.kind}`}>
-                                {/* Simple text glyph for session history */}
-                                <span className="weaverOpGlyphText">{meta.label.slice(0, 1)}</span>
-                              </span>
-                              <span className="weaverOperationCopy">
-                                <strong>{meta.label}</strong>
-                                <span>{op.targetPath ?? '—'}</span>
-                              </span>
-                              <span className="weaverOperationChevron">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14"><path d="m6 9 6 6 6-6" /></svg>
-                              </span>
-                            </summary>
-                            <div className="weaverOperationBody">
-                              {op.rationale ? <p className="weaverOperationReason">{op.rationale}</p> : null}
-                              {op.payload ? (
-                                <pre className="weaverPayload">{JSON.stringify(op.payload, null, 2)}</pre>
-                              ) : null}
-                            </div>
-                          </details>
-                        );
-                      })}
+                      {plan.operations.map((op, i) => (
+                        <WeaverOperationItem
+                          key={`${op.kind}-${op.targetPath ?? 'none'}-${i}`}
+                          operation={op as WeavePlanOperation}
+                          index={i}
+                          isExpanded={expandedSessionOps.has(i)}
+                          isApplied={false}
+                          onToggleExpand={(idx) => setExpandedSessionOps((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(idx)) next.delete(idx); else next.add(idx);
+                            return next;
+                          })}
+                        />
+                      ))}
                     </div>
                   </div>
                 ) : null}

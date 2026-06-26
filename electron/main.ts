@@ -22,6 +22,7 @@ import {
   deleteSession,
   clearSessions,
 } from './weaver/weaveService';
+import { applyWeaveOperations } from './weaver/weaveApplyService';
 import { getFsErrorCode } from './utils/fsErrors';
 import { toPosixPath } from './utils/paths';
 import type {
@@ -31,6 +32,7 @@ import type {
   CrashpadDeletePreferences,
   CrashpadDeletedCardSnapshot,
   CrashpadDocument,
+  WeavePlanOperation,
   WeavePlanRequest,
   WeaverSettings,
 } from './vault-contract';
@@ -64,6 +66,43 @@ let vaultWatcher: FSWatcher | null = null;
 let watchedVaultRoot: string | null = null;
 let watchedCardStorePath: string | null = null;
 
+// ── Debounced renderer notification for external file changes ───────────────
+
+/** Accumulates note paths changed externally since the last flush. */
+const pendingChangedPaths = new Set<string>();
+/** Timer handle for the debounced flush. */
+let debouncedFlushTimer: ReturnType<typeof setTimeout> | null = null;
+/** Debounce window: wait this many ms of inactivity before flushing. */
+const EXTERNAL_CHANGE_FLUSH_MS = 500;
+
+/**
+ * Flushes accumulated external-change paths to all renderer windows.
+ */
+function flushWatcherNotifications() {
+  debouncedFlushTimer = null;
+
+  if (pendingChangedPaths.size === 0) return;
+
+  const paths = [...pendingChangedPaths];
+  pendingChangedPaths.clear();
+
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send('vault:external-change', paths);
+    }
+  }
+}
+
+/**
+ * Schedules a debounced flush. Called after each watcher event.
+ */
+function scheduleWatcherFlush() {
+  if (debouncedFlushTimer) {
+    clearTimeout(debouncedFlushTimer);
+  }
+  debouncedFlushTimer = setTimeout(flushWatcherNotifications, EXTERNAL_CHANGE_FLUSH_MS);
+}
+
 protocol.registerSchemesAsPrivileged([
   {
     scheme: LOCAL_ASSET_SCHEME,
@@ -87,6 +126,11 @@ function stopVaultWatcher() {
   vaultWatcher = null;
   watchedVaultRoot = null;
   watchedCardStorePath = null;
+  if (debouncedFlushTimer) {
+    clearTimeout(debouncedFlushTimer);
+    debouncedFlushTimer = null;
+  }
+  pendingChangedPaths.clear();
 }
 
 /**
@@ -103,10 +147,16 @@ async function handleWatcherEvent(filePath: string, rootPath: string, cardStoreP
     const code = getFsErrorCode(error);
     if (code === 'ENOENT') {
       await removeNoteReferencesFromCardStore(cardStorePath, relativePath);
+      // Still notify the renderer so it can remove the note from the file tree
+      pendingChangedPaths.add(relativePath);
+      scheduleWatcherFlush();
       return;
     }
     console.error('CrashWeaver watcher sync error', error);
   }
+
+  pendingChangedPaths.add(relativePath);
+  scheduleWatcherFlush();
 }
 
 function escapeRegExp(value: string) {
@@ -336,6 +386,18 @@ ipcMain.handle('weave:generate-plan', async (event, request: WeavePlanRequest) =
 ipcMain.handle('weave:health-check', async () => checkWeaveProvider());
 ipcMain.handle('weave:list-models', async () => listWeaveModels());
 ipcMain.handle('weave:is-stub-provider', async () => isStubProviderActive());
+
+ipcMain.handle('weave:apply-plan', async (_event, rootPath: string, operations: WeavePlanOperation[]) => {
+  const config = await getVaultCardStore(rootPath);
+  const cardStorePath = config.cardStorePath;
+  const result = await applyWeaveOperations(rootPath, cardStorePath, operations, {
+    dryRun: false,
+    stopOnError: true,
+  });
+  // Trigger vault re-index so the file tree and card references refresh
+  await enqueueWatchVault(rootPath);
+  return result;
+});
 
 ipcMain.handle('weave:get-settings', async () => getWeaverSettings());
 

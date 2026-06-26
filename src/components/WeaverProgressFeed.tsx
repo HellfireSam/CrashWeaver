@@ -121,6 +121,25 @@ export function traceToLiveEntries(trace: WeaveReActStep[]): WeaverLiveEntry[] {
     const isToolAction = hasAction && step.action?.includes('Tool Call:');
     const toolNameMatch = isToolAction ? step.action?.match(/"([^"]+)"/)?.[1] : undefined;
 
+    // Parse tool arguments from the action string.
+    // Format: `Tool Call: "<toolName>" with arguments:\n{...json...}`
+    // or simpler: `Tool Call: toolName with arguments: {...}`
+    let toolArguments: Record<string, unknown> | undefined;
+    if (isToolAction && step.action) {
+      try {
+        const jsonStart = step.action.indexOf('{');
+        if (jsonStart !== -1) {
+          const jsonStr = step.action.slice(jsonStart);
+          const parsed = JSON.parse(jsonStr);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            toolArguments = parsed;
+          }
+        }
+      } catch {
+        // If JSON parsing fails (e.g. empty args `{}` in stub format), leave undefined
+      }
+    }
+
     return {
       id: `trace-${idx}`,
       ts: 0,
@@ -129,6 +148,7 @@ export function traceToLiveEntries(trace: WeaveReActStep[]): WeaverLiveEntry[] {
       thought: step.thought,
       toolName: toolNameMatch,
       toolTarget: undefined,
+      toolArguments,
       status: step.diagnostics ? 'error' : 'ok',
       detail: step.observation?.slice(0, 120),
       observationSummary: step.observation?.slice(0, 120),

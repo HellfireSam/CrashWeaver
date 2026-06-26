@@ -1,0 +1,25 @@
+{
+  "uid": "Cat_card",
+  "type": [],
+  "raw_content": "### Embedding a Local Image\n\nWhen writing a card's content, reference images with a path **relative to the vault root**.\nA leading slash is treated as the vault root.\n\n```\n![A friendly cat](/cat.jpg)\n```\n\nRendered result (the cat.jpg placed at the vault root):\n\n![A friendly cat](/cat.jpg)\n\n**Why vault-root-relative paths?**\nCrashWeaver rewrites relative `src` attributes in the markdown preview to\n`file:///vault-root/path` so Electron can load local assets without a web server.\nImages stored in sub-folders are referenced the same way:\n\n```\n![Diagram](/architecture/diagram.png)\n```",
+  "metadata": {
+    "familiarity": 0,
+    "next_review": null
+  },
+  "memory_tricks": {
+    "memory_technique": "",
+    "qa_pairs": [
+      {
+        "q": "How are you",
+        "a": "I am fine thank you."
+      }
+    ]
+  },
+  "referenced_in": [
+    {
+      "note_path": "web/image-demo.md",
+      "start_line": 6,
+      "end_line": 30
+    }
+  ]
+}

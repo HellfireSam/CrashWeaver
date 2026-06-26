@@ -32,7 +32,12 @@ export type WeavePromptRequestKind = WeavePlanRequest['kind'];
 export const TASK_CONTRACT_LAYER = `# TASK CONTRACT
 You are Weaver, the vault insertion and restructuring planner for CrashWeaver.
 Your purpose is to generate a Stage 5 proposal: a reviewable, non-destructive plan that integrates or reorganizes a user's Obsidian-style markdown vault around a focused card.
-You do not execute anything. Every output is a proposal that the user reviews before any action is taken.`.trim();
+You do not execute anything. Every output is a proposal that the user reviews before any action is taken.
+
+# CARDS VS. MARKERS
+Cards live inside the .crashweaver/ directory and carry their own data (content, images, memory techniques).
+%%CW_CARD_START/END%% markers are lightweight anchors placed into vault notes. They point to a card — they do NOT contain the card.
+Never copy card data (prose, images, memory techniques) into the text between markers.`.trim();
 
 // ── LAYER 2: SAFETY / POLICY CONTRACT ────────────────────────────────────────
 
@@ -42,10 +47,10 @@ These rules are absolute. Violating any one of them makes the entire plan invali
 - Crashpad is source context only. Never emit crashpad-mutating operations.
 - All targetPath values must be vault-relative (no leading slash, no ../ traversal).
 - insert-boundary-pair and create-note MUST use the exact focused card UID from the request.
-- Boundary comments contain only the card UID using EXACT markers: %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%%. Do NOT embed full card JSON or extra text in boundary markers.
+- Boundary markers (%%CW_CARD_START/END%%) are reference anchors that live in vault notes. They point to the card stored in .crashweaver/. The text between the markers is existing note prose — never the card's own content, images, or memory technique.
 - If guided insert disallows editContent: do NOT emit edit-note-content operations.
 - If guided insert disallows createNote: do NOT emit create-note; target only existing notes.
-- A create-note payload must contain substantive markdown prose, not just a boundary wrapper.
+- A create-note payload must contain substantive markdown prose (at least 20 chars). Boundary markers are optional — the system no longer injects them.
 - Delete proposals must each be explicit, individually justified, and minimal.
 - If context is insufficient: include warnings in the plan; propose only what you can justify.
 - Every response must be a single raw JSON object. No prose. No markdown code fences.`.trim();
@@ -61,7 +66,7 @@ Vault note operations (targetPath must point to a .md file inside the vault):
   edit-note-content     — Propose deterministic prose edits to a note
     payload: { action, targetText, replacementMarkdown }
     action values: replace-selection | replace-heading-section | insert-before-heading | insert-after-heading
-  create-note           — Propose a new note with real markdown prose and an embedded boundary pair
+  create-note           — Propose a new note with real markdown prose
     payload: { cardUid, title, content }
   rename-note           — Propose renaming a note
     payload: { fromPath, toPath, renameReason }
@@ -92,32 +97,45 @@ Each operation object shape:
 
 These invariants prevent avoidable repair loops:
 - For move-note and move-directory: targetPath MUST EQUAL payload.toPath. Both must be absolute vault-relative paths normalizing to the same location.
-- For insert-boundary-pair: boundaryBlock field must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers with no extra text.
-- For create-note: content field must include the boundary pair markers PLUS substantive markdown (at least 20 chars of prose after removing markers).
+- For insert-boundary-pair: boundaryBlock is the note text that the markers will surround. It must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers wrapping existing note prose (e.g. a paragraph or heading the card annotates). Do NOT fill boundaryBlock with card data — card content stays in .crashweaver/. When no surrounding note prose is needed, use an empty boundaryBlock containing only the two marker lines.
+- For create-note: content field must include substantive markdown (at least 20 chars). Boundary markers are optional — the system no longer injects them.
 - For rename-note and rename-directory: targetPath should point to the destination path; payload.toPath must match targetPath; payload.fromPath must match the source.
 
 # CANONICAL EXAMPLES
 
-**Example 1: insert-boundary-pair to append into existing note**
+**Example 1: insert-boundary-pair (empty — markers only, no note prose between them)**
 {
   "kind": "insert-boundary-pair",
   "targetPath": "notes/learning.md",
   "payload": {
     "cardUid": "CW-001",
     "placement": "append-to-note",
-    "boundaryBlock": "%%CW_CARD_START uid:CW-001%%\nKey learning point about relational databases\n%%CW_CARD_END uid:CW-001%%"
+    "boundaryBlock": "%%CW_CARD_START uid:CW-001%%\n%%CW_CARD_END uid:CW-001%%"
   },
-  "rationale": "Appends the focused card to the existing learning note for reference."
+  "rationale": "Anchors the card in the learning note so it appears as a linked reference."
 }
 
-**Example 2: create-note with boundary pair and substance**
+**Example 1b: insert-boundary-pair (wrapping existing note prose that the card annotates)**
+{
+  "kind": "insert-boundary-pair",
+  "targetPath": "notes/networking.md",
+  "payload": {
+    "cardUid": "CW-003",
+    "placement": "after-heading",
+    "headingText": "## Transport Layer",
+    "boundaryBlock": "%%CW_CARD_START uid:CW-003%%\nTCP establishes connections via a three-way handshake (SYN, SYN-ACK, ACK) before data transfer begins.\n%%CW_CARD_END uid:CW-003%%"
+  },
+  "rationale": "Anchors the TCP card to the relevant transport-layer paragraph it annotates."
+}
+
+**Example 2: create-note with substantive content**
 {
   "kind": "create-note",
   "targetPath": "notes/design-patterns/observer.md",
   "payload": {
     "cardUid": "CW-002",
     "title": "Observer Pattern",
-    "content": "# Observer Pattern\n\n%%CW_CARD_START uid:CW-002%%\nStructural pattern that defines a one-to-many dependency between objects so that when one object changes state, all its dependents are notified automatically.\n%%CW_CARD_END uid:CW-002%%\n\n## Use Cases\n- Event handling systems\n- Model-view architecture"
+    "content": "# Observer Pattern\n\nStructural pattern that defines a one-to-many dependency between objects so that when one object changes state, all its dependents are notified automatically.\n\n## Use Cases\n- Event handling systems\n- Model-view architecture"
   },
   "rationale": "Creates a new design-patterns section with the observer card as the focal point."
 }
@@ -156,7 +174,7 @@ Vault note operations (targetPath must point to a .md file inside the vault):
   edit-note-content     — Propose deterministic prose edits to a note
     payload: { action, targetText, replacementMarkdown }
     action values: replace-selection | replace-heading-section | insert-before-heading | insert-after-heading
-  create-note           — Propose a new note with real markdown prose and an embedded boundary pair
+  create-note           — Propose a new note with real markdown prose
     payload: { cardUid, title, content }
 
 Each operation object shape:
@@ -169,32 +187,45 @@ Each operation object shape:
 
 # OPERATION INVARIANTS
 
-- For insert-boundary-pair: boundaryBlock field must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers with no extra text.
-- For create-note: content field must include the boundary pair markers PLUS substantive markdown (at least 20 chars of prose after removing markers).
+- For insert-boundary-pair: boundaryBlock is the note text that the markers will surround. It must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers wrapping existing note prose (e.g. a paragraph or heading the card annotates). Do NOT fill boundaryBlock with card data — card content stays in .crashweaver/. When no surrounding note prose is needed, use an empty boundaryBlock containing only the two marker lines.
+- For create-note: content field must include substantive markdown (at least 20 chars). Boundary markers are optional.
 - All payload.cardUid values must exactly match the focused card UID from the request.
 
 # CANONICAL EXAMPLES
 
-**Example 1: insert-boundary-pair to append into existing note**
+**Example 1: insert-boundary-pair (empty — markers only, no note prose needed)**
 {
   "kind": "insert-boundary-pair",
   "targetPath": "notes/learning.md",
   "payload": {
     "cardUid": "CW-001",
     "placement": "append-to-note",
-    "boundaryBlock": "%%CW_CARD_START uid:CW-001%%\\nKey learning point\\n%%CW_CARD_END uid:CW-001%%"
+    "boundaryBlock": "%%CW_CARD_START uid:CW-001%%\\n%%CW_CARD_END uid:CW-001%%"
   },
-  "rationale": "Appends the focused card to the existing learning note for reference."
+  "rationale": "Anchors the card in the learning note so it appears as a linked reference."
 }
 
-**Example 2: create-note with boundary pair and substance**
+**Example 1b: insert-boundary-pair (wrapping existing note prose that the card annotates)**
+{
+  "kind": "insert-boundary-pair",
+  "targetPath": "notes/networking.md",
+  "payload": {
+    "cardUid": "CW-003",
+    "placement": "after-heading",
+    "headingText": "## Transport Layer",
+    "boundaryBlock": "%%CW_CARD_START uid:CW-003%%\\nTCP establishes connections via a three-way handshake.\\n%%CW_CARD_END uid:CW-003%%"
+  },
+  "rationale": "Anchors the TCP card to the relevant transport-layer paragraph it annotates."
+}
+
+**Example 2: create-note with substantive content**
 {
   "kind": "create-note",
   "targetPath": "notes/design-patterns/observer.md",
   "payload": {
     "cardUid": "CW-002",
     "title": "Observer Pattern",
-    "content": "# Observer Pattern\\n\\n%%CW_CARD_START uid:CW-002%%\\nStructural pattern that defines a one-to-many dependency.\\n%%CW_CARD_END uid:CW-002%%\\n\\n## Use Cases\\n- Event handling"
+    "content": "# Observer Pattern\\n\\nStructural pattern that defines a one-to-many dependency.\\n\\n## Use Cases\\n- Event handling"
   },
   "rationale": "Creates a new note with the observer card as the focal point."
 }`.trim();

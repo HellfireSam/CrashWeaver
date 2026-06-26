@@ -13,6 +13,8 @@ import type {
   CrashpadSummary,
   VaultDescriptor,
   VaultNoteDocument,
+  WeaveApplyResult,
+  WeavePlanOperation,
   WeavePlanRequest,
   WeavePlanResult,
   WeaveModelInfo,
@@ -96,4 +98,14 @@ contextBridge.exposeInMainWorld('crashWeaver', {
   deleteWeaverSession: (sessionId: string, rootPath?: string) =>
     ipcRenderer.invoke('weave:delete-session', sessionId, rootPath) as Promise<boolean>,
   clearWeaverSessions: (rootPath?: string) => ipcRenderer.invoke('weave:clear-sessions', rootPath) as Promise<number>,
+  /** Apply a list of Weaver plan operations to the vault. Returns per-operation results. */
+  applyWeavePlan: (rootPath: string, operations: WeavePlanOperation[]) =>
+    ipcRenderer.invoke('weave:apply-plan', rootPath, operations) as Promise<WeaveApplyResult>,
+
+  // Vault external-change events (push-based, not invoke)
+  onVaultExternalChange: (callback: (changedPaths: string[]) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, paths: string[]) => callback(paths);
+    ipcRenderer.on('vault:external-change', handler);
+    return () => ipcRenderer.removeListener('vault:external-change', handler);
+  },
 });
