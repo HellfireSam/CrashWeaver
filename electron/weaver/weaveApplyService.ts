@@ -12,6 +12,9 @@ import { getCardFilePath } from '../cardStoreService';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { parseCrashCardsFromNote } from '../cardParser';
 import type {
+  WeaveApplyOperationResult,
+  WeaveApplyOptions,
+  WeaveApplyResult,
   WeavePlanOperation,
   WeavePlanOperationKind,
   InsertBoundaryPairPayload,
@@ -26,44 +29,71 @@ import type {
   DeleteDirectoryPayload,
 } from '../vault-contract';
 
-// ── Result types (mirrored in vault-contract.ts) ─────────────────────────────
-
-export interface WeaveApplyOperationResult {
-  operationIndex: number;
-  kind: WeavePlanOperationKind;
-  targetPath: string;
-  ok: boolean;
-  error?: string;
-  warning?: string;
-  affectedPaths?: string[];
-}
-
-export interface WeaveApplyResult {
-  results: WeaveApplyOperationResult[];
-  allOk: boolean;
-  appliedCount: number;
-  failedCount: number;
-  warnings: string[];
-}
-
-export interface WeaveApplyOptions {
-  /** If true, validate operations but don't write anything. Default false. */
-  dryRun?: boolean;
-  /** If true, stop executing on the first failure. Default true. */
-  stopOnError?: boolean;
-}
-
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function assertWithinVault(resolvedRoot: string, targetPath: string): string {
-  const absolute = path.resolve(resolvedRoot, targetPath);
-  const relative = path.relative(resolvedRoot, absolute);
+/**
+ * Resolves a vault-relative path to an absolute filesystem path, verifying
+ * it stays within the vault root.  Symlinks are resolved so that a symlink
+ * inside the vault pointing outside cannot be used to escape.
+ *
+ * For paths that don't exist yet (create operations), the nearest existing
+ * ancestor is resolved and the missing tail is re-joined.
+ */
+async function assertWithinVault(resolvedRoot: string, targetPath: string): Promise<string> {
+  const naiveAbsolute = path.resolve(resolvedRoot, targetPath);
 
+  // Resolve the vault root itself through any symlinks
+  let realRoot: string;
+  try {
+    realRoot = await fs.realpath(resolvedRoot);
+  } catch {
+    throw new Error(`Vault root is not accessible: ${resolvedRoot}`);
+  }
+
+  // Resolve the target through symlinks if the path exists;
+  // otherwise walk up to the nearest existing ancestor.
+  let realAbsolute: string;
+  try {
+    realAbsolute = await fs.realpath(naiveAbsolute);
+  } catch (error) {
+    if (getFsErrorCode(error) === 'ENOENT') {
+      // Path doesn't exist yet — walk up to find nearest existing ancestor
+      let ancestor = path.dirname(naiveAbsolute);
+      const missingParts: string[] = [path.basename(naiveAbsolute)];
+      while (true) {
+        try {
+          const realAncestor = await fs.realpath(ancestor);
+          realAbsolute = path.join(realAncestor, ...missingParts);
+          break;
+        } catch (innerError) {
+          if (getFsErrorCode(innerError) === 'ENOENT') {
+            const parent = path.dirname(ancestor);
+            if (parent === ancestor) {
+              // Reached filesystem root — fall back to naive resolution
+              realAbsolute = naiveAbsolute;
+              break;
+            }
+            missingParts.unshift(path.basename(ancestor));
+            ancestor = parent;
+          } else {
+            throw innerError;
+          }
+        }
+      }
+    } else {
+      throw error;
+    }
+  }
+
+  const relative = path.relative(realRoot, realAbsolute);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     throw new Error(`Path escapes vault root: ${targetPath}`);
   }
 
-  return absolute;
+  // Return the naive (path.resolve) path so that file operations use
+  // consistent casing with the rest of the codebase.  The realpath
+  // resolution above is purely for the security boundary check.
+  return naiveAbsolute;
 }
 
 async function assertNoteExists(absolutePath: string): Promise<void> {
@@ -109,7 +139,7 @@ async function applyInsertBoundaryPair(
   payload: InsertBoundaryPairPayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const absolutePath = assertWithinVault(resolvedRoot, targetPath);
+  const absolutePath = await assertWithinVault(resolvedRoot, targetPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [targetPath] };
@@ -243,7 +273,7 @@ async function applyEditNoteContent(
   payload: EditNoteContentPayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const absolutePath = assertWithinVault(resolvedRoot, targetPath);
+  const absolutePath = await assertWithinVault(resolvedRoot, targetPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [targetPath] };
@@ -291,7 +321,7 @@ async function applyCreateNote(
   payload: CreateNotePayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const absolutePath = assertWithinVault(resolvedRoot, targetPath);
+  const absolutePath = await assertWithinVault(resolvedRoot, targetPath);
   const affectedPaths = [targetPath];
 
   if (dryRun) {
@@ -366,8 +396,8 @@ async function applyRenameNote(
   payload: RenameNotePayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const fromAbsolute = assertWithinVault(resolvedRoot, payload.fromPath);
-  const toAbsolute = assertWithinVault(resolvedRoot, payload.toPath);
+  const fromAbsolute = await assertWithinVault(resolvedRoot, payload.fromPath);
+  const toAbsolute = await assertWithinVault(resolvedRoot, payload.toPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [payload.fromPath, payload.toPath] };
@@ -444,7 +474,7 @@ async function applyDeleteNote(
   payload: DeleteNotePayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const absolutePath = assertWithinVault(resolvedRoot, targetPath);
+  const absolutePath = await assertWithinVault(resolvedRoot, targetPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [targetPath] };
@@ -464,6 +494,7 @@ async function applyDeleteNote(
   const cardUids = parsedNote.cards.map((c) => c.uid);
 
   // Remove this note's references from all referenced cards
+  const orphanedCardUids: string[] = [];
   for (const uid of cardUids) {
     const card = await readCardDocument(cardStorePath, uid);
     if (card) {
@@ -472,13 +503,23 @@ async function applyDeleteNote(
         card.referenced_in = nextReferences;
         await writeJsonAtomically(getCardFilePath(cardStorePath, uid), card);
       }
+      if (nextReferences.length === 0) {
+        orphanedCardUids.push(uid);
+      }
     }
   }
 
   // Delete the note file
   await fs.rm(absolutePath, { force: true });
 
-  return { ok: true, affectedPaths: [targetPath] };
+  const warning = orphanedCardUids.length > 0
+    ? buildOperationWarning(
+        { kind: 'delete-note', targetPath, payload, rationale: '' } as WeavePlanOperation,
+        `Card(s) ${orphanedCardUids.join(', ')} no longer referenced in any note. Card JSON file(s) preserved in card store — delete manually if no longer needed.`,
+      )
+    : undefined;
+
+  return { ok: true, warning, affectedPaths: [targetPath] };
 }
 
 async function applyCreateDirectory(
@@ -488,7 +529,7 @@ async function applyCreateDirectory(
   payload: CreateDirectoryPayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const absolutePath = assertWithinVault(resolvedRoot, targetPath);
+  const absolutePath = await assertWithinVault(resolvedRoot, targetPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [targetPath] };
@@ -506,8 +547,8 @@ async function applyRenameDirectory(
   payload: RenameDirectoryPayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const fromAbsolute = assertWithinVault(resolvedRoot, payload.fromPath);
-  const toAbsolute = assertWithinVault(resolvedRoot, payload.toPath);
+  const fromAbsolute = await assertWithinVault(resolvedRoot, payload.fromPath);
+  const toAbsolute = await assertWithinVault(resolvedRoot, payload.toPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [payload.fromPath, payload.toPath] };
@@ -565,7 +606,7 @@ async function applyDeleteDirectory(
   payload: DeleteDirectoryPayload,
   dryRun: boolean,
 ): Promise<Pick<WeaveApplyOperationResult, 'ok' | 'error' | 'warning' | 'affectedPaths'>> {
-  const absolutePath = assertWithinVault(resolvedRoot, targetPath);
+  const absolutePath = await assertWithinVault(resolvedRoot, targetPath);
 
   if (dryRun) {
     return { ok: true, affectedPaths: [targetPath] };
@@ -578,6 +619,11 @@ async function applyDeleteDirectory(
       throw new Error(`Directory not found: ${targetPath}`);
     }
     throw error;
+  }
+
+  // Safety: refuse to delete the vault root itself
+  if (absolutePath === path.resolve(resolvedRoot)) {
+    throw new Error('Refusing to delete the vault root directory.');
   }
 
   // Check if directory is non-empty and warn

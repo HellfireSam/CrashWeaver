@@ -46,7 +46,7 @@ test('insert-boundary-pair: appends to end of note', async (t) => {
         payload: {
           cardUid: 'CW-TEST',
           placement: 'append-to-note',
-          boundaryBlock: 'Test card content',
+          boundaryBlock: `${formatCardStartBoundary('CW-TEST')}\nTest card content\n${formatCardEndBoundary('CW-TEST')}`,
         },
         rationale: 'Add test card to note',
       },
@@ -82,7 +82,7 @@ test('insert-boundary-pair: prepends to beginning of note', async (t) => {
         payload: {
           cardUid: 'CW-PREPEND',
           placement: 'prepend-to-note',
-          boundaryBlock: 'Prepended card',
+          boundaryBlock: `${formatCardStartBoundary('CW-PREPEND')}\nPrepended card\n${formatCardEndBoundary('CW-PREPEND')}`,
         },
         rationale: 'Prepend to note',
       },
@@ -110,7 +110,7 @@ test('insert-boundary-pair: after a specific heading', async (t) => {
           cardUid: 'CW-HEADING',
           placement: 'after-heading',
           headingText: 'Section A',
-          boundaryBlock: 'After heading content',
+          boundaryBlock: `${formatCardStartBoundary('CW-HEADING')}\nAfter heading content\n${formatCardEndBoundary('CW-HEADING')}`,
         },
         rationale: 'Insert after Section A',
       },
@@ -141,7 +141,7 @@ test('insert-boundary-pair: before a specific heading', async (t) => {
           cardUid: 'CW-BEFORE',
           placement: 'before-heading',
           headingText: 'Section B',
-          boundaryBlock: 'Before heading content',
+          boundaryBlock: `${formatCardStartBoundary('CW-BEFORE')}\nBefore heading content\n${formatCardEndBoundary('CW-BEFORE')}`,
         },
         rationale: 'Insert before Section B',
       },
@@ -152,6 +152,7 @@ test('insert-boundary-pair: before a specific heading', async (t) => {
     const lines = content.split('\n');
     const boundaryIndex = lines.findIndex((l) => l.includes(formatCardStartBoundary('CW-BEFORE')));
     const headingIndex = lines.findIndex((l) => l.includes('## Section B'));
+    assert.notStrictEqual(boundaryIndex, -1, 'Boundary should be present in content');
     assert.ok(boundaryIndex < headingIndex, 'Boundary should be before the heading');
   } finally {
     await cleanup();
@@ -172,7 +173,7 @@ test('insert-boundary-pair: after selection text', async (t) => {
           cardUid: 'CW-SEL',
           placement: 'after-selection',
           selectedText: 'This is paragraph one.',
-          boundaryBlock: 'After selection content',
+          boundaryBlock: `${formatCardStartBoundary('CW-SEL')}\nAfter selection content\n${formatCardEndBoundary('CW-SEL')}`,
         },
         rationale: 'Insert after paragraph one',
       },
@@ -290,7 +291,7 @@ test('create-note: creates a new markdown note with boundary pair', async (t) =>
         payload: {
           cardUid: 'CW-NEW',
           title: 'New Test Note',
-          content: 'This is the content of the new note.',
+          content: `${formatCardStartBoundary('CW-NEW')}\nThis is the content of the new note.\n${formatCardEndBoundary('CW-NEW')}`,
         },
         rationale: 'Create a new note for the card',
       },

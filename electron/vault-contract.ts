@@ -493,3 +493,10 @@ export interface WeaveApplyResult {
   failedCount: number;
   warnings: string[];
 }
+
+export interface WeaveApplyOptions {
+  /** If true, validate operations but don't write anything. Default false. */
+  dryRun?: boolean;
+  /** If true, stop executing on the first failure. Default true. */
+  stopOnError?: boolean;
+}
