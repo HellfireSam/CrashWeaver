@@ -75,18 +75,21 @@ function InsertBoundaryDiff({ payload }: { payload: InsertBoundaryPairPayload })
   const block = payload.boundaryBlock ?? '';
 
   // The LLM is instructed to include %%CW_CARD_START/END%% markers inside
-  // boundaryBlock.  If the block already looks like a self-contained boundary
-  // pair, render it as-is to avoid showing duplicate markers in the preview.
-  const blockIsSelfContained =
-    block.trim().startsWith('%%CW_CARD_START') &&
-    block.trim().endsWith('%%CW_CARD_END');
+  // boundaryBlock.  Check whether the block already contains both markers
+  // (matching the schema's own assertBoundaryBlockIncludesCard check which
+  // uses `.includes()`, not `.startsWith()`/`.endsWith()`).  If it does,
+  // render the block as-is split by newlines to avoid double-wrapping.
+  const trimmedBlock = block.trim();
+  const blockHasStartMarker = trimmedBlock.includes('%%CW_CARD_START');
+  const blockHasEndMarker = trimmedBlock.includes('%%CW_CARD_END');
+  const blockIsSelfContained = blockHasStartMarker && blockHasEndMarker;
 
   return (
     <div className="weaverDiffPreview">
       <div className="weaverDiffHeader">Boundary insertion preview</div>
       <div className="weaverDiffLines">
         {blockIsSelfContained ? (
-          block.split('\n').map((line, i) => (
+          trimmedBlock.split('\n').map((line, i) => (
             <div key={i} className="weaverDiffLine weaverDiffAdd">
               <span className="weaverDiffMarker">+</span>
               <code>{line || '\u00A0'}</code>
@@ -98,12 +101,14 @@ function InsertBoundaryDiff({ payload }: { payload: InsertBoundaryPairPayload })
               <span className="weaverDiffMarker">+</span>
               <code>{startBoundary}</code>
             </div>
-            {block.trim() ? (
-              <div className="weaverDiffLine weaverDiffAdd">
-                <span className="weaverDiffMarker">+</span>
-                <code>{block}</code>
-              </div>
-            ) : null}
+            {trimmedBlock
+              ? trimmedBlock.split('\n').map((line, i) => (
+                  <div key={i} className="weaverDiffLine weaverDiffAdd">
+                    <span className="weaverDiffMarker">+</span>
+                    <code>{line || '\u00A0'}</code>
+                  </div>
+                ))
+              : null}
             <div className="weaverDiffLine weaverDiffAdd">
               <span className="weaverDiffMarker">+</span>
               <code>{endBoundary}</code>

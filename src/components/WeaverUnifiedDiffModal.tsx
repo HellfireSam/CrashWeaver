@@ -426,7 +426,10 @@ function EditNoteContentDiffView({ payload }: { payload: EditNoteContentPayload 
 
 function buildBoundaryBlockLines(payload: InsertBoundaryPairPayload): string {
   const block = payload.boundaryBlock?.trim() ?? '';
-  if (block.startsWith('%%CW_CARD_START') && block.endsWith('%%CW_CARD_END')) {
+  // Match the schema's own assertBoundaryBlockIncludesCard check which uses
+  // `.includes()`, not `.startsWith()`/`.endsWith()`.  This prevents double-wrapping
+  // when the LLM places markers inside a block that doesn't start/end with them.
+  if (block.includes('%%CW_CARD_START') && block.includes('%%CW_CARD_END')) {
     return block;
   }
   const start = formatCardStartBoundary(payload.cardUid);
@@ -583,12 +586,13 @@ function InsertBoundaryDiffView({
   // Error state — fall back to insertion-only preview
   if (loadError || !diffResult) {
     const block = payload.boundaryBlock ?? '';
+    const trimmedBlock = block.trim();
     const blockIsSelfContained =
-      block.trim().startsWith('%%CW_CARD_START') &&
-      block.trim().endsWith('%%CW_CARD_END');
+      trimmedBlock.includes('%%CW_CARD_START') &&
+      trimmedBlock.includes('%%CW_CARD_END');
     const addedLines = blockIsSelfContained
-      ? block.split('\n').length
-      : 2 + (block.trim() ? block.split('\n').length : 0);
+      ? trimmedBlock.split('\n').length
+      : 2 + (trimmedBlock ? trimmedBlock.split('\n').length : 0);
 
     return (
       <>

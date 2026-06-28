@@ -12,6 +12,11 @@
   },
   "referenced_in": [
     {
+      "note_path": "mathematics/green-theorem.md",
+      "start_line": 5,
+      "end_line": 11
+    },
+    {
       "note_path": "mathematics/greens-theorem-detailed.md",
       "start_line": 5,
       "end_line": 7
