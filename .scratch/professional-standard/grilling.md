@@ -1,8 +1,9 @@
 # CrashWeaver — Rework Grilling Record
 
-**Status: grilling COMPLETE; `/to-spec` done.** Q27 and Q30–Q32 are resolved and the glossary is
-confirmed. The spec is published as [GitHub issue
-#1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`).
+**Status: grilling COMPLETE; `/to-spec` and `/to-tickets` done.** Q27 and Q30–Q32 are resolved and the
+glossary is confirmed. The spec is [GitHub issue
+#1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
+(#2–#22) with native blocking edges. All 21 are sub-issues of #1.
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -289,8 +290,8 @@ Note: the **Weaver/weave naming rule itself is a coding standard**, so it belong
 ### Still open
 
 - **`gh` is now authenticated** as `HellfireSam` — the Q19 blocker is cleared.
-- **The two defects above are NOT yet filed as issues.** `/to-spec` published the spec issue only; the
-  owner chose to let `/to-tickets` file them. Both remain tracked inside the spec.
+- **Everything previously tracked is now filed.** The two defects are #16 and #17 (both also labelled
+  `bug`); the boundary-marker gap is #4; the destructive-consolidation reconciliation is #22.
 
 ### Next steps
 
@@ -303,7 +304,20 @@ The grilling frontier is otherwise **empty**. In order:
    from preload, which §5 above had left as an undecided "related structural gap". It also commits to
    the gate command as the single acceptance seam plus characterization tests at boundaries that
    already exist — **the module splits add no new test seam**.
-3. `/to-tickets` — split into tracer-bullet tickets with blocking edges.
+3. ~~`/to-tickets`~~ — **DONE**: 21 tickets, #2–#22, all sub-issues of #1 with native `blocked_by`
+   edges. The frontier (nothing blocking it) is **#2** (the green baseline), **#3** (documentation
+   reorganisation + glossary), and **#4** (the boundary-marker gap). Ticket map, in dependency order:
+
+   | Phase | Tickets |
+   | --- | --- |
+   | Green baseline | #2 |
+   | Enforceable | #5 lint+format → #8 gate/CI/governance |
+   | Documentation | #3 reorg+glossary · #6 architecture · #7 layout · #9 standards |
+   | Testing | #10 Vitest batch 1 → #11 batch 2 → #12 characterization |
+   | Splits | #14 apply service · #13 pure logic → #15 renderer split · #18 dead exports |
+   | Naming / IPC | #19 naming · #20 centralise → #21 rename+assert |
+   | Tracked | #16, #17 defects · #4 marker gap · #22 reconciliation |
+
 4. `/implement` per ticket, clearing context between tickets.
 
 **The first implementation ticket is the green PR:** split the tsconfigs (Q13) + update the 3 stale
