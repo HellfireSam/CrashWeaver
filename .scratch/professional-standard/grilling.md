@@ -319,6 +319,11 @@ The grilling frontier is otherwise **empty**. In order:
    | Tracked | #16, #17 defects · #4 marker gap · #22 reconciliation |
 
 4. `/implement` per ticket, clearing context between tickets.
+   - ~~#2 the green baseline~~ — **DONE** in `f90ed8e`: tsconfigs split (app / node / electron solution),
+     root cause of the TS2305 regression recorded and proven loud, three stale tests updated. Closed.
+     Gate verified on the frozen revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
+   - **Frontier is now #3** (docs reorg + glossary), **#4** (boundary-marker gap), and **#5**
+     (lint + format), which unblocks #8 and then the rest of the chain.
 
 **The first implementation ticket is the green PR:** split the tsconfigs (Q13) + update the 3 stale
 tests (Q14). Nothing else. No restructuring.
