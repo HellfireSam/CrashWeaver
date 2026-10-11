@@ -323,11 +323,13 @@ The grilling frontier is otherwise **empty**. In order:
    - ~~#2 the green baseline~~ — **DONE** in `f90ed8e`: tsconfigs split (app / node / electron solution),
      root cause of the TS2305 regression recorded and proven loud, three stale tests updated. Closed.
      Gate verified on the frozen revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
-   - ~~#3 the documentation rewrite + glossary~~ — **DONE** in `fe11d0a`, `baea6b1`, `5f781e6`,
-     `403988f`, `bac2b52`, `5116745`, `8bdaa40`. Scope was expanded by a second grilling round: rather than
-     reindexing the
-     old docs, **every document was rewritten from scratch**, because the archived set conflicts with
-     itself and does not reliably state what was intended. #6 (fresh architecture) was absorbed and
+   - ~~#3 the documentation rewrite + glossary~~ — **DONE** across seven commits on `main`
+     (`fe11d0a` archive · `baea6b1` glossary · `5f781e6` documentation set · `403988f` open questions ·
+     `bac2b52` user-guide corrections · `8bdaa40` setup/roadmap corrections · `5116745` record, plus
+     record-maintenance commits). Scope was expanded by a second grilling round: rather than
+     reindexing the old docs, **every document was rewritten from scratch**, because the archived set
+     conflicts with itself and does not reliably state what was intended. #6 (fresh architecture) was
+     absorbed and
      closed as a duplicate; #9 (standards) stays separate because it depends on #5/#8 tooling.
      - 21 superseded documents moved to `docs/archive/` behind a uniform banner, plus an archive
        index mapping each to its replacement. Nothing deleted.
