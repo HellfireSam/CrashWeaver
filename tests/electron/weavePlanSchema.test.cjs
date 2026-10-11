@@ -97,7 +97,7 @@ test('guided insert rejects edit-note-content when editContent permission is dis
   );
 });
 
-test('create-note payloads must include substantive prose and the focused boundary pair', async () => {
+test('create-note content enforces a prose floor and treats boundary markers as optional', async () => {
   const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-schema-'));
   const request = validateWeavePlanRequest(
     createGuidedRequest(rootPath, {
@@ -108,37 +108,51 @@ test('create-note payloads must include substantive prose and the focused bounda
     }),
   );
 
-  assert.throws(
-    () => validateWeavePlanResult(
-      {
-        plan: {
-          kind: 'guided-insert',
-          permissions: { editContent: false, createNote: true },
-          summary: 'Attempt to create a note without meaningful prose.',
-          operations: [
-            {
-              kind: 'create-note',
-              targetPath: 'notes/new-graph-note.md',
-              payload: {
-                cardUid: 'CW-001',
-                title: 'New graph note',
-                content: [
-                  '%%CW_CARD_START uid:CW-001%%',
-                  '%%CW_CARD_END uid:CW-001%%',
-                ].join('\n'),
-              },
-              rationale: 'This should fail because the note has no meaningful prose.',
-            },
-          ],
-          warnings: [],
-          referencedCards: ['CW-001'],
+  const resultFor = (content) => ({
+    plan: {
+      kind: 'guided-insert',
+      permissions: { editContent: false, createNote: true },
+      summary: 'Create a note for the focused card.',
+      operations: [
+        {
+          kind: 'create-note',
+          targetPath: 'notes/new-graph-note.md',
+          payload: {
+            cardUid: 'CW-001',
+            title: 'New graph note',
+            content,
+          },
+          rationale: 'The focused card needs a note of its own.',
         },
-        model: 'stub',
-        provider: 'stub',
-        latencyMs: 1,
-      },
+      ],
+      warnings: [],
+      referencedCards: ['CW-001'],
+    },
+    model: 'stub',
+    provider: 'stub',
+    latencyMs: 1,
+  });
+
+  // Boundary markers are optional for create-note: prose on its own is accepted.
+  assert.doesNotThrow(() =>
+    validateWeavePlanResult(
+      resultFor('# New graph note\n\nGraph traversal notes for the focused card.'),
       request,
     ),
+  );
+
+  // Content is judged only by its trimmed length, so a boundary-only payload
+  // that clears the 20-character floor is accepted too.
+  assert.doesNotThrow(() =>
+    validateWeavePlanResult(
+      resultFor(['%%CW_CARD_START uid:CW-001%%', '%%CW_CARD_END uid:CW-001%%'].join('\n')),
+      request,
+    ),
+  );
+
+  // The floor itself is still enforced.
+  assert.throws(
+    () => validateWeavePlanResult(resultFor('Too short.'), request),
     /substantive markdown prose/i,
   );
 });

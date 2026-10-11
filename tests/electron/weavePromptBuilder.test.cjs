@@ -125,7 +125,7 @@ test('buildContextLayer warns when no candidate notes are ranked', () => {
 
 // ── Initial user turn ─────────────────────────────────────────────────────────
 
-test('buildInitialUserTurn includes request spec, context, and budget reminder', () => {
+test('buildInitialUserTurn carries the request spec and context without repeating the budget', () => {
   const request = {
     rootPath: 'D:/vault',
     kind: 'guided-insert',
@@ -156,7 +156,18 @@ test('buildInitialUserTurn includes request spec, context, and budget reminder',
   assert.match(turn, /REQUEST SPECIFICATION/);
   assert.match(turn, /Focused card UID: CW-001/);
   assert.match(turn, /VAULT CONTEXT SNAPSHOT/);
-  assert.match(turn, /read-only tool call/);
+
+  // The budget reminder deliberately lives in the system prompt's tool-loop
+  // layer only; the user turn must not repeat it.
+  assert.doesNotMatch(turn, /read-only tool call/i);
+  assert.doesNotMatch(turn, /Total retrieval character budget/i);
+
+  // Each phrase asserted absent above is asserted present here, so the coverage
+  // moved rather than vanished.
+  const systemPrompt = buildSystemPrompt(profile, 'guided-insert', 1, 1, 3600);
+  assert.match(systemPrompt, /You have at most 1 tool call available/);
+  assert.match(systemPrompt, /Note-read budget: at most 1 note read/i);
+  assert.match(systemPrompt, /Total retrieval character budget: up to 3600 chars/i);
 });
 
 // ── Observation message ───────────────────────────────────────────────────────

@@ -12,7 +12,7 @@
     "test": "npm run test:electron && npm run test:renderer",
     "test:electron": "npm run build:main && node --test tests/electron/**/*.test.cjs",
     "test:renderer": "vitest run src/lib/markdownPreview.test.ts src/lib/editorPaths.test.ts src/lib/crashpadStatus.test.ts",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "typecheck": "tsc -b && tsc -p tsconfig.electron.json --noEmit",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.electron.json",
     "build": "npm run typecheck && npm run build:renderer && npm run build:main",

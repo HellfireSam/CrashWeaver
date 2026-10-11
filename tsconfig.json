@@ -1,19 +1,15 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "Node16",
-    "skipLibCheck": true,
-    "moduleResolution": "node16",
-    "allowImportingTsExtensions": false,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noEmit": true,
-    "types": ["vite/client"]
-  },
-  "include": ["src", "vite.config.ts"]
+  // Solution file. The compiler options for each project live in the files
+  // below; editor tooling uses these references to pick the right project for
+  // a given file. `npm run typecheck` builds this solution with `tsc -b`, so
+  // every referenced project is checked, and `tsconfig.electron.json` stays
+  // outside it because that project emits a CommonJS build.
+  // Keep this file free of `include`/`files` inputs: the referenced projects are
+  // not composite, and `tsc -b` tolerates that only while the solution itself
+  // has no inputs of its own.
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }

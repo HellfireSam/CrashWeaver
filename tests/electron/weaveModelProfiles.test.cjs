@@ -166,7 +166,9 @@ test('resolveFullModelProfile respects disableBudgetRestrictions setting', () =>
 
   assert.equal(profile.maxTokens, BUDGET_VALIDATION_BOUNDS.maxTokens);
   assert.equal(profile.timeoutMs, BUDGET_VALIDATION_BOUNDS.maxTimeoutMs);
-  assert.equal(profile.iterationLimit, BUDGET_VALIDATION_BOUNDS.maxIterations);
+  // Unrestricted mode deliberately raises the tool-call ceiling above the
+  // restricted maximum: 200 is a safety cap, not maxIterations (20).
+  assert.equal(profile.iterationLimit, 200);
 });
 
 test('resolveFullModelProfile intelligent budgets scale by strength', () => {

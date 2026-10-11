@@ -1,0 +1,21 @@
+{
+  // Vite's config file is an ES module, so it must be resolved with `bundler`
+  // module resolution. It previously inherited `module: Node16` from the single
+  // root tsconfig while package.json declares no `"type": "module"`, which made
+  // TypeScript treat this file as CommonJS and resolve Vite's deprecated
+  // `index.d.cts` shim — a file with no named exports. The result was
+  // `TS2305: Module '"vite"' has no exported member 'defineConfig'`, which also
+  // blocked `npm run build`. Do not switch this project back to node16/node.
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["vite.config.ts"]
+}
