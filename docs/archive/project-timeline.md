@@ -1,9 +1,13 @@
+> **Superseded.** Archived 2026-10-11 from `Project Timeline.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
+
+---
+
 # Project Timeline
 
-This file tracks sequencing and planning only.
-
-Canonical product and architecture source:
-- docs/00-Single-Source-of-Truth.md
+This file tracked sequencing and planning only.
 
 ## Status (June 2026)
 
@@ -35,6 +39,6 @@ Planned:
 
 ## Planning Rules
 
-- If timeline detail conflicts with docs/00-Single-Source-of-Truth.md, the canonical file wins.
+- This rule referenced a document that has been retired; it is retained only as a record of the planning convention in force at the time.
 - Keep this file focused on status and sequencing, not product definitions.
 

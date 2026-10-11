@@ -1,8 +1,13 @@
-# Development Setup (Canonical)
+> **Superseded.** Archived 2026-10-11 from `docs/01-Development-Setup.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
 
-This file is the single source of truth for local setup and standard validation commands.
+---
 
-For product definitions and architecture boundaries, see `docs/00-Single-Source-of-Truth.md`.
+# Development Setup
+
+This file described local setup and standard validation commands. For current setup instructions see [`docs/guides/development-setup.md`](../guides/development-setup.md).
 
 ## Prerequisites
 
@@ -61,9 +66,9 @@ npm run build:main
 ## Stage Validation Guides
 
 Use these files for manual validation flows:
-- `docs/Stage 1 Setup.md`
-- `docs/Stage 2 Setup.md`
-- `docs/Stage 3 Setup.md`
-- `docs/Stage 4 Setup.md`
-- `docs/Stage 5 Setup.md`
+- `./stage-1-setup.md`
+- `./stage-2-setup.md`
+- `./stage-3-setup.md`
+- `./stage-4-setup.md`
+- `./stage-5-setup.md`
 

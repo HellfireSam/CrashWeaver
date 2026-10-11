@@ -1,8 +1,13 @@
-# CrashWeaver Single Source of Truth
+> **Superseded.** Archived 2026-10-11 from `docs/00-Single-Source-of-Truth.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
 
-This document is the canonical source for product definitions, architecture boundaries, stage status, and delivery direction.
+---
 
-If any other documentation disagrees with this file, this file wins.
+# CrashWeaver former single source of truth
+
+This document was the project's declared canonical source for product definitions, architecture boundaries, stage status, and delivery direction. It is archived and carries no authority; see the banner above.
 
 ## 1. Product Model
 
@@ -172,22 +177,22 @@ Planned:
 - LLM edits must never auto-apply.
 - Any future apply path must show additions and removals clearly and require explicit user acceptance before writes.
 
-## 6. Documentation Contract
+## 6. Documentation Contract (historical)
 
-The following files are supporting docs and must defer to this canonical source:
-- `CrashWeaver Project Outline.md`
-- `Project Timeline.md`
-- `docs/Project Architecture for Dummies.md`
-- `docs/Stage 1 Architecture.md`
-- `docs/Stage 2 Architecture.md`
-- `docs/Stage 3 Architecture.md`
-- `docs/Stage 4 Architecture.md`
-- `docs/Stage 5 Architecture.md`
-- `docs/LLM Layer - OpenRouter Implementation.md`
-- `docs/Card Insert Templates.md`
-- `docs/Card Workspace Template Options.md`
+This section listed the documents that were required to defer to this file. All of them are now archived alongside it or replaced by the current documentation set:
+- `./project-outline.md`
+- `./project-timeline.md`
+- `./architecture-for-beginners.md`
+- `./stage-1-architecture.md`
+- `./stage-2-architecture.md`
+- `./stage-3-architecture.md`
+- `./stage-4-architecture.md`
+- `./stage-5-architecture.md`
+- `./llm-layer-openrouter-implementation.md`
+- `./card-insert-templates.md`
+- `./card-workspace-template-options.md`
 
 Setup and validation source split:
-- Global setup commands: `docs/01-Development-Setup.md`
-- Stage-specific manual validation: `docs/Stage X Setup.md`
+- Global setup commands: `./development-setup.md`
+- Stage-specific manual validation: `./stage-<n>-setup.md`
 

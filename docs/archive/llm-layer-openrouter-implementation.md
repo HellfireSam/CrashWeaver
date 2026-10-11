@@ -1,7 +1,11 @@
-# LLM Layer - OpenRouter Implementation
+> **Superseded.** Archived 2026-10-11 from `docs/LLM Layer - OpenRouter Implementation.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
 
-Canonical product and architecture source:
-- docs/00-Single-Source-of-Truth.md
+---
+
+# LLM Layer - OpenRouter Implementation
 
 This document defines how to implement the CrashWeaver LLM layer using OpenRouter while preserving Stage 5 and Stage 6 boundaries.
 
@@ -485,4 +489,4 @@ Stage 6:
 Stage 7:
 - Review scheduling and familiarity workflows
 
-Keep all details in this document subordinate to `docs/00-Single-Source-of-Truth.md`.
+This document is superseded and carries no authority; see [the documentation index](../README.md).

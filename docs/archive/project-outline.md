@@ -1,15 +1,13 @@
+> **Superseded.** Archived 2026-10-11 from `CrashWeaver Project Outline.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
+
+---
+
 # CrashWeaver Project Outline
 
-This file is now an executive summary.
-
-Canonical source of truth:
-- docs/00-Single-Source-of-Truth.md
-
-Global setup and validation commands:
-- docs/01-Development-Setup.md
-
-Timeline and delivery sequencing:
-- Project Timeline.md
+This file was an executive summary for the project.
 
 ## Summary
 
@@ -24,5 +22,5 @@ CrashWeaver is an Electron app for working with Obsidian vault content through C
 - Weaver uses compact vault retrieval plus targeted read-only note access rather than sending the full vault to the model.
 - Stage 5 stages read-only Weaver proposals; Stage 6 adds accept/reject diff approval before any writes.
 
-For definitions, schema, architecture boundaries, stage status, and acceptance principles, use docs/00-Single-Source-of-Truth.md only.
+See [the documentation index](../README.md) for current documentation.
 

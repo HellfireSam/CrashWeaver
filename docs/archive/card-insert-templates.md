@@ -1,7 +1,11 @@
-# Card Insert Templates
+> **Superseded.** Archived 2026-10-11 from `docs/Card Insert Templates.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
 
-Canonical schema and product rules:
-- docs/00-Single-Source-of-Truth.md
+---
+
+# Card Insert Templates
 
 This file is an example catalog only. It does not define schema contracts.
 
@@ -33,5 +37,5 @@ Use for fast capture with minimal fields before later enrichment.
 
 - Keep UID stable across note boundaries and card JSON.
 - Future Weaver planning may use these template families as prompt or proposal hints, but they do not define insert behavior or approval rules.
-- Keep this file as examples only; update docs/00-Single-Source-of-Truth.md when schema changes.
+- Keep this file as examples only. For the current schema see [`docs/reference/card-schema.md`](../reference/card-schema.md).
 

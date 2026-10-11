@@ -1,9 +1,13 @@
+> **Superseded.** Archived 2026-10-11 from `docs/Project Architecture for Dummies.md` during the
+> [documentation rewrite](https://github.com/HellfireSam/CrashWeaver/issues/3). This document records what was believed when it was
+> written and carries no authority.
+> Current documentation: [docs index](../README.md) · Replacement: [archive index](./README.md).
+
+---
+
 # CrashWeaver Architecture for Beginners
 
 This file is a simplified entry point.
-
-Canonical source:
-- docs/00-Single-Source-of-Truth.md
 
 ## Mental Model
 
@@ -33,5 +37,5 @@ Users may provide insertion intent. Stage 5 handles non-destructive, read-only a
 
 ## How To Use This Doc
 
-Use this file for orientation only. Use docs/00-Single-Source-of-Truth.md for exact rules, schema, and current implementation status.
+Use this file for orientation only. For current documentation see [the documentation index](../README.md).
 
