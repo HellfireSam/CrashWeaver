@@ -1,27 +1,40 @@
-# Documentation Index
+# CrashWeaver documentation
 
-Primary source:
-- docs/00-Single-Source-of-Truth.md
+Current documentation only. Everything superseded lives in
+[the archive](./archive/README.md).
 
-Setup source:
-- docs/01-Development-Setup.md
+## Start here
 
-Supporting docs:
-- docs/Project Architecture for Dummies.md
-- docs/Stage 1 Architecture.md
-- docs/Stage 1 Setup.md
-- docs/Stage 2 Architecture.md
-- docs/Stage 2 Setup.md
-- docs/Stage 3 Architecture.md
-- docs/Stage 3 Setup.md
-- docs/Stage 4 Architecture.md
-- docs/Stage 4 Setup.md
-- docs/Stage 5 Architecture.md
-- docs/Stage 5 Setup.md
-- docs/LLM Layer - OpenRouter Implementation.md
-- docs/Card Insert Templates.md
-- docs/Card Workspace Template Options.md
+- [Domain glossary](../CONTEXT.md) — the project's vocabulary
+- [Architecture overview](./architecture/overview.md) — what the system is and how a weave flows end to end
 
-Rule:
-- If there is any discrepancy, docs/00-Single-Source-of-Truth.md is authoritative.
+## Architecture
 
+- [Overview](./architecture/overview.md)
+- [Data model](./architecture/data-model.md) — vault, notes, boundaries, card store, references
+- [Process model and IPC](./architecture/process-model.md) — main, preload, renderer, the shared contract
+- [The weave pipeline](./architecture/weave-pipeline.md) — retrieval, planning, approval, apply
+
+## Reference
+
+- [Card schema](./reference/card-schema.md)
+- [Boundary format](./reference/boundary-format.md)
+- [Card insert templates](./reference/card-insert-templates.md)
+
+## Guides
+
+- [Development setup](./guides/development-setup.md)
+- [Using CrashWeaver](./guides/using-crashweaver.md)
+
+## Planning
+
+- [Roadmap](./roadmap.md)
+
+## Not yet written
+
+- Coding standards and contribution guidance.
+
+## For agents
+
+- [AGENTS.md](../AGENTS.md) and [`docs/agents/`](./agents/) describe how automated agents
+  should work in this repository.
