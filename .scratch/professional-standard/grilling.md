@@ -1,9 +1,10 @@
 # CrashWeaver — Rework Grilling Record
 
-**Status: grilling COMPLETE; `/to-spec` and `/to-tickets` done.** Q27 and Q30–Q32 are resolved and the
-glossary is confirmed. The spec is [GitHub issue
+**Status: grilling COMPLETE; `/to-spec` and `/to-tickets` done; implementation in progress.** Q27 and
+Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHub issue
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
-(#2–#22) with native blocking edges. All 21 are sub-issues of #1.
+(#2–#22) with native blocking edges. All 21 are sub-issues of #1. **#2 (green baseline), #3
+(documentation rewrite) and #6 (absorbed into #3) are closed.**
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -322,8 +323,29 @@ The grilling frontier is otherwise **empty**. In order:
    - ~~#2 the green baseline~~ — **DONE** in `f90ed8e`: tsconfigs split (app / node / electron solution),
      root cause of the TS2305 regression recorded and proven loud, three stale tests updated. Closed.
      Gate verified on the frozen revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
-   - **Frontier is now #3** (docs reorg + glossary), **#4** (boundary-marker gap), and **#5**
-     (lint + format), which unblocks #8 and then the rest of the chain.
+   - ~~#3 the documentation rewrite + glossary~~ — **DONE** in `fe11d0a`, `baea6b1`, `5f781e6`,
+     `403988f`, `bac2b52`. Scope was expanded by a second grilling round: rather than reindexing the
+     old docs, **every document was rewritten from scratch**, because the archived set conflicts with
+     itself and does not reliably state what was intended. #6 (fresh architecture) was absorbed and
+     closed as a duplicate; #9 (standards) stays separate because it depends on #5/#8 tooling.
+     - 21 superseded documents moved to `docs/archive/` behind a uniform banner, plus an archive
+       index mapping each to its replacement. Nothing deleted.
+     - `CONTEXT.md` published at the root: the 21 confirmed terms, verbatim from #1, glossary only.
+     - 13 fresh documents written from the code (~2,700 lines): root README, docs index, four
+       architecture documents, three reference documents, two guides, and `docs/roadmap.md`.
+     - Verification: each fresh document was falsified against the code by an independent adversarial
+       verifier. 61 findings were raised, including six majors (a false "each surface has one owner"
+       claim, a false claim that every marker writer emits the canonical form, two card-schema
+       errors, a false claim that the diff preview mirrors apply's placement rules, and the user
+       guide's restatement of the vault rule). All were fixed; nothing was invented.
+     - Intent gaps: `.scratch/professional-standard/docs-open-questions.md` — three decisions for the
+       owner (card store versus the vault rule, request logs and the embedding cache versus the
+       approval gate, roadmap framing) plus recommendations. Per the agreed protocol, unresolved
+       entries are documented as open rather than guessed, and they do not block closing the ticket.
+     - Gate on the committed revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
+       Documentation-only change.
+   - **Frontier is now #4** (boundary-marker gap), **#5** (lint + format), and **#7** (layout), which
+     #3's reorganisation has unblocked.
 
 **The first implementation ticket is the green PR:** split the tsconfigs (Q13) + update the 3 stale
 tests (Q14). Nothing else. No restructuring.
@@ -342,4 +364,6 @@ In a new session, say:
 
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
-would do that, and that needs GitHub credentials (Q19 is still outstanding).
+would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
+the decisions are no longer only local. The six rework commits so far are **not pushed**: `main` is
+ahead of `origin/main` and no rework commit has been pushed.
