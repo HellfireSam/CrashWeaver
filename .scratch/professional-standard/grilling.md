@@ -1,6 +1,8 @@
 # CrashWeaver — Rework Grilling Record
 
-**Status: grilling PAUSED, incomplete.** One question unanswered (Q27), plus the glossary draft.
+**Status: grilling COMPLETE; `/to-spec` done.** Q27 and Q30–Q32 are resolved and the glossary is
+confirmed. The spec is published as [GitHub issue
+#1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`).
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -286,15 +288,21 @@ Note: the **Weaver/weave naming rule itself is a coding standard**, so it belong
 
 ### Still open
 
-- **`gh` is unauthenticated** (Q19 chose GitHub Issues). Blocks **filing the two defects above** and
-  blocks `/to-tickets`.
+- **`gh` is now authenticated** as `HellfireSam` — the Q19 blocker is cleared.
+- **The two defects above are NOT yet filed as issues.** `/to-spec` published the spec issue only; the
+  owner chose to let `/to-tickets` file them. Both remain tracked inside the spec.
 
 ### Next steps
 
 The grilling frontier is otherwise **empty**. In order:
 
-1. Shared-understanding sign-off — the grilling skill forbids acting before this.
-2. `/to-spec` — turn this record into a spec.
+1. ~~Shared-understanding sign-off~~ — **DONE**.
+2. ~~`/to-spec`~~ — **DONE**: published as
+   [issue #1](https://github.com/HellfireSam/CrashWeaver/issues/1), labelled `ready-for-agent`. The spec
+   additionally commits to centralising the 41 IPC channel names and deriving the renderer bridge type
+   from preload, which §5 above had left as an undecided "related structural gap". It also commits to
+   the gate command as the single acceptance seam plus characterization tests at boundaries that
+   already exist — **the module splits add no new test seam**.
 3. `/to-tickets` — split into tracer-bullet tickets with blocking edges.
 4. `/implement` per ticket, clearing context between tickets.
 
