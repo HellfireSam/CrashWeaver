@@ -324,7 +324,8 @@ The grilling frontier is otherwise **empty**. In order:
      root cause of the TS2305 regression recorded and proven loud, three stale tests updated. Closed.
      Gate verified on the frozen revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
    - ~~#3 the documentation rewrite + glossary~~ — **DONE** in `fe11d0a`, `baea6b1`, `5f781e6`,
-     `403988f`, `bac2b52`. Scope was expanded by a second grilling round: rather than reindexing the
+     `403988f`, `bac2b52`, `5116745`, `8bdaa40`. Scope was expanded by a second grilling round: rather than
+     reindexing the
      old docs, **every document was rewritten from scratch**, because the archived set conflicts with
      itself and does not reliably state what was intended. #6 (fresh architecture) was absorbed and
      closed as a duplicate; #9 (standards) stays separate because it depends on #5/#8 tooling.
