@@ -3,7 +3,10 @@
 **Status: grilling PAUSED, incomplete.** One question unanswered (Q27), plus the glossary draft.
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
-- **Repo:** `/root/workspace01/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`)
+- **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
+  `/root/workspace01/CrashWeaver`; the old copy was verified identical (same HEAD, 419 tracked files,
+  byte-identical trees, `fsck` clean) and then deleted. **This path is canonical — never write to the
+  old location.**
 - **Branch / HEAD at time of writing:** `main` @ `6760903`
 - **Session date:** recorded during the grilling session that created this file
 - **Committed work so far:** none of the rework. Only `AGENTS.md` + `docs/agents/` (agent-skills config) and this record.
@@ -201,54 +204,76 @@ and **16 imported by neither side** (dead: `CardParseDiagnosticCode`, `WeaveProv
 
 ## 7. OPEN — resume here
 
-### Q27 (unanswered): the three latent defects
+### Q27 (RESOLVED)
 
-1. **`applyRenameNote` updates only the FIRST matching `referenced_in` entry per card**
-   (`findIndex`, line 436). Duplicate entries would be half-updated.
-2. **`verifyBoundaryIntegrity` is never called by delete or rename** — only by insert/edit.
-3. **Possible dry-run validation hole** — the dry-run path may return `{ok: true}` *before* reading
-   content (lines 144–146, 278–280), so it never validates that target text or headings exist.
-   **This finding is INFERRED, NOT VERIFIED.** It matters because Stage 6's entire safety story is
-   "the user reviews the diff before any write." **Verify before writing an issue.**
+**Decision:** file the two genuine code defects as GitHub issues; **rewrite the dry-run test to assert
+its actual behaviour**. No production behaviour changes. The test rewrite is its own small PR,
+separate from the green PR.
 
-**Recommendation on the table:** file all three as GitHub issues and fix none during the rework —
-subject to verifying #3 first, and noting that if it holds it qualifies as an outright bug under the
-Q3 freeze.
+**Defect 1 — `applyRenameNote` updates only the FIRST matching `referenced_in` entry per card**
+(`findIndex`, line 436). Duplicate entries would be half-updated.
 
-### Also open
+**Defect 2 — `verifyBoundaryIntegrity` is never called by delete or rename**, only by insert/edit.
 
-- **Glossary contents for `CONTEXT.md`** — not yet drafted. Terms available from the surveys: Card /
-  Crash Card, Note, Vault, Card store, UID boundary, `referenced_in`, Crashpad, Weaver, weave, Weave
-  plan / operation, memory tricks, familiarity / `next_review`. Remember: glossary only, no
-  implementation detail.
-- **`gh` is unauthenticated** (Q19 chose GitHub Issues). Blocks `/to-tickets`.
+**Defect 3 — the dry-run gap: VERIFIED, and dormant.**
 
-### After Q27 is answered
+Verified across all ten handlers: each calls `assertWithinVault`, then returns `{ok: true}`
+immediately — lines 144, 278, 327, 402, 479, 534, 553, 611, with `move-note` (457) and
+`move-directory` (598) delegating to those. Dry-run therefore skips:
 
-The grilling frontier is otherwise **empty**. Next steps in order:
+- `assertNoteExists` (148, 282, 483)
+- target-text presence (288–296) and `verifyBoundaryIntegrity` (300, 309)
+- `fs.stat` existence (615–622)
+- **the vault-root guard (624–627)** — dry-run reports `ok` for an operation the real run refuses
+- the non-empty-directory warning (629–636)
 
-1. Answer Q27. Draft and confirm `CONTEXT.md` (glossary only).
-2. Shared-understanding sign-off — the grilling skill forbids acting before this.
-3. `/to-spec` — turn this record into a spec.
-4. `/to-tickets` — split into tracer-bullet tickets with blocking edges.
-5. `/implement` per ticket, clearing context between tickets.
+**Two corrections to what was recorded while paused:**
+
+1. **`dryRun: true` is never called in production.** The only production call site is `main.ts:394`
+   with `dryRun: false`; the only `true` is in the test. The diff preview is computed in the renderer
+   from the plan and does **not** consume dry-run. **Live impact today: zero.** The earlier note that
+   this undermined the Stage 6 safety story was wrong.
+2. **The existing test is near-vacuous.** `tests/electron/weaveApplyService.test.cjs:536` asserts
+   "does not modify any files" and `allOk === true` — both guaranteed by the early return. It cannot
+   detect that validation was skipped. That is false confidence, and it is the reason for the rewrite.
+
+**Real exposure is latent:** `WeaveApplyOptions.dryRun` is public API (`vault-contract.ts:499`) and
+IPC-reachable, so anyone wiring a "validate before apply" feature gets a silent all-clear.
+
+### Q29 (RESOLVED): workspace moved
+
+Canonical copy is now **`/root/CrashWeaver`**. The old copy at `/root/workspace01/CrashWeaver` was
+deleted after a guarded verification: matching HEAD (`f7f01a4`), 419 tracked files each,
+byte-identical working trees, `git fsck` clean, `node_modules` intact.
+
+### Still open
+
+- **`gh` is unauthenticated** (Q19 chose GitHub Issues). Blocks **filing the two defects above** and
+  blocks `/to-tickets`.
+
+### Next steps
+
+The grilling frontier is otherwise **empty**. In order:
+
+1. Shared-understanding sign-off — the grilling skill forbids acting before this.
+2. `/to-spec` — turn this record into a spec.
+3. `/to-tickets` — split into tracer-bullet tickets with blocking edges.
+4. `/implement` per ticket, clearing context between tickets.
 
 **The first implementation ticket is the green PR:** split the tsconfigs (Q13) + update the 3 stale
 tests (Q14). Nothing else. No restructuring.
 
 ## 8. How to resume
 
-In this workspace:
-
 ```bash
-cd /root/workspace01/CrashWeaver
+cd /root/CrashWeaver
 cat .scratch/professional-standard/grilling.md
 ```
 
 In a new session, say:
 
 > Resume the CrashWeaver rework. Read `.scratch/professional-standard/grilling.md` in
-> `/root/workspace01/CrashWeaver` and continue from section 7 "OPEN — resume here".
+> `/root/CrashWeaver` and continue from section 7.
 
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
