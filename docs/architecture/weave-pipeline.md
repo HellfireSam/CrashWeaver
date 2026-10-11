@@ -105,7 +105,7 @@ title-and-tags proxy; no code path refreshes them with full prose, despite a sou
 
 ## Model layer
 
-**Model profiles.** `weaveModelProfiles.ts` is the single source of truth for model-driven execution policy. `DEFAULT_MODEL_BY_UI_TIER` maps `cw-fast` → `openai/gpt-4o-mini`, `cw-balanced` →
+**Model profiles.** `weaveModelProfiles.ts` owns model resolution and the rest of model-driven execution policy. `DEFAULT_MODEL_BY_UI_TIER` maps `cw-fast` → `openai/gpt-4o-mini`, `cw-balanced` →
 `openai/gpt-4o`, `cw-deep` → `anthropic/claude-sonnet-4-5`; `resolveModel` prefers the request model, then the persisted preference, then the balanced default, treating a value containing `/` as
 an ID and anything else as a tier. `resolveStructuredOutputMode` inspects the provider prefix: members of `JSON_MODE_PROVIDERS` (`openai`, `google`, `deepseek`, `x-ai`) get `json_mode`, everything else
 gets `fences_and_braces`; `resolveResponseFormatParams` turns `json_mode` into `responseFormatParams` `{ response_format: { type: 'json_object' } }`, which `resolveFullModelProfile` assigns.

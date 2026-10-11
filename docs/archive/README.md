@@ -10,9 +10,11 @@ Current documentation:
 - [Documentation index](../README.md)
 - [Domain glossary](../../CONTEXT.md)
 
-Every archived document carries a superseded banner at the top. File names were changed
-to kebab-case when the documents moved here; the content is otherwise unedited except
-for removed deference headers and reference paths repaired to point inside the archive.
+Every archived document carries a superseded banner at the top, and its file name was
+changed to kebab-case when it moved here. The content is otherwise unedited except for
+the banner, the removal of statements that deferred to a retired file, reference paths
+repaired to point at their current targets, and the neutralising of the former
+single-source-of-truth document's authority claim.
 
 ## What replaced what
 
@@ -27,5 +29,18 @@ for removed deference headers and reference paths repaired to point inside the a
 | `card-insert-templates.md` | [Card insert templates](../reference/card-insert-templates.md) |
 | `card-workspace-template-options.md` | Nothing — an unimplemented UX proposal with no current equivalent |
 | `weaver-ux-enhancement-proposal.md` | Nothing — a record of features that were implemented, with no current equivalent |
-| `stage-1-architecture.md` … `stage-6-architecture.md` | [Architecture](../architecture/overview.md) — the stage drafts are history, not current documentation |
-| `stage-1-setup.md` … `stage-6-setup.md` | [Development setup](../guides/development-setup.md) — per-stage manual validation passes are no longer maintained |
+| `stage-1-architecture.md` | [Architecture](../architecture/overview.md) |
+| `stage-2-architecture.md` | [Architecture](../architecture/overview.md) |
+| `stage-3-architecture.md` | [Architecture](../architecture/overview.md) |
+| `stage-4-architecture.md` | [Architecture](../architecture/overview.md) |
+| `stage-5-architecture.md` | [Architecture](../architecture/overview.md) |
+| `stage-6-architecture.md` | [Architecture](../architecture/overview.md) |
+| `stage-1-setup.md` | [Development setup](../guides/development-setup.md) |
+| `stage-2-setup.md` | [Development setup](../guides/development-setup.md) |
+| `stage-3-setup.md` | [Development setup](../guides/development-setup.md) |
+| `stage-4-setup.md` | [Development setup](../guides/development-setup.md) |
+| `stage-5-setup.md` | [Development setup](../guides/development-setup.md) |
+| `stage-6-setup.md` | [Development setup](../guides/development-setup.md) |
+
+The stage drafts are history, not current documentation, and the per-stage manual
+validation passes are no longer maintained.

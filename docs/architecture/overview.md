@@ -200,7 +200,7 @@ schema validation, the diff UI and per-kind apply semantics in full.
 | `tests/electron/` | `node:test` suites for the main-process services and the Weaver, loaded from the compiled `dist-electron/` output |
 | `dist/` | Vite's renderer build output, loaded by the window in production (git-ignored) |
 | `dist-electron/` | `tsc`'s CommonJS build of `electron/`, referenced by `package.json`'s `main` (git-ignored) |
-| `mock-vault/`, `mock-vault_sample/` | Checked-in vault-shaped directories with `.crashweaver/` state, for exercising the app manually |
+| `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | Checked-in sample material for exercising the app manually: `mock-vault/` is the sample vault, `mock-vault_sample/` is a duplicate copy of it, and `template-mock-gallery/` is a template gallery. None of them is referenced by code or tests |
 
 The two halves meet at one file: `electron/vault-contract.ts` declares the request, document and
 result types for notes, cards, crashpads, weave requests, plans and apply results. Both the main

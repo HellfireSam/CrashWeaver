@@ -178,7 +178,7 @@ lines. The stored `note_path` is the vault-relative POSIX path, matching the not
 | Vault open and index refresh | `vault:open` → `openVault`, and `vault:update-index` → `updateIndex`; both run `rebuildCardStoreFromNotes`, which syncs every note and then drops references pointing at note paths that no longer exist |
 | Note save | `vault:write-note` → `writeNote` → `syncNoteToCardStore` for that note, before the index is rewritten |
 | External change | `watchVault` in `electron/main.ts` runs a chokidar watcher on the vault root; `add`/`change`/`unlink` events go to `handleWatcherEvent`, which syncs the file or, on `ENOENT`, calls `removeNoteReferencesFromCardStore` |
-| Card rename, delete or restore | `renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences` and `reinsertCardBoundariesForReferences` each rewrite boundaries in the affected notes and re-sync every note they rewrote |
+| card rename, delete or restore | `renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences` and `reinsertCardBoundariesForReferences` each rewrite boundaries in the affected notes and re-sync every note they rewrote |
 
 The watcher ignores dotfiles and dot-directories, everything under `**/.crashweaver/**` and
 the card store path itself, so the app's own metadata and card-store writes do not feed back into
@@ -294,8 +294,8 @@ service branches on that string rather than on message text.
 | Note missing on read | `readNoteDocument` does not catch, so `ENOENT` propagates through `readNote` and the IPC channel to the renderer |
 | Referenced note missing | `readReferenceNoteContent` returns `null` so boundary rewrites skip it; `reinsertCardBoundariesForReferences` records the path in `skippedNotePaths`; `isMissingReferenceNoteError` is the shared `ENOENT` check |
 | Watcher event for a deleted file | `handleWatcherEvent` treats `ENOENT` as deletion, calls `removeNoteReferencesFromCardStore`, then notifies the renderer so the file tree updates |
-| Card file missing | `readCardDocument` returns `null`; the parsed card reports `cardExists: false`, and `src/lib/cards.ts` supplies `createFallbackCard` so the UID is editable before the file exists |
-| Card or crashpad file unreadable | `listCardDocuments` and `listCrashpads` skip it with a warning and load the rest |
+| card file missing | `readCardDocument` returns `null`; the parsed card reports `cardExists: false`, and `src/lib/cards.ts` supplies `createFallbackCard` so the UID is editable before the file exists |
+| card or crashpad file unreadable | `listCardDocuments` and `listCrashpads` skip it with a warning and load the rest |
 | Index or settings file missing or unparsable | `readStoredIndexFile` logs and treats it as absent so the next write builds a fresh index; `readSettings` falls back to `createDefaultSettings`, and mutations are serialised through `settingsMutationQueue` |
 | Card store directory missing | `ensureCardStoreDirectory` creates it before any card write; readers treat `ENOENT` as empty |
 
@@ -309,7 +309,7 @@ service branches on that string rather than on message text.
 | One reference per UID per note | `dedupeParsedCards` keeps the first occurrence of a duplicated UID and emits a diagnostic |
 | Boundaries are paired | `parseCrashCardsFromNote` reports unbalanced or mismatched pairs; `verifyBoundaryIntegrity` refuses to apply a weave operation while error-severity diagnostics exist; `hasBlockingDiagnostics` blocks reference pruning from a malformed note |
 | A note's span never overwrites an existing card payload | `upsertCardReference` assigns `raw_content` from the parsed block only when the card's `raw_content` is blank |
-| Card JSON is only ever written whole | `writeJsonAtomically` plus the temp-file rename in `writeTextAtomically` |
+| card JSON is only ever written whole | `writeJsonAtomically` plus the temp-file rename in `writeTextAtomically` |
 | Reference pruning never deletes card files | `removeCardReference`, `syncParsedCrashCards` and `rebuildCardStoreFromNotes` mutate only `referenced_in` |
 | The index schema version is fixed | `VaultIndex.version` is the literal `1` in `coerceStoredIndex` and `buildIndex` |
 

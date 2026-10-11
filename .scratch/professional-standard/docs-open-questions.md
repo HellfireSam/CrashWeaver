@@ -108,8 +108,8 @@ shape canonical.
 ### B6. `mock-vault/` and `mock-vault_sample/` are manual sample vaults
 
 No code, test or tooling references either directory. **Recommendation:** document them as
-checked-in sample vaults for manual exercise only. (`mock-vault_sample/` is deleted and
-`mock-vault/` moves under `fixtures/` by a separate layout ticket.)
+checked-in sample vaults for manual exercise only. (`mock-vault_sample/` is to be deleted and
+`mock-vault/` is to move under `fixtures/` by a separate layout ticket.)
 
 **Affects.** `docs/guides/development-setup.md`, `docs/architecture/overview.md`.
 
