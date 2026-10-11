@@ -2,7 +2,8 @@
 
 Where the project is and what comes next. This is the one current document that is not
 derived from the code: it records intent. Everything about how the system works today lives in
-[the architecture documents](./architecture/overview.md) and [the reference documents](./README.md).
+[the architecture documents](./architecture/overview.md) and
+[the reference documents](./reference/card-schema.md).
 
 ## Where the project is
 
@@ -33,8 +34,9 @@ panel and crashpad card editor are where they are read and written. Stage 7 is t
 loop over those two fields.
 
 One piece of state is already reserved for this stage. Each vault-index entry carries a
-`ReviewMetadata` with a wider shape — `lastReviewedAt`, `nextReviewAt`, `intervalDays`,
-`repetition`, `easeFactor` — which is written with defaults and read nowhere today. It is kept
+`ReviewMetadata` with a wider shape — `familiarity` plus `lastReviewedAt`, `nextReviewAt`,
+`intervalDays`, `repetition` and `easeFactor` — which is written with defaults and whose
+scheduling values are consumed nowhere today. It is kept
 deliberately as a future concept rather than deleted; see
 [the data model](./architecture/data-model.md) for where both copies live.
 

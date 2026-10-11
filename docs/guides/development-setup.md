@@ -14,7 +14,6 @@ is described in [the overview](../architecture/overview.md).
   run under plain Node and Vitest. In a headless container Electron may fail to start with
   a missing shared library such as `libnss3`; that is environmental and does not affect the
   tests.
-- On Windows, which is where the app is manually validated, use PowerShell.
 
 ## Install
 
@@ -69,7 +68,7 @@ runners today:
 
 | Suite | Runner | Target | Notes |
 | --- | --- | --- | --- |
-| `npm run test:electron` | Node's built-in `node:test` | compiled `tests/electron/**/*.test.cjs` | runs `npm run build:main` first, so it always tests current build output |
+| `npm run test:electron` | Node's built-in `node:test` | checked-in `tests/electron/**/*.test.cjs`, which load the compiled `dist-electron/` output | runs `npm run build:main` first, so the suites always exercise current build output |
 | `npm run test:renderer` | Vitest | explicit `src/lib/*.test.ts` files | the three files are listed in the script rather than globbed |
 
 Two consequences worth knowing:
@@ -102,7 +101,7 @@ npm run build
 halves are available as `npm run build:renderer` and `npm run build:main`.
 
 There is no one-command gate and no linter or formatter yet; until they land, "green" means
-the four commands above.
+the checks above.
 
 ## TypeScript project layout
 
