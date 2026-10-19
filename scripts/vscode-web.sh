@@ -16,7 +16,7 @@
 #
 # NOTE: this binds 0.0.0.0 with password auth over plain HTTP (code-server's own
 # default). Anyone who can reach the port and knows the password gets a root shell.
-# Prefer a single-hole-forward from the socat container (see README note at bottom)
+# Prefer a single-hole-forward from the socat container (see the --sidecar output)
 # and/or set VSCODE_WEB_HOST=127.0.0.1.
 #
 # Written for the Debian-based dev container this repo runs in (dash/bash, no

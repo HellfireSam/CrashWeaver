@@ -11,7 +11,7 @@ procedure, a drill — not an enumeration of card kinds, and no code branches on
 labels the field "Tags (comma-separated)" (`src/components/CrashpadWorkspace.tsx`) and
 `src/hooks/useCrashpadCardEditor.ts` normalises it by splitting on commas, trimming and dropping
 empty entries; `coerceCardDocument` keeps only string entries (`toStringArray`). Every card stored
-under `mock-vault/.crashweaver/cards/` currently carries `"type": []`.
+under `fixtures/mock-vault/.crashweaver/cards/` currently carries `"type": []`.
 
 Any non-empty string therefore works, and the firm rules are mechanical: keep the entries strings and
 pick the words you would search for. Tags are not decorative — `extractNoteSearchTokens` folds

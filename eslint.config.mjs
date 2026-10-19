@@ -45,17 +45,7 @@ const typescriptProjectOptions = (project) => ({
 export default tseslint.config(
   {
     // Build output, dependencies and checked-in sample material are not source.
-    ignores: [
-      'dist/',
-      'dist-electron/',
-      'node_modules/',
-      'coverage/',
-      'fixtures/',
-      // Pre-#7 layout; harmless to keep while the move lands.
-      'mock-vault/',
-      'mock-vault_sample/',
-      'template-mock-gallery/',
-    ],
+    ignores: ['dist/', 'dist-electron/', 'node_modules/', 'coverage/', 'fixtures/'],
   },
 
   js.configs.recommended,

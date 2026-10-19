@@ -10,7 +10,7 @@
 ## Prerequisites
 
 - Stage 5 complete (Weaver proposal generation works end-to-end)
-- Mock vault available at `mock-vault/`
+- Mock vault available at `fixtures/mock-vault/`
 - OpenRouter API key configured (or stub provider for demo mode)
 
 ## Build & Typecheck

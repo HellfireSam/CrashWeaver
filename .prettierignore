@@ -8,13 +8,10 @@ coverage/
 # Generated or third-party content.
 package-lock.json
 
-# Checked-in sample vaults. They hold user-content fixtures, not source, and are
-# moved under fixtures/ by ticket #7.
-fixtures/
-mock-vault/
-mock-vault_sample/
-template-mock-gallery/
-.vscode/
+# Checked-in sample vaults. They hold user-content data, not source; the
+# README beside them is documentation and stays checked.
+fixtures/mock-vault/
+fixtures/mock-vault_sample/
 
 # The archive holds superseded documents kept verbatim; reformatting them adds
 # churn without adding value.
