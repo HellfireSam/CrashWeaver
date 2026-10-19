@@ -188,9 +188,9 @@ unknown keys — top-level, inside `metadata`, or inside `memory_tricks` — are
 and write. A read can therefore return a document that differs from the file on disk, and the next
 write persists the reduced form.
 
-> Open question: dropping unknown fields is silent and lossy for hand-edited card JSON. Should the
-> store preserve unrecognised keys or keep dropping them? Recommendation: keep the drop, which also
-> clears stale keys, and treat new fields as needing a migration path.
+The drop is deliberate. Preserving unrecognised keys would keep hand-edits intact, but it would also
+let stale or malformed data live on indefinitely, so a new card field must arrive with a deliberate
+migration rather than relying on passthrough.
 
 ## Field-level compatibility rules the code enforces
 

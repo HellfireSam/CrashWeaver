@@ -388,8 +388,8 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | B6 | `mock-vault_sample/` is a deliberately retained pristine copy for user testing, not a duplicate to delete. Ticket #7 corrected. |
 | B7 | The parser/mutator whitespace mismatch stays a documented known gap. |
 | B8 | Familiarity and next review feed a planned review-scheduling function using standard spaced-repetition algorithms. |
-| B2 | **Not answered** — the unused `warning` severity remains an open callout. |
-| B9 | **Explanation requested** — unknown-key dropping; the plain-language explanation and recommendation are in the open-questions record, pending a decision. |
+| B2 | The `warning` severity stays error-only in practice; a non-blocking tier is tracked as a gap in the roadmap. |
+| B9 | Unknown card JSON keys keep being dropped; a new field must arrive with a migration. |
 
 Everything else is unchanged: the closed tickets, the frontier (#4, #5, #7), and the unpushed state of
 `main`.

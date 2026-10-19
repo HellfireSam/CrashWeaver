@@ -88,9 +88,10 @@ code `mismatched-boundary-uid` when `dedupeParsedCards` drops a second pair for 
 the same note; its `line` is the dropped card's `startLine`. `hasBlockingDiagnostics` treats any
 `severity === 'error'` diagnostic as blocking.
 
-> Open question: `CardParseDiagnostic.severity` is declared as `'warning' | 'error'`, but no producer in
-> the codebase emits `'warning'`. Should a non-blocking tier exist (for example for duplicate pairs),
-> and should the duplicate case have its own code rather than reusing `mismatched-boundary-uid`?
+The severity is error-only in practice. `CardParseDiagnostic.severity` allows `'warning'`, but no
+producer emits it, and the duplicate pair above is reported under the existing
+`mismatched-boundary-uid` code. A non-blocking tier — and a distinct code for duplicate pairs — is a
+tracked gap; see [the roadmap](../roadmap.md).
 
 ## Line ranges and `referenced_in`
 

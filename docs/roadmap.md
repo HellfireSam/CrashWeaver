@@ -80,4 +80,5 @@ Real limitations of the current code, recorded here rather than implied away in 
 - The parser accepts interior whitespace in a boundary marker that the mutation services cannot
   match, and a Weaver-supplied block can place such a pair: it parses, but it is never stripped or
   UID-renamed afterwards.
-- The `warning` diagnostic severity is declared but never produced.
+- The `warning` diagnostic severity is declared but never produced, and duplicate-UID pairs reuse the
+  `mismatched-boundary-uid` error code; a non-blocking diagnostic tier is not implemented.

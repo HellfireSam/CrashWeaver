@@ -100,35 +100,22 @@ familiarity and popular knowledge-review algorithms, to calculate the next recom
 are replaced with the intended function; the roadmap's "Card-level scheduling and review" entry
 describes it.
 
----
+### B2 — the `warning` severity stays error-only, tracked as a gap
 
-## Still open
+**Decision (owner):** follow the recommendation. The diagnostic type is documented as error-only in
+practice, and a non-blocking tier (with its own code for duplicate pairs) is tracked as a gap.
 
-### B2 — is the `warning` diagnostic severity meant to exist? (not answered)
+**Applied:** the callout in `docs/reference/boundary-format.md` is replaced with the decision; the
+roadmap's known-gap entry now also notes that duplicate-UID pairs reuse the `mismatched-boundary-uid`
+error code.
 
-`CardParseDiagnostic.severity` is declared `'warning' | 'error'`, but no producer emits `'warning'`,
-and duplicate-UID pairs reuse the `mismatched-boundary-uid` error code. Should a non-blocking tier
-exist, with its own code for duplicates? **Recommendation:** document the type as error-only in
-practice and track a non-blocking tier as a gap. The callout remains in
-`docs/reference/boundary-format.md`.
+### B9 — unknown card JSON keys keep being dropped
 
-### B9 — should unknown card JSON keys be preserved? (explanation requested)
+**Decision (owner):** follow the recommendation. Unknown keys are dropped on read and write, and a new
+card field must arrive with a deliberate migration rather than relying on passthrough.
 
-The owner asked what this means. In plain terms:
-
-`coerceCardDocument` in `electron/cardStoreService.ts` rebuilds a card from the fields it knows. Any
-other key in a card's JSON file is **discarded when the card is read**, and therefore gone from the
-next write. Today that is invisible in normal use — the app writes only known fields — but it means
-that if someone hand-edits a card file to add a field the app does not know about, that field
-silently disappears the next time the card is saved. It is lossy for hand-edits and for any future
-field that ships before a migration path.
-
-**Recommendation:** keep dropping unknown keys, because it also clears stale keys, and treat any new
-field as needing a migration path rather than relying on passthrough. The alternative is to preserve
-unrecognised keys on write, which keeps hand-edits intact but lets malformed or obsolete data
-survive indefinitely.
-
-The callout remains in `docs/reference/card-schema.md` until this is decided.
+**Applied:** the callout in `docs/reference/card-schema.md` is replaced with the decision and its
+rationale.
 
 ---
 
