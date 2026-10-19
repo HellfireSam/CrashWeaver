@@ -39,20 +39,6 @@ function toCardQaPairs(value: unknown): CardQaPair[] {
     .filter((item) => item.q || item.a);
 }
 
-function toLegacyFillQaPairs(value: unknown): CardQaPair[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
-    .map((item) => ({
-      q: typeof item.sentence === 'string' ? item.sentence : '',
-      a: toStringArray(item.answers).join('\n'),
-    }))
-    .filter((item) => item.q || item.a);
-}
-
 function createDefaultCardDocument(uid: string, blockContent: string): CardDocument {
   return {
     uid,
@@ -90,7 +76,7 @@ function coerceCardDocument(uid: string, value: unknown, fallbackBlockContent = 
     memory_tricks: {
       memory_technique:
         typeof memoryTricks.memory_technique === 'string' ? memoryTricks.memory_technique : '',
-      qa_pairs: [...toCardQaPairs(memoryTricks.qa_pairs), ...toLegacyFillQaPairs(memoryTricks.fill_in_the_blanks)],
+      qa_pairs: toCardQaPairs(memoryTricks.qa_pairs),
     },
     referenced_in: toCardReferences(data.referenced_in),
   };
