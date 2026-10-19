@@ -115,14 +115,19 @@ Lint the repository:
 npm run lint
 ```
 
-`lint` runs ESLint over `src/`, `electron/`, `vite.config.ts` and the CommonJS test
-suites. The rule set is ESLint's recommended set, typescript-eslint's recommended set, the
-React hooks and React refresh plugins, and three type-aware async rules —
-`no-floating-promises`, `no-misused-promises` and `await-thenable` — which catch the failure this
-codebase has actually suffered: a promise that never settles and raises no error. Those rules need
-a TypeScript program, so each file group is resolved against its own project
-(`tsconfig.app.json`, `tsconfig.electron.json`, `tsconfig.node.json`). The config lives in
-[`eslint.config.mjs`](../../eslint.config.mjs).
+`lint` runs ESLint over every TypeScript and JavaScript file in the repository. The rule set is
+ESLint's recommended set, typescript-eslint's recommended set, the React hooks and React refresh
+plugins, and three type-aware async rules — `no-floating-promises`, `no-misused-promises` and
+`await-thenable` — which catch the failure this codebase has actually suffered: a promise that
+never settles and raises no error.
+
+The type-aware rules need a TypeScript program, so they apply where a project provides one:
+`src/` against `tsconfig.app.json`, `electron/` against `tsconfig.electron.json`, and
+`vite.config.ts` against `tsconfig.node.json`. Everything else — a future script, or the CommonJS
+electron test suites, which are not part of a TypeScript project yet — is still linted, but with
+rules that need no types, so the async safety net does not cover it. When a new TypeScript source
+directory appears, give it a project group in [`eslint.config.mjs`](../../eslint.config.mjs) and it
+joins the type-aware set. The electron suites join it when they move into the TypeScript layer.
 
 The command currently exits 0 with warnings: 20 `react-hooks/exhaustive-deps` and 8
 `react-refresh/only-export-components`. They are left visible rather than suppressed. The

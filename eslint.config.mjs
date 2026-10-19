@@ -9,15 +9,22 @@
 //   - `electron/**`    → tsconfig.electron.json  (main process, CommonJS)
 //   - `vite.config.ts` → tsconfig.node.json      (the Vite config)
 //
-// The parser needs a TypeScript program for those rules to have types, hence the
-// explicit `project` per file group. Two mechanisms are not mixed: the renderer
-// and Vite-config projects are referenced by the root solution and could use
-// `parserOptions.projectService`, but `tsconfig.electron.json` is deliberately
-// kept outside that solution because it emits a CommonJS build. The project
-// service discovers projects through the solution and would report every
-// electron file as "not found by the project service", so the whole repository
-// uses the explicit `project` form instead. Keep these lists in step with the
-// tsconfigs; a file no project contains is a configuration error, not a pass.
+// Type-aware rules need a TypeScript program, hence the explicit `project` per
+// group. Files outside those three projects — a future script, or the CommonJS
+// test suites — are still linted, but only with rules that need no types, so the
+// async safety net does not cover them. They are not silently skipped: this file
+// matches every `.ts`/`.tsx` and every `.js`/`.mjs`/`.cjs` under the repository.
+// When a new TypeScript source directory appears, give it a project group like
+// the three below and it joins the type-aware set. The CommonJS electron suites
+// join it when ticket #11 moves them into the TypeScript layer.
+//
+// Two mechanisms are not mixed: the renderer and Vite-config projects are
+// referenced by the root solution and could use `parserOptions.projectService`,
+// but `tsconfig.electron.json` is deliberately kept outside that solution
+// because it emits a CommonJS build. The project service discovers projects
+// through the solution and would report every electron file as "not found by
+// the project service", so the whole repository uses the explicit `project`
+// form instead. Keep the project lists in step with the tsconfigs.
 //
 // Prettier owns formatting, and no stylistic ESLint rule is enabled here, so the
 // two cannot contradict each other. If a stylistic rule is ever added, turn it
@@ -28,6 +35,31 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
+const typeScriptFiles = ['**/*.{ts,tsx}'];
+const javaScriptFiles = ['**/*.{js,mjs,cjs}'];
+
+// The renderer and the main process are the projects that get type information.
+const typedProjectGroups = [
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: projectOptions(['./tsconfig.app.json']),
+  },
+  {
+    files: ['electron/**/*.ts'],
+    languageOptions: {
+      globals: globals.node,
+      ...projectOptions(['./tsconfig.electron.json']),
+    },
+  },
+  {
+    files: ['vite.config.ts'],
+    languageOptions: {
+      globals: globals.node,
+      ...projectOptions(['./tsconfig.node.json']),
+    },
+  },
+];
+
 // The async safety net: the three rules from the repository's coding standard.
 const typeAwareAsyncRules = {
   '@typescript-eslint/no-floating-promises': 'error',
@@ -35,12 +67,14 @@ const typeAwareAsyncRules = {
   '@typescript-eslint/await-thenable': 'error',
 };
 
-const typescriptProjectOptions = (project) => ({
-  parserOptions: {
-    project,
-    tsconfigRootDir: import.meta.dirname,
-  },
-});
+function projectOptions(project) {
+  return {
+    parserOptions: {
+      project,
+      tsconfigRootDir: import.meta.dirname,
+    },
+  };
+}
 
 export default tseslint.config(
   {
@@ -50,13 +84,38 @@ export default tseslint.config(
 
   js.configs.recommended,
 
-  // Renderer.
+  // Every TypeScript file is linted, whether or not a tsconfig project owns it.
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: typeScriptFiles,
     extends: [tseslint.configs.recommended],
-    languageOptions: typescriptProjectOptions(['./tsconfig.app.json']),
-    rules: typeAwareAsyncRules,
   },
+
+  // Every JavaScript file is linted with Node globals. `.cjs` is CommonJS by
+  // design (the electron test suites), so `require` is not a style choice there.
+  {
+    files: javaScriptFiles,
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+
+  // Type information and the async safety net, per project.
+  ...typedProjectGroups.map((group) => ({
+    files: group.files,
+    languageOptions: group.languageOptions,
+    rules: typeAwareAsyncRules,
+  })),
+
+  // React rules for the renderer.
   {
     files: ['src/**/*.{ts,tsx}'],
     plugins: {
@@ -70,56 +129,11 @@ export default tseslint.config(
     },
   },
 
-  // Main process.
+  // Placeholder-argument convention, applied only where the TypeScript plugin is
+  // loaded; a bare object would apply to files whose parser never registered it.
   {
-    files: ['electron/**/*.ts'],
-    extends: [tseslint.configs.recommended],
-    languageOptions: {
-      globals: globals.node,
-      ...typescriptProjectOptions(['./tsconfig.electron.json']),
-    },
-    rules: typeAwareAsyncRules,
-  },
-
-  // Vite config.
-  {
-    files: ['vite.config.ts'],
-    extends: [tseslint.configs.recommended],
-    languageOptions: {
-      globals: globals.node,
-      ...typescriptProjectOptions(['./tsconfig.node.json']),
-    },
-    rules: typeAwareAsyncRules,
-  },
-
-  // Electron test suites: CommonJS by design, and not part of any type-checked
-  // project, so they get syntax and scope analysis without type-aware rules.
-  {
-    files: ['**/*.cjs'],
-    extends: [tseslint.configs.recommended],
-    languageOptions: {
-      sourceType: 'commonjs',
-      globals: globals.node,
-    },
+    files: typeScriptFiles,
     rules: {
-      // `require` is the module system here, not a style choice.
-      '@typescript-eslint/no-require-imports': 'off',
-    },
-  },
-
-  // This config file and any other ESM tooling at the root.
-  {
-    files: ['*.mjs'],
-    languageOptions: {
-      globals: globals.node,
-    },
-  },
-
-  // ── Shared adjustments ────────────────────────────────────────────────────
-  {
-    files: ['src/**/*.{ts,tsx}', 'electron/**/*.ts', 'vite.config.ts'],
-    rules: {
-      // Allow `_`-prefixed placeholders to stay intentionally unused.
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

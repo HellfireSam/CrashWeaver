@@ -1,10 +1,11 @@
 # CrashWeaver — Rework Grilling Record
 
-**Status: grilling COMPLETE; `/to-spec` and `/to-tickets` done; implementation in progress.** Q27 and
-Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHub issue
+**Status: grilling COMPLETE; `/to-spec` and `/to-tickets` done; implementation in progress.**
+Q27 and Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHub issue
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
-(#2–#22) with native blocking edges. All 21 are sub-issues of #1. **#2 (green baseline), #3
-(documentation rewrite) and #6 (absorbed into #3) are closed.**
+(#2–#22) with native blocking edges. All 21 are sub-issues of #1. **Closed: #2 (green baseline), #3
+(documentation rewrite), #6 (absorbed into #3), and — on this branch, pending close — #5 (lint +
+format), #7 (layout) and #8 (gate + CI + governance).**
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -347,11 +348,28 @@ The grilling frontier is otherwise **empty**. In order:
        entries are documented as open rather than guessed, and they do not block closing the ticket.
      - Gate on the committed revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
        Documentation-only change.
-   - **Frontier is now #4** (boundary-marker gap), **#5** (lint + format), and **#7** (layout), which
-     #3's reorganisation has unblocked.
+   - ~~#5 lint + format~~ — **DONE**: `93f8a1e` (ESLint 10 flat config, Prettier, and the
+     violations cleared) · `af377e7` (one formatting-only commit, listed in
+     `.git-blame-ignore-revs`) · `1bbe195` (docs + blame-ignore entry). ESLint exits 0 with 28
+     recorded warnings. Typed async rules resolve against the right tsconfig per file group; a
+     deliberate floating promise fails lint in both `src/` and `electron/`.
+   - ~~#7 layout~~ — **DONE** in `ab8c6c9`: fixtures under `fixtures/` (`mock-vault/` retained as the
+     live vault, `mock-vault_sample/` retained per the owner decision B6), template gallery deleted,
+     empty `.vscode/settings.json` deleted, root `README.md` folded into `docs/README.md` (owner
+     decision in this session: `AGENTS.md` and `CONTEXT.md` stay at the root). Every reference
+     updated in the same commit.
+   - ~~#8 gate + CI + governance~~ — **DONE** in `a1e1bfb`: `npm run gate` (npm ci → format check →
+     lint → typecheck → tests → build) and `npm run checks` (same, no reinstall); GitHub Actions with
+     the full gate on Linux and typecheck+tests on Windows; Node 22 pinned via `.nvmrc` + `engines`;
+     PR template asking for the gate command and result; Conventional Commits recorded in
+     `CONTRIBUTING.md` with an `AGENTS.md` pointer. Gate verified green end to end (39s).
+   - **Frontier is now #9** (coding standards; its blockers #5 and #8 are done) and **#10** (Vitest
+     batch 1; blocker #8 is done). #4 (boundary-marker gap) also remains unblocked but is a tracked
+     product gap, not rework: leave it until the rework is done.
 
-**The first implementation ticket is the green PR:** split the tsconfigs (Q13) + update the 3 stale
-tests (Q14). Nothing else. No restructuring.
+**Branch state:** the work is committed on `main` in this clone and **not pushed**. Five commits sit
+above `origin/main`: three for #5, one for #7, one for #8. Everything before them (#2, #3) is already
+on `origin/main`.
 
 ## 8. How to resume
 

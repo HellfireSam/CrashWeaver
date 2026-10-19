@@ -36,15 +36,15 @@ gate on Linux, and typecheck plus tests on Windows, where path and casing behavi
 
 Run the individual commands while you work:
 
-| Command                | What it does                                                 |
-| ---------------------- | ------------------------------------------------------------ |
-| `npm run lint`         | ESLint across `src/`, `electron/`, the Vite config and tests |
-| `npm run lint:fix`     | ESLint with its safe automatic fixes                         |
-| `npm run format`       | Prettier, rewriting every file it owns                       |
-| `npm run format:check` | Prettier in check mode, which is what the gate runs          |
-| `npm run typecheck`    | `tsc` over the app, Vite-config and electron projects        |
-| `npm test`             | The electron suites and the renderer suites                  |
-| `npm run build`        | Typecheck plus the renderer and main-process builds          |
+| Command                | What it does                                          |
+| ---------------------- | ----------------------------------------------------- |
+| `npm run lint`         | ESLint across every TypeScript and JavaScript file    |
+| `npm run lint:fix`     | ESLint with its safe automatic fixes                  |
+| `npm run format`       | Prettier, rewriting every file it owns                |
+| `npm run format:check` | Prettier in check mode, which is what the gate runs   |
+| `npm run typecheck`    | `tsc` over the app, Vite-config and electron projects |
+| `npm test`             | The electron suites and the renderer suites           |
+| `npm run build`        | Typecheck plus the renderer and main-process builds   |
 
 Lint currently reports warnings without failing. Treat a new warning as a regression: the command
 stays green only because the existing warnings are recorded, not suppressed.
