@@ -8,7 +8,6 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useMemo,
   useState,
@@ -57,19 +56,6 @@ const DEFAULT_CRASHPAD_DELETE_PREFERENCES: CrashpadDeletePreferences = {
   requireConfirmationForNewCards: true,
   requireStrictConfirmationForExistingCards: true,
 };
-
-function createDefaultVaultState(): VaultState {
-  return {
-    vaultPath: null,
-    vault: null,
-    vaultAlias: 'My Vault',
-    allCards: [],
-    internalDirectories: [],
-    crashpadSummaries: [],
-    activeCrashpad: null,
-    crashpadDeletePreferences: DEFAULT_CRASHPAD_DELETE_PREFERENCES,
-  };
-}
 
 // ── Context ──────────────────────────────────────────────────────────────────
 

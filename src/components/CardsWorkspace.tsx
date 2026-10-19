@@ -201,7 +201,6 @@ export function CardsWorkspace({
                       className="cardContentMarkdown"
                       onClick={() => onSetCardFocusElement('raw_content.markdown')}
                       // Raw card markdown is user content rendered for preview.
-                      // eslint-disable-next-line react/no-danger
                       dangerouslySetInnerHTML={{
                         __html: renderMarkdownPreview(
                           focusedCard.rawContent || 'No raw content is currently stored for this card.',

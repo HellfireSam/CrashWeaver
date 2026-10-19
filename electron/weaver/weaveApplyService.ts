@@ -1,10 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { formatCardStartBoundary, formatCardEndBoundary } from '../cardParser';
-import { readCardDocument, cardDocumentExists, upsertCardReference } from '../cardStoreService';
+import { readCardDocument, cardDocumentExists } from '../cardStoreService';
 import { syncNoteToCardStore } from '../cardSyncService';
-import { removeCardBoundariesAcrossReferences, renameCardBoundariesAcrossReferences } from '../services/cardReferenceMutationService';
-import { readReferenceNoteContent, resolveReferenceNotePath } from '../services/noteReferenceMutationService';
 import { writeTextAtomically } from '../utils/jsonFile';
 import { toPosixPath } from '../utils/paths';
 import { writeJsonAtomically } from '../utils/jsonFile';
@@ -16,7 +14,6 @@ import type {
   WeaveApplyOptions,
   WeaveApplyResult,
   WeavePlanOperation,
-  WeavePlanOperationKind,
   InsertBoundaryPairPayload,
   EditNoteContentPayload,
   CreateNotePayload,
@@ -28,6 +25,14 @@ import type {
   MoveDirectoryPayload,
   DeleteDirectoryPayload,
 } from '../vault-contract';
+
+// The card-to-note mutation services in `services/` are deliberately not imported
+// here. They look like the obvious de-duplication of the note-to-card delete and
+// rename paths below, but wiring them in would be destructive: those services
+// walk card -> references, while the paths here walk note -> cards, so swapping
+// them would strip a deleted card's boundaries from every *other* note and drop
+// all reference pruning. Reconciling the two directions is ticket #22, not a
+// tidy-up.
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -104,7 +109,7 @@ async function assertNoteExists(absolutePath: string): Promise<void> {
     }
   } catch (error) {
     if (getFsErrorCode(error) === 'ENOENT') {
-      throw new Error(`Note not found: ${absolutePath}`);
+      throw new Error(`Note not found: ${absolutePath}`, { cause: error });
     }
     throw error;
   }
@@ -175,7 +180,6 @@ async function applyInsertBoundaryPair(
       const headingIndex = lines.findIndex((line) => headingRegex.test(line));
       if (headingIndex === -1) {
         // Fallback: append to end if heading not found
-        insertIndex = lines.length;
         return {
           ok: true,
           warning: buildOperationWarning(
@@ -197,7 +201,6 @@ async function applyInsertBoundaryPair(
       const headingRegex = new RegExp(`^#{1,6}\\s+${headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
       const headingIndex = lines.findIndex((line) => headingRegex.test(line));
       if (headingIndex === -1) {
-        insertIndex = 0;
         return {
           ok: true,
           warning: buildOperationWarning(
@@ -233,7 +236,6 @@ async function applyInsertBoundaryPair(
         }
       }
       if (foundIndex === -1) {
-        insertIndex = lines.length;
         return {
           ok: true,
           warning: buildOperationWarning(
@@ -558,7 +560,7 @@ async function applyRenameDirectory(
     await fs.stat(fromAbsolute);
   } catch (error) {
     if (getFsErrorCode(error) === 'ENOENT') {
-      throw new Error(`Directory not found: ${payload.fromPath}`);
+      throw new Error(`Directory not found: ${payload.fromPath}`, { cause: error });
     }
     throw error;
   }
@@ -616,7 +618,7 @@ async function applyDeleteDirectory(
     await fs.stat(absolutePath);
   } catch (error) {
     if (getFsErrorCode(error) === 'ENOENT') {
-      throw new Error(`Directory not found: ${targetPath}`);
+      throw new Error(`Directory not found: ${targetPath}`, { cause: error });
     }
     throw error;
   }

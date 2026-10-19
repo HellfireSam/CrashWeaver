@@ -28,20 +28,6 @@ const VALID_OPERATION_KINDS = new Set<WeavePlanOperationKind>([
   'move-directory',
   'delete-directory',
 ]);
-const NOTE_OPERATION_KINDS = new Set<WeavePlanOperationKind>([
-  'insert-boundary-pair',
-  'edit-note-content',
-  'create-note',
-  'rename-note',
-  'move-note',
-  'delete-note',
-]);
-const DIRECTORY_OPERATION_KINDS = new Set<WeavePlanOperationKind>([
-  'create-directory',
-  'rename-directory',
-  'move-directory',
-  'delete-directory',
-]);
 const VALID_INSERT_PLACEMENTS = new Set<WeaveInsertPlacement>([
   'append-to-note',
   'prepend-to-note',
@@ -148,10 +134,6 @@ function normalizeGuidedInsertPermissions(value: unknown): GuidedInsertPermissio
     editContent: value.editContent,
     createNote: value.createNote,
   };
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function normalizeCardUid(value: unknown, label: string) {

@@ -181,7 +181,7 @@ export async function computeEmbedding(
   } catch (error) {
     clearTimeout(timeoutId);
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to compute embedding: ${detail}`);
+    throw new Error(`Failed to compute embedding: ${detail}`, { cause: error });
   }
 }
 

@@ -574,7 +574,6 @@ export function CrashpadWorkspace({
                           <div
                             className="cardContentMarkdown"
                             // Preview HTML is built from the user's own card content.
-                            // eslint-disable-next-line react/no-danger
                             dangerouslySetInnerHTML={{ __html: previewRenderedContent }}
                           />
                         </section>

@@ -114,10 +114,6 @@ function messagesToOpenRouterFormat(
   return messages;
 }
 
-function makeWeaveError(message: string, category: WeaveErrorCategory): Error {
-  return Object.assign(new Error(message), { errorCategory: category });
-}
-
 function getTraceDiagnostics(
   toolResult: WeaveToolResult,
 ): NonNullable<WeavePlanResult['trace']>[number]['diagnostics'] {

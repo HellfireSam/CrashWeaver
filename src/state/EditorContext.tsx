@@ -16,7 +16,7 @@ import {
   type SetStateAction,
 } from 'react';
 import type { VaultNoteDocument } from '../../electron/vault-contract';
-import type { CardScope, FocusWindow } from '../lib/cards';
+import type { CardScope } from '../lib/cards';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

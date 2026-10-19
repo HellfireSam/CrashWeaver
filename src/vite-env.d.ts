@@ -20,7 +20,6 @@ import type {
   WeavePlanResult,
   WeaveModelInfo,
   WeaveProviderHealth,
-  WeaverKeyStatus,
   WeaverSettings,
   VaultWriteNoteInput,
   VaultWriteNoteResult,

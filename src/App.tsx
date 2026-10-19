@@ -2,14 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import 'katex/dist/katex.min.css';
 import type {
-  CardDocument,
-  VaultDescriptor,
-  VaultNoteDocument,
-  WeaveApplyResult,
   WeaveKind,
   WeavePlanOperation,
-  WeavePlanResult,
-  WeaveProviderHealth,
   WeaverSettings,
   WeaveStrength,
 } from '../electron/vault-contract';
@@ -21,10 +15,7 @@ import type { WeaverSessionSummary, WeaverSessionDetail } from './components/Wea
 import { WeaverConfirmDialog, isDestructiveOperation } from './components/WeaverConfirmDialog';
 import { SettingsModal } from './components/SettingsModal';
 import {
-  type CardScope,
   type CardViewRecord,
-  type FocusWindow,
-  formatCardRebuildSummary,
   getFileName,
   sortCardViewRecords,
   toCardViewRecordFromCard,
@@ -39,7 +30,6 @@ import { useCrashpadHistoryActions } from './hooks/useCrashpadHistoryActions';
 import { useDailyCrashpadActions } from './hooks/useDailyCrashpadActions';
 import { useEditorDocumentActions } from './hooks/useEditorDocumentActions';
 import {
-  DEFAULT_CRASHPAD_TAB_VIEW_STATE,
   DEFAULT_MARKDOWN_TAB_VIEW_STATE,
   useEditorTabViewState,
 } from './hooks/useEditorTabViewState';
@@ -57,10 +47,8 @@ import { useStoredScrollSync } from './hooks/useStoredScrollSync';
 // ── Shared state contexts (replaces 47 local useState calls) ─────────────────
 import { useVaultState } from './state/VaultContext';
 import { useEditorState } from './state/EditorContext';
-import type { EditorDocumentKind, MarkdownViewMode } from './state/EditorContext';
 import { useWeaverState } from './state/WeaverContext';
 import { useUIState } from './state/UIContext';
-import type { WidgetTool } from './state/UIContext';
 
 // ── Constants / helpers that don't belong in state ───────────────────────────
 
@@ -102,8 +90,7 @@ export default function App() {
 
   const {
     vaultPath, vault, vaultAlias,
-    allCards, internalDirectories,
-    crashpadSummaries, activeCrashpad, crashpadDeletePreferences,
+    allCards, activeCrashpad, crashpadDeletePreferences,
     setVaultPath, setVault, setVaultAlias,
     setAllCards, setInternalDirectories,
     setCrashpadSummaries, setActiveCrashpad, setCrashpadDeletePreferences,
@@ -114,7 +101,7 @@ export default function App() {
     selectedExplorerPath, selectedNotePath,
     draftPath, draftContent, savedContent,
     activeNote, viewMode, cardScope,
-    isPicking, isReading, isSaving, isRefreshingIndex,
+    isPicking, isSaving, isRefreshingIndex,
     statusMessage, errorMessage, editorFontSize,
     setActiveEditorKind, setActiveCardFilePath, setActiveCardFileUid,
     setSelectedExplorerPath, setSelectedNotePath,
@@ -132,18 +119,17 @@ export default function App() {
     isCheckingWeaveProvider, isGeneratingWeavePlan,
     weaveEvaluatingCardUid,
     weaverSettings, weaveSessions, weaveActiveSessionId,
-    weaveApplyResult, isApplyingWeavePlan, weaveApplyError,
+    weaveApplyResult, isApplyingWeavePlan,
     setWeaveModel, setWeaveKind, setWeaveEditContent, setWeaveCreateNote,
     setWeaveStrength, setWeaveIntent,
     setWeavePlanResult, setWeaveProviderHealth,
     setIsCheckingWeaveProvider, setIsGeneratingWeavePlan,
     setWeaveEvaluatingCardUid,
-    setWeaverSettings, setWeaveSessions, setWeaveActiveSessionId,
+    setWeaverSettings, setWeaveSessions,
     setWeaveApplyResult, setIsApplyingWeavePlan, setWeaveApplyError,
   } = useWeaverState();
 
   const {
-    expandedFolders, activeSidebarTab,
     isSidebarVisible, isInspectorVisible, isSettingsOpen,
     openFirstNoteOnVaultOpen, showHiddenEntries,
     focusedCardUid, focusedWindow, activeWidgetTool,
@@ -218,11 +204,7 @@ export default function App() {
   } = useCardDetailState(cardDetailStorageKey, focusedCardUid, setFocusedWindow);
   const {
     markdownTabViewStates,
-    crashpadTabViewStates,
     focusedCardUidByTab,
-    setMarkdownTabViewStates,
-    setCrashpadTabViewStates,
-    setFocusedCardUidByTab,
     updateMarkdownTabViewState,
     updateCrashpadTabViewState,
     moveStoredTabState,
@@ -359,8 +341,6 @@ export default function App() {
     refreshCrashpadCatalog,
     persistCrashpad,
     openCrashpadInEditor,
-    handleOpenCrashpad,
-    handleCreateCrashpad,
     handleUpdateCrashpadDeletePreferences,
     handleCrashpadActivePanelChange,
     handleCrashpadEditorModeChange,
@@ -454,7 +434,6 @@ export default function App() {
   const {
     canSwitchEditors,
     openNoteInEditor,
-    openEditorDocument,
     handleOpenExplorerFile,
     handleOpenNote,
     handleActivateTab,
@@ -828,7 +807,7 @@ export default function App() {
   useEffect(() => {
     if (!vaultPath) return;
 
-    const unsubscribe = window.crashWeaver.onVaultExternalChange(async () => {
+    const refreshFromExternalChange = async () => {
       try {
         const refreshedVault = await window.crashWeaver.updateIndex(vaultPath);
         setVault(refreshedVault);
@@ -838,6 +817,12 @@ export default function App() {
       } catch {
         // Silently ignore — the next manual refresh will catch up
       }
+    };
+
+    // The subscription delivers changes synchronously and ignores what the
+    // callback returns, so the refresh runs detached on purpose.
+    const unsubscribe = window.crashWeaver.onVaultExternalChange(() => {
+      void refreshFromExternalChange();
     });
 
     return unsubscribe;
@@ -1002,7 +987,9 @@ export default function App() {
 
         <AppSidebar
           onToggleFolder={handleToggleFolder}
-          onSelectFile={handleOpenExplorerFile}
+          onSelectFile={(filePath, fileKind) => {
+            void handleOpenExplorerFile(filePath, fileKind);
+          }}
         />
 
         <div
@@ -1197,7 +1184,13 @@ export default function App() {
                 onToggleQaAnswer={toggleQaAnswer}
               />
             ) : viewMode === 'source' ? (
-              <form id="noteEditorForm" className="editorForm" onSubmit={handleSaveNote}>
+              <form
+                id="noteEditorForm"
+                className="editorForm"
+                onSubmit={(event) => {
+                  void handleSaveNote(event);
+                }}
+              >
                 <textarea
                   id="draftContent"
                   ref={textareaRef}
@@ -1228,7 +1221,6 @@ export default function App() {
                   }
                 }}
                 // Preview HTML is built from the user's own vault content.
-                // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: renderedHtml }}
               />
             ) : (
@@ -1304,11 +1296,17 @@ export default function App() {
           onWeaveEditContentChange={setWeaveEditContent}
           onWeaveCreateNoteChange={setWeaveCreateNote}
           onWeaveStrengthChange={setWeaveStrength}
-          onWeaveApplyOperations={handleApplyWeaveOperations}
+          onWeaveApplyOperations={(operations) => {
+            void handleApplyWeaveOperations(operations);
+          }}
           onWeaveNewSession={handleNewWeaverSession}
           onWeaveReRunFromHistory={handleReRunFromHistory}
-          onWeaveDeleteSession={handleDeleteWeaverSession}
-          onWeaveClearSessions={handleClearWeaverSessions}
+          onWeaveDeleteSession={(sessionId) => {
+            void handleDeleteWeaverSession(sessionId);
+          }}
+          onWeaveClearSessions={() => {
+            void handleClearWeaverSessions();
+          }}
         />
       </section>
 
@@ -1318,7 +1316,7 @@ export default function App() {
           onConfirm={() => {
             const opsToApply = pendingApplyOpsRef.current;
             setPendingDestructiveOps(null);
-            handleApplyWeaveOperations(opsToApply);
+            void handleApplyWeaveOperations(opsToApply);
           }}
           onCancel={() => {
             setPendingDestructiveOps(null);

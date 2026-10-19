@@ -1,0 +1,8 @@
+# Commits listed here are excluded from `git blame` and from GitHub's blame view.
+# Add one hash per line, with a comment above it saying what the commit did.
+#
+# To make git honour this file locally:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Formatting-only commits appear below. A commit is only listed here when the
+# change it contains is purely Prettier output.

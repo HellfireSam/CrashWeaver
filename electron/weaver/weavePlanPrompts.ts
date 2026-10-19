@@ -357,7 +357,7 @@ Do not exhaust the tool budget just to be thorough. Finalize when:
 }
 
 **Turn 1 — System returns observation:**
-Status: SUCCESS. Found 2 notes matching \"TCP handshake\": notes/networking.md (score 248.00), concepts/protocols.md (score 185.00).
+Status: SUCCESS. Found 2 notes matching "TCP handshake": notes/networking.md (score 248.00), concepts/protocols.md (score 185.00).
 
 **Turn 2 — Assistant reads a specific note:**
 {
@@ -368,7 +368,7 @@ Status: SUCCESS. Found 2 notes matching \"TCP handshake\": notes/networking.md (
 }
 
 **Turn 2 — System returns excerpt:**
-The note covers OSI layers, TCP flags, and connection lifecycle. A section heading \"## Transport Layer\" exists.
+The note covers OSI layers, TCP flags, and connection lifecycle. A section heading "## Transport Layer" exists.
 
 **Turn 3 — Assistant finalizes (sufficient evidence gathered):**
 {

@@ -10,10 +10,7 @@ import type {
 } from '../vault-contract';
 import { getVaultCardStore, readNote } from '../vaultService';
 import { toPosixPath } from '../utils/paths';
-import type {
-  EmbeddingSimilarityMap,
-  EmbeddingCache,
-} from './weaverEmbeddingService';
+import type { EmbeddingSimilarityMap } from './weaverEmbeddingService';
 import {
   loadEmbeddingCache,
   buildQueryEmbedding,

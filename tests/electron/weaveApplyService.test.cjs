@@ -33,7 +33,7 @@ async function setupTestVault(notes) {
 
 // ── insert-boundary-pair tests ──────────────────────────────────────────────
 
-test('insert-boundary-pair: appends to end of note', async (t) => {
+test('insert-boundary-pair: appends to end of note', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Target Note\n\nSome content here.\n',
   });
@@ -69,7 +69,7 @@ test('insert-boundary-pair: appends to end of note', async (t) => {
   }
 });
 
-test('insert-boundary-pair: prepends to beginning of note', async (t) => {
+test('insert-boundary-pair: prepends to beginning of note', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Target Note\n\nSome content.\n',
   });
@@ -96,7 +96,7 @@ test('insert-boundary-pair: prepends to beginning of note', async (t) => {
   }
 });
 
-test('insert-boundary-pair: after a specific heading', async (t) => {
+test('insert-boundary-pair: after a specific heading', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Intro\n\nIntro text.\n\n## Section A\n\nSection content.\n\n## Section B\n\nMore content.\n',
   });
@@ -127,7 +127,7 @@ test('insert-boundary-pair: after a specific heading', async (t) => {
   }
 });
 
-test('insert-boundary-pair: before a specific heading', async (t) => {
+test('insert-boundary-pair: before a specific heading', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Intro\n\nIntro text.\n\n## Section B\n\nSection content.\n',
   });
@@ -159,7 +159,7 @@ test('insert-boundary-pair: before a specific heading', async (t) => {
   }
 });
 
-test('insert-boundary-pair: after selection text', async (t) => {
+test('insert-boundary-pair: after selection text', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Note\n\nThis is paragraph one.\n\nThis is paragraph two.\n\nThis is paragraph three.\n',
   });
@@ -192,7 +192,7 @@ test('insert-boundary-pair: after selection text', async (t) => {
 
 // ── edit-note-content tests ─────────────────────────────────────────────────
 
-test('edit-note-content: replaces target text in note', async (t) => {
+test('edit-note-content: replaces target text in note', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Note\n\nOriginal text that needs updating.\n\nMore content.\n',
   });
@@ -220,7 +220,7 @@ test('edit-note-content: replaces target text in note', async (t) => {
   }
 });
 
-test('edit-note-content: fails when target text not found', async (t) => {
+test('edit-note-content: fails when target text not found', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/target.md': '# Note\n\nSome content.\n',
   });
@@ -247,7 +247,7 @@ test('edit-note-content: fails when target text not found', async (t) => {
   }
 });
 
-test('edit-note-content: fails when edit would break boundary integrity', async (t) => {
+test('edit-note-content: fails when edit would break boundary integrity', async () => {
   const uid = 'CW-PROTECTED';
   const startBoundary = formatCardStartBoundary(uid);
   const endBoundary = formatCardEndBoundary(uid);
@@ -280,7 +280,7 @@ test('edit-note-content: fails when edit would break boundary integrity', async 
 
 // ── create-note tests ───────────────────────────────────────────────────────
 
-test('create-note: creates a new markdown note with boundary pair', async (t) => {
+test('create-note: creates a new markdown note with boundary pair', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({});
 
   try {
@@ -316,7 +316,7 @@ test('create-note: creates a new markdown note with boundary pair', async (t) =>
   }
 });
 
-test('create-note: fails if note already exists', async (t) => {
+test('create-note: fails if note already exists', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/existing.md': '# Existing\n',
   });
@@ -345,7 +345,7 @@ test('create-note: fails if note already exists', async (t) => {
 
 // ── rename-note tests ───────────────────────────────────────────────────────
 
-test('rename-note: renames a note file', async (t) => {
+test('rename-note: renames a note file', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/old-name.md': '# Old Name\n\nContent.\n',
   });
@@ -377,7 +377,7 @@ test('rename-note: renames a note file', async (t) => {
 
 // ── move-note tests ─────────────────────────────────────────────────────────
 
-test('move-note: moves a note to a different directory', async (t) => {
+test('move-note: moves a note to a different directory', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/subject.md': '# Subject\n\nContent.\n',
   });
@@ -407,7 +407,7 @@ test('move-note: moves a note to a different directory', async (t) => {
 
 // ── delete-note tests ───────────────────────────────────────────────────────
 
-test('delete-note: deletes a note file and cleans up card references', async (t) => {
+test('delete-note: deletes a note file and cleans up card references', async () => {
   const uid = 'CW-DELREF';
   const startBoundary = formatCardStartBoundary(uid);
   const endBoundary = formatCardEndBoundary(uid);
@@ -453,7 +453,7 @@ test('delete-note: deletes a note file and cleans up card references', async (t)
 
 // ── directory operations tests ──────────────────────────────────────────────
 
-test('create-directory: creates a new directory', async (t) => {
+test('create-directory: creates a new directory', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({});
 
   try {
@@ -474,7 +474,7 @@ test('create-directory: creates a new directory', async (t) => {
   }
 });
 
-test('rename-directory: renames an existing directory', async (t) => {
+test('rename-directory: renames an existing directory', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/old-dir/placeholder.md': '# Placeholder\n',
   });
@@ -505,7 +505,7 @@ test('rename-directory: renames an existing directory', async (t) => {
   }
 });
 
-test('delete-directory: deletes a directory and its contents', async (t) => {
+test('delete-directory: deletes a directory and its contents', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/to-delete-dir/file1.md': '# File 1\n',
     'notes/to-delete-dir/file2.md': '# File 2\n',
@@ -533,7 +533,7 @@ test('delete-directory: deletes a directory and its contents', async (t) => {
 
 // ── dry-run mode tests ──────────────────────────────────────────────────────
 
-test('dryRun: does not modify any files', async (t) => {
+test('dryRun: does not modify any files', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/safe.md': '# Safe Note\n\nOriginal content.\n',
   });
@@ -564,7 +564,7 @@ test('dryRun: does not modify any files', async (t) => {
 
 // ── stopOnError tests ───────────────────────────────────────────────────────
 
-test('stopOnError: stops after first failure (default)', async (t) => {
+test('stopOnError: stops after first failure (default)', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/valid.md': '# Valid\n',
   });
@@ -602,7 +602,7 @@ test('stopOnError: stops after first failure (default)', async (t) => {
   }
 });
 
-test('stopOnError false: continues after failure', async (t) => {
+test('stopOnError false: continues after failure', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
     'notes/valid.md': '# Valid\n',
   });
@@ -641,7 +641,7 @@ test('stopOnError false: continues after failure', async (t) => {
 
 // ── path escape prevention ──────────────────────────────────────────────────
 
-test('safety: rejects paths that escape vault root', async (t) => {
+test('safety: rejects paths that escape vault root', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({});
 
   try {
@@ -667,7 +667,7 @@ test('safety: rejects paths that escape vault root', async (t) => {
 
 // ── unknown operation kind ──────────────────────────────────────────────────
 
-test('safety: handles unknown operation kind', async (t) => {
+test('safety: handles unknown operation kind', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({});
 
   try {

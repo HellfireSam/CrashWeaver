@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { WeaverLiveEntry } from './WeaverProgressFeed';
+import { useCallback, useMemo, useState } from 'react';
 import { WeaverOperationItem } from './WeaverOperationItem';
 import type { WeavePlanOperation } from '../../electron/vault-contract';
 

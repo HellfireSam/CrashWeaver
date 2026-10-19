@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { CardDocument, CardRenameResult, CrashpadDeletedCardSnapshot, CrashpadDocument } from '../../electron/vault-contract';
+import type { CardRenameResult, CrashpadDeletedCardSnapshot, CrashpadDocument } from '../../electron/vault-contract';
 import type { CrashpadHistoryEntry } from '../lib/crashpadHistory';
 import { getErrorMessage } from '../lib/errorUtils';
 

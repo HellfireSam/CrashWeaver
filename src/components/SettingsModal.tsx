@@ -160,10 +160,14 @@ export function SettingsModal({
             <div className="settingCallout">
               <p className="detailKey">Vault actions</p>
               <div className="settingsActionRow">
-                <button className="actionButton" type="button" onClick={onSelectVault} disabled={isPicking}>
+                <button className="actionButton" type="button" onClick={() => {
+                  void onSelectVault();
+                }} disabled={isPicking}>
                   {isPicking ? 'Opening...' : vaultPath ? 'Change Vault' : 'Open Vault'}
                 </button>
-                <button className="actionButton ghost" type="button" onClick={onRefreshIndex} disabled={!vaultPath || isRefreshingIndex}>
+                <button className="actionButton ghost" type="button" onClick={() => {
+                  void onRefreshIndex();
+                }} disabled={!vaultPath || isRefreshingIndex}>
                   {isRefreshingIndex ? 'Refreshing...' : 'Refresh Index'}
                 </button>
               </div>
@@ -172,7 +176,9 @@ export function SettingsModal({
             <div className="settingCallout">
               <p className="detailKey">Card store folder</p>
               <p className="detailValue">{vault?.cardStore?.cardStorePath ?? 'No vault selected.'}</p>
-              <button className="actionButton" type="button" onClick={onSelectCardStore} disabled={!vaultPath}>
+              <button className="actionButton" type="button" onClick={() => {
+                  void onSelectCardStore();
+                }} disabled={!vaultPath}>
                 Choose Card Store
               </button>
             </div>
@@ -187,13 +193,17 @@ export function SettingsModal({
                 <p className="detailValue">No image directories selected. Relative image paths resolve from the vault root only.</p>
               )}
               <div className="settingsActionRow">
-                <button className="actionButton" type="button" onClick={onSelectImageDirectories} disabled={!vaultPath}>
+                <button className="actionButton" type="button" onClick={() => {
+                  void onSelectImageDirectories();
+                }} disabled={!vaultPath}>
                   Choose Image Directories
                 </button>
                 <button
                   className="actionButton ghost"
                   type="button"
-                  onClick={onResetImageDirectories}
+                  onClick={() => {
+                    void onResetImageDirectories();
+                  }}
                   disabled={!vaultPath || !(vault?.imageDirectories.length ?? 0)}
                 >
                   Use Vault Root Only
@@ -213,12 +223,12 @@ export function SettingsModal({
                   id="cpRemoteNoteBoundaries"
                   type="checkbox"
                   checked={crashpadDeletePreferences.removeNoteBoundariesByDefault}
-                  onChange={(event) =>
-                    onSetDeletePreferences({
+                  onChange={(event) => {
+                    void onSetDeletePreferences({
                       ...crashpadDeletePreferences,
                       removeNoteBoundariesByDefault: event.target.checked,
-                    })
-                  }
+                    });
+                  }}
                 />
                 <span>Remove note boundaries by default when deleting cards</span>
               </label>
@@ -228,12 +238,12 @@ export function SettingsModal({
                   id="cpRequireConfirmationForNew"
                   type="checkbox"
                   checked={crashpadDeletePreferences.requireConfirmationForNewCards}
-                  onChange={(event) =>
-                    onSetDeletePreferences({
+                  onChange={(event) => {
+                    void onSetDeletePreferences({
                       ...crashpadDeletePreferences,
                       requireConfirmationForNewCards: event.target.checked,
-                    })
-                  }
+                    });
+                  }}
                 />
                 <span>Require confirmation when deleting cards</span>
               </label>

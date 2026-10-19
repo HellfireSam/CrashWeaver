@@ -16,7 +16,11 @@
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.electron.json",
     "build": "npm run typecheck && npm run build:renderer && npm run build:main",
-    "start": "npm run build && electron ."
+    "start": "npm run build && electron .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@types/diff": "^7.0.2",
@@ -32,6 +36,7 @@
     "uuid": "^11.1.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.15.29",
     "@types/react": "^18.3.12",
@@ -40,8 +45,14 @@
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^35.5.1",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
     "jsdom": "^29.1.1",
+    "prettier": "^3.9.10",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.71.2",
     "vite": "^6.3.5",
     "vitest": "^4.1.7",
     "wait-on": "^8.0.3"

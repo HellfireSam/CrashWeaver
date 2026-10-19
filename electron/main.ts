@@ -116,13 +116,8 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-function isPathWithin(parentPath: string, childPath: string) {
-  const relativePath = path.relative(parentPath, childPath);
-  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
-}
-
 function stopVaultWatcher() {
-  vaultWatcher?.close();
+  void vaultWatcher?.close();
   vaultWatcher = null;
   watchedVaultRoot = null;
   watchedCardStorePath = null;
@@ -228,9 +223,9 @@ function createMainWindow() {
   });
 
   if (isDev) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL as string);
+    void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL as string);
   } else {
-    mainWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
+    void mainWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
   }
 }
 
@@ -435,7 +430,7 @@ ipcMain.handle('crashpad:set-delete-preferences', async (_event, rootPath: strin
   updateVaultCrashpadDeletePreferences(rootPath, preferences),
 );
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   registerLocalAssetProtocol();
   createMainWindow();
   void initializeWeaveProvider();

@@ -194,15 +194,6 @@ const RETRY_BASE_DELAY_MS = 800;
 const RETRY_MAX_DELAY_MS = 8_000;
 
 /**
- * Status codes eligible for a retry.
- * 429 (rate-limit) and 5xx (server error) are transient; auth errors and
- * client errors (4xx except 429) are not retryable.
- */
-function isRetryableStatus(status: number): boolean {
-  return status === 429 || status >= 500;
-}
-
-/**
  * Exponential backoff with full jitter.
  * delay = min(maxDelay, baseDelay * 2^attempt) * random(0, 1)
  */

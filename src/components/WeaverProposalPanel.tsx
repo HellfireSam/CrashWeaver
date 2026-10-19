@@ -9,9 +9,8 @@ import type {
 import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
 import { traceToLiveEntries } from './WeaverProgressFeed';
 import { WeaverSessionHistory, type WeaverSessionSummary, type WeaverSessionDetail } from './WeaverSessionHistory';
-import { WeaverDiffPreview } from './WeaverDiffPreview';
 import { WeaverUnifiedDiffModal } from './WeaverUnifiedDiffModal';
-import { WeaverOperationItem, WEAVE_OPERATION_META } from './WeaverOperationItem';
+import { WeaverOperationItem } from './WeaverOperationItem';
 import type { WeaveApplyResult, WeavePlanOperation } from '../../electron/vault-contract';
 
 type WeaverProposalPanelProps = {

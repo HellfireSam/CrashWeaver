@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    // The lib is one step ahead of the target so ES2022's `ErrorOptions` is
+    // available: the main process runs on the Node 22 bundled with Electron 35,
+    // which supports `new Error(message, { cause })`. Widening the lib changes
+    // only which types are known, never the emitted JavaScript.
+    "lib": ["ES2022"],
     "module": "CommonJS",
     "moduleResolution": "Node",
     "strict": true,
