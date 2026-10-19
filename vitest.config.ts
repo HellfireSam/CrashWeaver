@@ -2,16 +2,11 @@ import { defineConfig } from 'vitest/config';
 
 // The one test runner for both layers.
 //
-// `include` names the suites Vitest can execute. The main-process suites are
-// the ones under `tests/electron/` that have been ported to Vitest; the
-// remaining `node:test` `.cjs` files are deliberately not matched, so a bare
-// `vitest run` no longer collects files it cannot execute. The `node:test`
-// suites are run by their own command until they finish porting (ticket #11).
-//
-// The main-process tests import the compiled CommonJS output in
-// `dist-electron/`, so the repository's test commands build the main process
-// before running Vitest. A bare `vitest run` needs `npm run build:main` first;
-// that build is the check that the compiled artifact still works.
+// `include` names every suite in the repository: the renderer suites colocated
+// with the pure modules they cover, and the main-process suites under
+// `tests/electron/`. The main-process tests import the compiled CommonJS output
+// in `dist-electron/`, so `npm test` builds the main process first; that build
+// is also the check that the compiled artifact still works.
 export default defineConfig({
   test: {
     include: ['src/**/*.test.{ts,tsx}', 'tests/electron/**/*.test.ts'],

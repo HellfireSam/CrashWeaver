@@ -1,8 +1,8 @@
 # Development setup
 
-Prerequisites and the scripts you use while working on the repository. The test commands are in
-[`tests/README.md`](../../tests/README.md), because the runner split needs more explanation than a
-script list. The code lives in [`electron/`](../../electron) (main process) and
+Prerequisites and the scripts you use while working on the repository. The test commands and the
+known gaps are in [`tests/README.md`](../../tests/README.md), because the coverage report needs more
+explanation than a script list. The code lives in [`electron/`](../../electron) (main process) and
 [`src/`](../../src) (renderer); the architecture is described in
 [the overview](../architecture/overview.md).
 
@@ -73,11 +73,11 @@ Run the tests:
 npm test
 ```
 
-`npm test` runs two commands while the test migration is in flight: the main-process suites still
-on Node's built-in runner, then Vitest for both layers. The runner split, the per-suite commands,
-coverage and the known test gaps are documented in [`tests/README.md`](../../tests/README.md).
+`npm test` builds the main process, then runs every suite under Vitest with coverage. The
+single-suite commands, coverage and the known test gaps are documented in
+[`tests/README.md`](../../tests/README.md).
 
-The test commands build the main process first because the main-process suites import the compiled
+The test command builds the main process first because the main-process suites import the compiled
 `dist-electron/` output, never the TypeScript sources; that build is the compiled-artifact check.
 A main-process suite run by hand therefore needs `npm run build:main` first.
 
@@ -128,7 +128,7 @@ The repository splits its TypeScript configuration the way Vite expects:
 | `tsconfig.json`          | solution file only — no inputs, just references | —                                                                                                         |
 | `tsconfig.app.json`      | `src` (renderer)                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
 | `tsconfig.node.json`     | `vite.config.ts`, `vitest.config.ts`            | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
-| `tsconfig.tests.json`    | `tests/**/*.ts` (the ported test suites)        | `module: ESNext`, `moduleResolution: bundler`, `noEmit`; Node types                                       |
+| `tsconfig.tests.json`    | `tests/**/*.ts` (the test suites)               | `module: ESNext`, `moduleResolution: bundler`, `noEmit`; Node types                                       |
 | `tsconfig.electron.json` | `electron` (main process)                       | `module: CommonJS`, `moduleResolution: Node`, `lib: ES2022` for `Error` `cause`, emits to `dist-electron` |
 
 The split exists to protect a specific failure. `vite.config.ts` is an ES module, and
@@ -149,7 +149,7 @@ CommonJS.
 | `electron/weaver/`                                         | planning graph, prompts, providers, schema, context, logging                                                                                                                                                                                                                              |
 | `src/`                                                     | renderer: components, hooks, state contexts, pure helpers, styles                                                                                                                                                                                                                         |
 | `src/lib/`                                                 | pure renderer helpers, with the renderer test files beside them                                                                                                                                                                                                                           |
-| `tests/electron/`                                          | test suites that load compiled output from `dist-electron/`: ported `.test.ts` suites run under Vitest, the remaining `.test.cjs` suites under `node:test`; the known gaps are named in [tests/README.md](../../tests/README.md)                                                          |
+| `tests/electron/`                                          | main-process test suites that load compiled output from `dist-electron/` under Vitest; the known gaps are named in [tests/README.md](../../tests/README.md)                                                                                                                               |
 | `dist/`                                                    | Vite renderer build output                                                                                                                                                                                                                                                                |
 | `dist-electron/`                                           | compiled main-process output                                                                                                                                                                                                                                                              |
 | `eslint.config.mjs`, `.prettierrc.json`, `.prettierignore` | lint and format configuration: the rules, and the files both tools skip                                                                                                                                                                                                                   |

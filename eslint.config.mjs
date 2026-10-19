@@ -9,17 +9,15 @@
 //   - `electron/**`      → tsconfig.electron.json  (main process, CommonJS)
 //   - `vite.config.ts`,
 //     `vitest.config.ts` → tsconfig.node.json      (the build and test configs)
-//   - `tests/**/*.ts`    → tsconfig.tests.json     (the ported test suites)
+//   - `tests/**/*.ts`    → tsconfig.tests.json     (the test suites)
 //
 // Type-aware rules need a TypeScript program, hence the explicit `project` per
-// group. Files outside those projects — a future script, or the CommonJS
-// `node:test` suites that have not ported yet — are still linted, but only with
-// rules that need no types, so the async safety net does not cover them. They are
-// not silently skipped: this file matches every `.ts`/`.tsx` and every
-// `.js`/`.mjs`/`.cjs` under the repository. When a new TypeScript source
-// directory appears, give it a project group like the ones below and it joins
-// the type-aware set. The remaining CommonJS electron suites join it when
-// ticket #11 moves them into the TypeScript layer.
+// group. Files outside those projects — a future script, or this configuration
+// file — are still linted, but only with rules that need no types, so the async
+// safety net does not cover them. They are not silently skipped: this file
+// matches every `.ts`/`.tsx` and every `.js`/`.mjs`/`.cjs` under the
+// repository. When a new TypeScript source directory appears, give it a project
+// group like the ones below and it joins the type-aware set.
 //
 // Two mechanisms are not mixed: the renderer and Vite-config projects are
 // referenced by the root solution and could use `parserOptions.projectService`,
@@ -100,21 +98,11 @@ export default tseslint.config(
     extends: [tseslint.configs.recommended],
   },
 
-  // Every JavaScript file is linted with Node globals. `.cjs` is CommonJS by
-  // design (the electron test suites), so `require` is not a style choice there.
+  // Every JavaScript file is linted with Node globals.
   {
     files: javaScriptFiles,
     languageOptions: {
       globals: globals.node,
-    },
-  },
-  {
-    files: ['**/*.cjs'],
-    languageOptions: {
-      sourceType: 'commonjs',
-    },
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 

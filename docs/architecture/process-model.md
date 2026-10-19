@@ -220,7 +220,7 @@ de-duplicates them on write in `setImageDirectories`. A missing or unreadable fi
 callers cannot clobber one another, then through
 `writeJsonAtomically` from `electron/utils/jsonFile.ts`: a temp file plus `rename`, with a
 backup-and-restore fallback for the Windows case where the target exists.
-`tests/electron/settingsService.test.cjs` drives the compiled `dist-electron/settingsService.js`
+`tests/electron/settingsService.test.ts` drives the compiled `dist-electron/settingsService.js`
 through the `__setSettingsFilePathForTests` and `__resetSettingsMutationQueueForTests` seams and
 asserts per-key persistence and mutation serialization against the settings file.
 
@@ -270,7 +270,7 @@ over the solution and then `tsc -p tsconfig.electron.json --noEmit` separately;
 The CommonJS target is what Electron loads. `package.json` sets
 `"main": "dist-electron/main.js"` and declares no `"type": "module"`, so `main.js` and
 `preload.js` — both emitted flat into `dist-electron/` by `rootDir: electron` — load as
-CommonJS, and the `node:test` suites in `tests/electron/` `require` compiled modules directly,
+CommonJS, and the Vitest suites in `tests/electron/` `require` compiled modules directly,
 as in `require('../../dist-electron/settingsService.js')`. `vite.config.ts` sets `base: './'` so
 the built `dist/index.html` works when main loads it over `file://`, with `build.outDir: 'dist'`
 and a dev server pinned to `127.0.0.1:5173` by `strictPort`.

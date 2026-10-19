@@ -73,9 +73,6 @@ These are the conventions the code already follows; match them in new code.
 | Test files                              | `<module>.test.ts`             | `vaultService.test.ts`, `markdownPreview.test.ts`                        |
 | Test-only exports                       | `__` prefix, `ForTests` suffix | `__setSettingsFilePathForTests`, `__resetWeaveProviderForTests`          |
 
-The remaining `tests/electron/*.test.cjs` suites keep their current names until ticket #11 ports
-them into the TypeScript layer; the row above is the convention new tests follow.
-
 More rules, in the same spirit:
 
 - **Booleans read as a question.** `isDev`, `isGeneratingWeavePlan`, `hasCardStore`, `shouldWarn`,

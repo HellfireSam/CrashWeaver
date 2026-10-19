@@ -4,9 +4,6 @@
   // compiled CommonJS output in `dist-electron/` through `createRequire`, so
   // this project needs the Node types and no module resolution of the dist
   // output (which emits no declarations).
-  //
-  // The remaining `node:test` `.cjs` suites are JavaScript and outside this
-  // project until they finish porting (ticket #11).
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tests.tsbuildinfo",
     "target": "ES2022",

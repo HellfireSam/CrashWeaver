@@ -7,25 +7,20 @@ tested.
 ## One runner: Vitest
 
 Vitest is the test runner for both layers. [`vitest.config.ts`](../../vitest.config.ts) is its one
-configuration; `include` lists exactly the suites it can execute.
+configuration; `include` lists every suite in the repository.
 
 - **Renderer suites** — `src/**/*.test.{ts,tsx}` — run against the TypeScript sources and are
   colocated with the module they test (`src/lib/markdownPreview.test.ts` beside
   `src/lib/markdownPreview.ts`).
 - **Main-process suites** — `tests/electron/**/*.test.ts` — run against the **compiled** CommonJS
   output in `dist-electron/`, imported through `createRequire`, not against `electron/*.ts`. The
-  test commands build the main process first. That build is the compiled-artifact check: if the
+  test command builds the main process first. That build is the compiled-artifact check: if the
   build breaks, the tests cannot run.
 
-The migration is not finished: the remaining `tests/electron/*.test.cjs` suites still run under
-Node's built-in `node:test` until ticket #11 ports them. During the migration `npm test` runs both
-commands, and Vitest's `include` deliberately does not match the `.cjs` files, so no phantom "No
-test suite found" failure is collected. **New tests are written for Vitest.** Do not add a new
-`node:test` suite, and do not add a second test configuration.
-
-The commands themselves are in [`tests/README.md`](../../tests/README.md). Running a main-process
-suite directly requires the main-process build first; on a clean clone a bare `npx vitest run`
-collects the ported main-process suites and fails until `npm run build:main` has run.
+There is no second runner and no second configuration: **a new test is a Vitest test.** The
+commands themselves are in [`tests/README.md`](../../tests/README.md). Running a main-process suite
+directly requires the main-process build first; on a clean clone a bare `npx vitest run` collects
+the main-process suites and fails until `npm run build:main` has run.
 
 ## Writing a suite
 
@@ -83,6 +78,5 @@ name in [`tests/README.md`](../../tests/README.md).
 
 `npm run gate` runs the tests on Linux with everything else, and CI runs typecheck plus tests on
 Windows, where path and casing behaviour differs. A test that passes only on one platform is a
-bug. While the migration runs two commands, `npm test` chains them and stops at the first failure:
-when one fails, run the other explicitly so a failure is not hidden by the order. Ticket #11
-collapses the chain into the one runner so the ordering question disappears.
+bug. `npm test` builds the main process and runs the one runner, so a failure has one cause and
+there is no ordering to reason about.

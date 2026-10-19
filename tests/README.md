@@ -1,44 +1,35 @@
 # Tests
 
-Both layers are converging on one runner, Vitest ([`vitest.config.ts`](../vitest.config.ts)).
-This file records how to run the suites and which behaviour is deliberately **not** tested.
+Both layers run under one runner, Vitest ([`vitest.config.ts`](../vitest.config.ts)). This file
+records how to run the suites and which behaviour is deliberately **not** tested.
 
 ## Running
 
 ```bash
-npm test            # the node:test suites, then the Vitest suites, with coverage
-npm run test:node   # the main-process suites still on node:test
-npm run test:vitest # Vitest for both layers (renderer plus the ported main-process suites)
+npm test # builds the main process, then runs every suite under Vitest with coverage
 ```
 
-The two names describe the runners, not the layers: `test:node` is the remainder of the
-`node:test` phase, and `test:vitest` is where both layers end up. Ticket #11 deletes
-`test:node` once the remaining suites have ported.
+`npm test` builds the main process before it runs Vitest because the main-process suites import
+the compiled CommonJS output in `dist-electron/` through `createRequire`, not the TypeScript
+sources. That build is the compiled-artifact check: if it breaks, the suite cannot run. The command
+also prints the coverage report; the HTML report is written to `coverage/` (git-ignored). The
+coverage policy is in the [testing standard](../docs/standards/testing.md).
 
-`test:vitest` sets coverage on and prints the report; the HTML report is written to `coverage/`
-(git-ignored). The coverage policy is in the [testing standard](../docs/standards/testing.md).
-
-The main-process suites import the compiled CommonJS output in `dist-electron/` through
-`createRequire`, not the TypeScript sources, which is what keeps the compiled-artifact check in
-the suite. Both npm test commands build the main process first. A suite run by hand does not:
+Run a single suite by hand — this needs the main-process build first too:
 
 ```bash
 npm run build:main
-node --test tests/electron/weaveApplyService.test.cjs
-npx vitest run tests/electron/vaultService.test.ts
+npx vitest run tests/electron/weaveApplyService.test.ts
 npx vitest run src/lib/markdownPreview.test.ts
 ```
 
-Vitest's `include` lists only the suites it can execute. The remaining `node:test` `.cjs` files
-are not collected, which is what removed the old "No test suite found" phantom failures from a
-bare `npx vitest run`. Ticket #11 ports the rest and deletes the `node:test` wiring.
+Vitest's `include` lists every suite in the repository: the renderer suites beside the pure modules
+they cover, and the main-process suites in `tests/electron/`.
 
-Suites already ported to Vitest:
-
-| Layer    | Files                                                                                                                                                                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| renderer | `src/lib/*.test.ts`                                                                                                                                                                                                     |
-| main     | `tests/electron/cardBoundaryService.test.ts`, `cardReferenceMutationService.test.ts`, `cardRestoreMutationService.test.ts`, `noteReferenceMutationService.test.ts`, `vaultIndexService.test.ts`, `vaultService.test.ts` |
+| Layer    | Files                      |
+| -------- | -------------------------- |
+| renderer | `src/lib/*.test.ts`        |
+| main     | `tests/electron/*.test.ts` |
 
 ## Known test gaps
 
@@ -65,7 +56,7 @@ it where a ticket does.
   schema, prompts and context retrieval have suites; the service facade that sequences them and
   owns session history and request logging (`weaverSessionHistory.ts`, `weaveRequestLogger.ts`)
   does not.
-- **The dry run is effectively untested.** `tests/electron/weaveApplyService.test.cjs` asserts
+- **The dry run is effectively untested.** `tests/electron/weaveApplyService.test.ts` asserts
   that a dry run writes nothing, which the early return guarantees; it cannot detect that dry
   run skips the validation the real run performs. Ticket #12 rewrites it to assert the actual
   behaviour.
