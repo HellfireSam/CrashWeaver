@@ -53,12 +53,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback(this.state.error, this.handleReset);
       }
 
-      return (
-        <AppErrorFallback
-          error={this.state.error}
-          onReset={this.handleReset}
-        />
-      );
+      return <AppErrorFallback error={this.state.error} onReset={this.handleReset} />;
     }
 
     return this.props.children;

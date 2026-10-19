@@ -1,5 +1,9 @@
 import { useCallback } from 'react';
-import type { CardRenameResult, CrashpadDocument, VaultDescriptor } from '../../electron/vault-contract';
+import type {
+  CardRenameResult,
+  CrashpadDocument,
+  VaultDescriptor,
+} from '../../electron/vault-contract';
 import { normalizeRelativePath } from '../lib/editorPaths';
 
 type UseCardRenameActionsOptions = {
@@ -7,8 +11,13 @@ type UseCardRenameActionsOptions = {
   selectedExplorerPath: string;
   activeCardFileUid: string | null;
   activeNoteFilePath: string | null;
-  refreshCardsCatalog: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
-  refreshCrashpadCatalog: (rootPath: string, preferredCrashpadId?: string | null) => Promise<CrashpadDocument | null>;
+  refreshCardsCatalog: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
+  refreshCrashpadCatalog: (
+    rootPath: string,
+    preferredCrashpadId?: string | null,
+  ) => Promise<CrashpadDocument | null>;
   moveStoredTabState: (previousPath: string, nextPath: string) => void;
   setVault: (vault: VaultDescriptor) => void;
   setSelectedExplorerPath: (path: string) => void;

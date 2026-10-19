@@ -59,12 +59,15 @@ test('compactTraceItem does not include raw result when includeRawResult is fals
 });
 
 test('compactTraceItem includes raw result when includeRawResult is true and under size limit', () => {
-  const result = compactTraceItem({
-    thought: 'Reading note',
-    action: 'Call read_note_full',
-    observation: 'Found content.',
-    toolResult: { data: 'small' },
-  }, true);
+  const result = compactTraceItem(
+    {
+      thought: 'Reading note',
+      action: 'Call read_note_full',
+      observation: 'Found content.',
+      toolResult: { data: 'small' },
+    },
+    true,
+  );
 
   assert.deepEqual(result.toolResult, { data: 'small' });
 });

@@ -58,7 +58,9 @@ textarea {
   color: var(--text-primary);
   padding: 0.45rem 0.78rem;
   cursor: pointer;
-  transition: border-color 140ms ease, background 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
 }
 
 .actionButton:hover:enabled {

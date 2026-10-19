@@ -43,11 +43,17 @@ type UseEditorDocumentActionsOptions = {
   setViewMode: (viewMode: MarkdownViewMode) => void;
   setCardScope: (scope: CardScope) => void;
   setFocusedCardUid: (uid: string | null) => void;
-  setFocusedWindow: (windowName: 'explorer' | 'source-editor' | 'preview' | 'cards-list' | 'card-detail' | 'settings') => void;
+  setFocusedWindow: (
+    windowName:
+      'explorer' | 'source-editor' | 'preview' | 'cards-list' | 'card-detail' | 'settings',
+  ) => void;
   rememberOpenTab: (filePath: string) => void;
   clearEditorState: () => void;
   openCrashpadInEditor: (rootPath: string, crashpadId: string) => Promise<CrashpadDocument>;
-  getMarkdownTabState: (filePath: string, restoreStoredState: boolean) => { viewMode: MarkdownViewMode; cardScope: CardScope };
+  getMarkdownTabState: (
+    filePath: string,
+    restoreStoredState: boolean,
+  ) => { viewMode: MarkdownViewMode; cardScope: CardScope };
 };
 
 export function useEditorDocumentActions({
@@ -83,7 +89,8 @@ export function useEditorDocumentActions({
   getMarkdownTabState,
 }: UseEditorDocumentActionsOptions) {
   const canSwitchEditors = useCallback(
-    (targetPath: string) => !hasUnsavedChanges || targetPath === currentEditorPath || targetPath === selectedNotePath,
+    (targetPath: string) =>
+      !hasUnsavedChanges || targetPath === currentEditorPath || targetPath === selectedNotePath,
     [currentEditorPath, hasUnsavedChanges, selectedNotePath],
   );
 
@@ -104,7 +111,7 @@ export function useEditorDocumentActions({
       setSavedContent(note.content);
       setViewMode(markdownTabState.viewMode);
       setCardScope(markdownTabState.cardScope);
-      setFocusedCardUid(restoreStoredState ? focusedCardUidByTab[note.filePath] ?? null : null);
+      setFocusedCardUid(restoreStoredState ? (focusedCardUidByTab[note.filePath] ?? null) : null);
       rememberOpenTab(note.filePath);
       return note;
     },
@@ -208,7 +215,11 @@ export function useEditorDocumentActions({
           'uid' in openedDocument
         ) {
           setStatusMessage(`Loaded card ${String(openedDocument.uid)}.`);
-        } else if (openedDocument && typeof openedDocument === 'object' && 'name' in openedDocument) {
+        } else if (
+          openedDocument &&
+          typeof openedDocument === 'object' &&
+          'name' in openedDocument
+        ) {
           setStatusMessage(`Loaded ${String(openedDocument.name)}.`);
         }
       } catch (error) {
@@ -217,7 +228,14 @@ export function useEditorDocumentActions({
         setIsReading(false);
       }
     },
-    [canSwitchEditors, openEditorDocument, setErrorMessage, setIsReading, setStatusMessage, vaultPath],
+    [
+      canSwitchEditors,
+      openEditorDocument,
+      setErrorMessage,
+      setIsReading,
+      setStatusMessage,
+      vaultPath,
+    ],
   );
 
   const handleOpenNote = useCallback(
@@ -263,7 +281,8 @@ export function useEditorDocumentActions({
 
   const handleCloseTab = useCallback(
     async (filePath: string) => {
-      const isCurrentTab = filePath === currentEditorPath || (isMarkdownEditor && filePath === selectedNotePath);
+      const isCurrentTab =
+        filePath === currentEditorPath || (isMarkdownEditor && filePath === selectedNotePath);
 
       if (isCurrentTab && hasUnsavedChanges) {
         setStatusMessage(null);

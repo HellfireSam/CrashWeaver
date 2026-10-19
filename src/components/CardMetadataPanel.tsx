@@ -2,7 +2,10 @@ import type { CardViewRecord } from '../lib/cards';
 import { formatNextReview } from '../lib/cards';
 
 type CardMetadataPanelProps = {
-  card: Pick<CardViewRecord, 'uid' | 'metadata' | 'currentReference' | 'cardFilePath' | 'references'>;
+  card: Pick<
+    CardViewRecord,
+    'uid' | 'metadata' | 'currentReference' | 'cardFilePath' | 'references'
+  >;
   familiarity?: number | string;
   nextReview?: string | null;
   onOpenNote?: (filePath: string) => Promise<void> | void;
@@ -39,7 +42,9 @@ export function CardMetadataPanel({
               {card.currentReference.note_path}
             </button>
           ) : (
-            <p className="detailValue">{card.currentReference?.note_path ?? 'No active note reference'}</p>
+            <p className="detailValue">
+              {card.currentReference?.note_path ?? 'No active note reference'}
+            </p>
           )}
         </div>
         <div>

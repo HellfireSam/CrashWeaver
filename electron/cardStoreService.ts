@@ -2,12 +2,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getFsErrorCode } from './utils/fsErrors';
 import { writeJsonAtomically } from './utils/jsonFile';
-import type { CardDocument, CardNoteReference, CardQaPair, ParsedCrashCard } from './vault-contract';
+import type {
+  CardDocument,
+  CardNoteReference,
+  CardQaPair,
+  ParsedCrashCard,
+} from './vault-contract';
 
 const CARD_UID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 function toStringArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
 }
 
 function toCardReferences(value: unknown): CardNoteReference[] {
@@ -19,7 +26,8 @@ function toCardReferences(value: unknown): CardNoteReference[] {
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
     .map((item) => ({
       note_path: typeof item.note_path === 'string' ? item.note_path : '',
-      start_line: typeof item.start_line === 'number' ? Math.max(1, Math.trunc(item.start_line)) : 1,
+      start_line:
+        typeof item.start_line === 'number' ? Math.max(1, Math.trunc(item.start_line)) : 1,
       end_line: typeof item.end_line === 'number' ? Math.max(1, Math.trunc(item.end_line)) : 1,
     }))
     .filter((item) => item.note_path);
@@ -58,7 +66,10 @@ function createDefaultCardDocument(uid: string, blockContent: string): CardDocum
 
 function coerceCardDocument(uid: string, value: unknown, fallbackBlockContent = ''): CardDocument {
   const data = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-  const metadata = data.metadata && typeof data.metadata === 'object' ? (data.metadata as Record<string, unknown>) : {};
+  const metadata =
+    data.metadata && typeof data.metadata === 'object'
+      ? (data.metadata as Record<string, unknown>)
+      : {};
   const memoryTricks =
     data.memory_tricks && typeof data.memory_tricks === 'object'
       ? (data.memory_tricks as Record<string, unknown>)
@@ -68,7 +79,9 @@ function coerceCardDocument(uid: string, value: unknown, fallbackBlockContent = 
     uid,
     type: toStringArray(data.type),
     raw_content:
-      typeof data.raw_content === 'string' && data.raw_content.trim() ? data.raw_content : fallbackBlockContent.trim(),
+      typeof data.raw_content === 'string' && data.raw_content.trim()
+        ? data.raw_content
+        : fallbackBlockContent.trim(),
     metadata: {
       familiarity: typeof metadata.familiarity === 'number' ? metadata.familiarity : 0,
       next_review: typeof metadata.next_review === 'string' ? metadata.next_review : null,
@@ -90,7 +103,10 @@ export async function ensureCardStoreDirectory(cardStorePath: string) {
   await fs.mkdir(cardStorePath, { recursive: true });
 }
 
-export async function readCardDocument(cardStorePath: string, uid: string): Promise<CardDocument | null> {
+export async function readCardDocument(
+  cardStorePath: string,
+  uid: string,
+): Promise<CardDocument | null> {
   try {
     const raw = await fs.readFile(getCardFilePath(cardStorePath, uid), 'utf8');
     return coerceCardDocument(uid, JSON.parse(raw));
@@ -123,7 +139,9 @@ export async function cardDocumentExists(cardStorePath: string, uid: string) {
 export async function listCardDocuments(cardStorePath: string): Promise<CardDocument[]> {
   try {
     const entries = await fs.readdir(cardStorePath, { withFileTypes: true });
-    const files = entries.filter((entry) => entry.isFile() && path.extname(entry.name).toLowerCase() === '.json');
+    const files = entries.filter(
+      (entry) => entry.isFile() && path.extname(entry.name).toLowerCase() === '.json',
+    );
 
     const loadedCards = await Promise.all(
       files.map(async (entry) => {
@@ -154,7 +172,11 @@ export async function upsertCardReference(
   cardStorePath: string,
   notePath: string,
   parsedCard: ParsedCrashCard,
-): Promise<{ action: 'created' | 'updated' | 'unchanged'; card: CardDocument; cardFilePath: string }> {
+): Promise<{
+  action: 'created' | 'updated' | 'unchanged';
+  card: CardDocument;
+  cardFilePath: string;
+}> {
   await ensureCardStoreDirectory(cardStorePath);
 
   const existingCard = await readCardDocument(cardStorePath, parsedCard.uid);
@@ -177,7 +199,9 @@ export async function upsertCardReference(
       left.note_path.localeCompare(right.note_path),
     );
   } else {
-    nextCard.referenced_in = nextCard.referenced_in.map((entry, index) => (index === referenceIndex ? nextReference : entry));
+    nextCard.referenced_in = nextCard.referenced_in.map((entry, index) =>
+      index === referenceIndex ? nextReference : entry,
+    );
   }
 
   if (!nextCard.raw_content.trim() && parsedCard.blockContent.trim()) {
@@ -269,7 +293,10 @@ export function createCardDocument(uid: string): CardDocument {
   return createDefaultCardDocument(assertValidCardUid(uid), '');
 }
 
-export async function writeCardDocument(cardStorePath: string, card: CardDocument): Promise<CardDocument> {
+export async function writeCardDocument(
+  cardStorePath: string,
+  card: CardDocument,
+): Promise<CardDocument> {
   const uid = assertValidCardUid(card.uid);
   await ensureCardStoreDirectory(cardStorePath);
   const nextCard = coerceCardDocument(uid, card);

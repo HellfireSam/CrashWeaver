@@ -239,11 +239,16 @@ export function InspectorPane({
           </div>
           <div className="propertyGroup">
             <p className="detailKey">Focused Weaver card</p>
-            <p className="detailValue">{weaveCardUid ?? 'No crashpad card available for Weaver yet.'}</p>
+            <p className="detailValue">
+              {weaveCardUid ?? 'No crashpad card available for Weaver yet.'}
+            </p>
           </div>
           <div className="propertyGroup">
             <p className="detailKey">LLM surface</p>
-            <p className="detailValue">Weaver plans vault notes and folders from crashpad context. Crashpad remains source-only in Stage 5.</p>
+            <p className="detailValue">
+              Weaver plans vault notes and folders from crashpad context. Crashpad remains
+              source-only in Stage 5.
+            </p>
           </div>
         </>
       );
@@ -274,7 +279,10 @@ export function InspectorPane({
           </div>
           <div className="propertyGroup">
             <p className="detailKey">Weaver availability</p>
-            <p className="detailValue">Open a crashpad to use the LLM panel. Card and note views remain read-only companions here.</p>
+            <p className="detailValue">
+              Open a crashpad to use the LLM panel. Card and note views remain read-only companions
+              here.
+            </p>
           </div>
         </>
       );
@@ -288,7 +296,9 @@ export function InspectorPane({
         </div>
         <div className="propertyGroup">
           <p className="detailKey">Tags</p>
-          <p className="detailValue">{activeNote?.tags.length ? `#${activeNote.tags.join(' #')}` : 'No tags'}</p>
+          <p className="detailValue">
+            {activeNote?.tags.length ? `#${activeNote.tags.join(' #')}` : 'No tags'}
+          </p>
         </div>
         <div className="propertyGroup">
           <p className="detailKey">Last modified</p>
@@ -308,7 +318,10 @@ export function InspectorPane({
         </div>
         <div className="propertyGroup">
           <p className="detailKey">Last card sync</p>
-          <p className="detailValue">{formatCardSyncSummary(activeNote?.cardSync ?? vault?.lastCardSync) ?? 'No card sync recorded yet.'}</p>
+          <p className="detailValue">
+            {formatCardSyncSummary(activeNote?.cardSync ?? vault?.lastCardSync) ??
+              'No card sync recorded yet.'}
+          </p>
         </div>
       </>
     );
@@ -338,20 +351,37 @@ export function InspectorPane({
         </div>
       </div>
 
-      <div ref={inspectorPanelsRef} className={`inspectorPanels ${inspectorLayoutClass}`} style={inspectorPanelsStyle}>
+      <div
+        ref={inspectorPanelsRef}
+        className={`inspectorPanels ${inspectorLayoutClass}`}
+        style={inspectorPanelsStyle}
+      >
         {isContextPanelOpen ? (
-          <section className="inspectorSubpanel" onMouseDown={() => onSetFocusedWindow(isCardsView ? 'card-detail' : 'preview')}>
+          <section
+            className="inspectorSubpanel"
+            onMouseDown={() => onSetFocusedWindow(isCardsView ? 'card-detail' : 'preview')}
+          >
             <div className="inspectorSubpanelHeader">
               <div className="inspectorSubpanelTitle">
                 <p className="panelTitle">Context</p>
-                <h3>{isCrashpadEditor ? 'Crashpad Context' : isCardsView ? 'Card Context' : 'Properties'}</h3>
+                <h3>
+                  {isCrashpadEditor
+                    ? 'Crashpad Context'
+                    : isCardsView
+                      ? 'Card Context'
+                      : 'Properties'}
+                </h3>
               </div>
               <button
                 type="button"
                 className="inspectorPanelClose"
                 onClick={() => updatePanelVisibility(false, isLlmPanelOpen)}
                 disabled={!isLlmPanelOpen}
-                title={isLlmPanelOpen ? 'Close context panel' : 'At least one right-panel section must stay open'}
+                title={
+                  isLlmPanelOpen
+                    ? 'Close context panel'
+                    : 'At least one right-panel section must stay open'
+                }
               >
                 ×
               </button>
@@ -371,7 +401,10 @@ export function InspectorPane({
         ) : null}
 
         {isLlmPanelOpen ? (
-          <section className="inspectorSubpanel inspectorSubpanelWeaver" onMouseDown={() => onSetFocusedWindow('assistant-panel')}>
+          <section
+            className="inspectorSubpanel inspectorSubpanelWeaver"
+            onMouseDown={() => onSetFocusedWindow('assistant-panel')}
+          >
             <WeaverProposalPanel
               canGenerate={canGenerateWeavePlan}
               cardUid={weaveCardUid}

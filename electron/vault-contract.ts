@@ -253,11 +253,7 @@ export type WeaveErrorCategory =
 export type WeaveProviderName = 'stub' | 'openrouter';
 
 export type WeaveInsertPlacement =
-  | 'append-to-note'
-  | 'prepend-to-note'
-  | 'after-heading'
-  | 'before-heading'
-  | 'after-selection';
+  'append-to-note' | 'prepend-to-note' | 'after-heading' | 'before-heading' | 'after-selection';
 
 export type WeaveNoteEditAction =
   | 'replace-selection'
@@ -353,16 +349,31 @@ interface WeavePlanOperationBase<K extends WeavePlanOperationKind, P> {
   rationale: string;
 }
 
-export type InsertBoundaryPairOperation = WeavePlanOperationBase<'insert-boundary-pair', InsertBoundaryPairPayload>;
-export type EditNoteContentOperation = WeavePlanOperationBase<'edit-note-content', EditNoteContentPayload>;
+export type InsertBoundaryPairOperation = WeavePlanOperationBase<
+  'insert-boundary-pair',
+  InsertBoundaryPairPayload
+>;
+export type EditNoteContentOperation = WeavePlanOperationBase<
+  'edit-note-content',
+  EditNoteContentPayload
+>;
 export type CreateNoteOperation = WeavePlanOperationBase<'create-note', CreateNotePayload>;
 export type RenameNoteOperation = WeavePlanOperationBase<'rename-note', RenameNotePayload>;
 export type MoveNoteOperation = WeavePlanOperationBase<'move-note', MoveNotePayload>;
 export type DeleteNoteOperation = WeavePlanOperationBase<'delete-note', DeleteNotePayload>;
-export type CreateDirectoryOperation = WeavePlanOperationBase<'create-directory', CreateDirectoryPayload>;
-export type RenameDirectoryOperation = WeavePlanOperationBase<'rename-directory', RenameDirectoryPayload>;
+export type CreateDirectoryOperation = WeavePlanOperationBase<
+  'create-directory',
+  CreateDirectoryPayload
+>;
+export type RenameDirectoryOperation = WeavePlanOperationBase<
+  'rename-directory',
+  RenameDirectoryPayload
+>;
 export type MoveDirectoryOperation = WeavePlanOperationBase<'move-directory', MoveDirectoryPayload>;
-export type DeleteDirectoryOperation = WeavePlanOperationBase<'delete-directory', DeleteDirectoryPayload>;
+export type DeleteDirectoryOperation = WeavePlanOperationBase<
+  'delete-directory',
+  DeleteDirectoryPayload
+>;
 
 export type WeavePlanOperation =
   | InsertBoundaryPairOperation

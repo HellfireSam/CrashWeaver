@@ -7,11 +7,7 @@
  */
 
 import type { WeaveAgentState, WeaveAgentRoute, WeaveGraphStep } from './weaveGraphState';
-import {
-  MAX_TOTAL_STEPS,
-  systemMsg,
-  userMsg,
-} from './weaveGraphState';
+import { MAX_TOTAL_STEPS, systemMsg, userMsg } from './weaveGraphState';
 import type { WeaveProgressCallback } from './weaveGraphState';
 import {
   makeCallModelNode,
@@ -82,17 +78,14 @@ function mergeUsage(
 }
 
 function updateState(state: WeaveAgentState, updates: Partial<WeaveAgentState>): WeaveAgentState {
-  const nextMessages = updates.messages
-    ? state.messages.concat(updates.messages)
-    : state.messages;
+  const nextMessages = updates.messages ? state.messages.concat(updates.messages) : state.messages;
 
-  const nextTrace = updates.trace
-    ? state.trace.concat(updates.trace)
-    : state.trace;
+  const nextTrace = updates.trace ? state.trace.concat(updates.trace) : state.trace;
 
-  const nextUsage = updates.accumulatedUsage !== undefined
-    ? mergeUsage(state.accumulatedUsage, updates.accumulatedUsage)
-    : state.accumulatedUsage;
+  const nextUsage =
+    updates.accumulatedUsage !== undefined
+      ? mergeUsage(state.accumulatedUsage, updates.accumulatedUsage)
+      : state.accumulatedUsage;
 
   return {
     ...state,
@@ -185,9 +178,7 @@ export async function runWeaveGraph(
         unrestricted,
       ),
     ),
-    userMsg(
-      buildInitialUserTurn(request, contextSnapshot, effectiveBudget, settings),
-    ),
+    userMsg(buildInitialUserTurn(request, contextSnapshot, effectiveBudget, settings)),
   ];
 
   if (logger) {
@@ -203,7 +194,12 @@ export async function runWeaveGraph(
     });
   }
 
-  onProgress?.({ phase: 'graph-start', model: resolvedModel, toolBudget: effectiveBudget.promptToolCalls, sessionId });
+  onProgress?.({
+    phase: 'graph-start',
+    model: resolvedModel,
+    toolBudget: effectiveBudget.promptToolCalls,
+    sessionId,
+  });
 
   // Instantiate the node handlers injected with dependencies
   const callModel = makeCallModelNode(httpClient, logger, onProgress);
@@ -303,7 +299,11 @@ export async function runWeaveGraph(
         totalSteps: stepCount,
       });
     }
-    onProgress?.({ phase: 'graph-complete', operations: state.result.plan.operations.length, latencyMs: state.result.latencyMs });
+    onProgress?.({
+      phase: 'graph-complete',
+      operations: state.result.plan.operations.length,
+      latencyMs: state.result.latencyMs,
+    });
     return state.result;
   }
 

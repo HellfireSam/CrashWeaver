@@ -89,62 +89,127 @@ export default function App() {
   // ── Consume shared state from contexts (replaces 47 useState calls) ──────
 
   const {
-    vaultPath, vault, vaultAlias,
-    allCards, activeCrashpad, crashpadDeletePreferences,
-    setVaultPath, setVault, setVaultAlias,
-    setAllCards, setInternalDirectories,
-    setCrashpadSummaries, setActiveCrashpad, setCrashpadDeletePreferences,
+    vaultPath,
+    vault,
+    vaultAlias,
+    allCards,
+    activeCrashpad,
+    crashpadDeletePreferences,
+    setVaultPath,
+    setVault,
+    setVaultAlias,
+    setAllCards,
+    setInternalDirectories,
+    setCrashpadSummaries,
+    setActiveCrashpad,
+    setCrashpadDeletePreferences,
   } = useVaultState();
 
   const {
-    activeEditorKind, activeCardFilePath, activeCardFileUid,
-    selectedExplorerPath, selectedNotePath,
-    draftPath, draftContent, savedContent,
-    activeNote, viewMode, cardScope,
-    isPicking, isSaving, isRefreshingIndex,
-    statusMessage, errorMessage, editorFontSize,
-    setActiveEditorKind, setActiveCardFilePath, setActiveCardFileUid,
-    setSelectedExplorerPath, setSelectedNotePath,
-    setDraftPath, setDraftContent, setSavedContent,
-    setActiveNote, setViewMode, setCardScope,
-    setIsPicking, setIsReading, setIsSaving, setIsRefreshingIndex,
-    setStatusMessage, setErrorMessage, setEditorFontSize,
+    activeEditorKind,
+    activeCardFilePath,
+    activeCardFileUid,
+    selectedExplorerPath,
+    selectedNotePath,
+    draftPath,
+    draftContent,
+    savedContent,
+    activeNote,
+    viewMode,
+    cardScope,
+    isPicking,
+    isSaving,
+    isRefreshingIndex,
+    statusMessage,
+    errorMessage,
+    editorFontSize,
+    setActiveEditorKind,
+    setActiveCardFilePath,
+    setActiveCardFileUid,
+    setSelectedExplorerPath,
+    setSelectedNotePath,
+    setDraftPath,
+    setDraftContent,
+    setSavedContent,
+    setActiveNote,
+    setViewMode,
+    setCardScope,
+    setIsPicking,
+    setIsReading,
+    setIsSaving,
+    setIsRefreshingIndex,
+    setStatusMessage,
+    setErrorMessage,
+    setEditorFontSize,
     clearEditorState,
   } = useEditorState();
 
   const {
-    weaveModel, weaveKind, weaveEditContent, weaveCreateNote,
-    weaveStrength, weaveIntent,
-    weavePlanResult, weaveProviderHealth,
-    isCheckingWeaveProvider, isGeneratingWeavePlan,
+    weaveModel,
+    weaveKind,
+    weaveEditContent,
+    weaveCreateNote,
+    weaveStrength,
+    weaveIntent,
+    weavePlanResult,
+    weaveProviderHealth,
+    isCheckingWeaveProvider,
+    isGeneratingWeavePlan,
     weaveEvaluatingCardUid,
-    weaverSettings, weaveSessions, weaveActiveSessionId,
-    weaveApplyResult, isApplyingWeavePlan,
-    setWeaveModel, setWeaveKind, setWeaveEditContent, setWeaveCreateNote,
-    setWeaveStrength, setWeaveIntent,
-    setWeavePlanResult, setWeaveProviderHealth,
-    setIsCheckingWeaveProvider, setIsGeneratingWeavePlan,
+    weaverSettings,
+    weaveSessions,
+    weaveActiveSessionId,
+    weaveApplyResult,
+    isApplyingWeavePlan,
+    setWeaveModel,
+    setWeaveKind,
+    setWeaveEditContent,
+    setWeaveCreateNote,
+    setWeaveStrength,
+    setWeaveIntent,
+    setWeavePlanResult,
+    setWeaveProviderHealth,
+    setIsCheckingWeaveProvider,
+    setIsGeneratingWeavePlan,
     setWeaveEvaluatingCardUid,
-    setWeaverSettings, setWeaveSessions,
-    setWeaveApplyResult, setIsApplyingWeavePlan, setWeaveApplyError,
+    setWeaverSettings,
+    setWeaveSessions,
+    setWeaveApplyResult,
+    setIsApplyingWeavePlan,
+    setWeaveApplyError,
   } = useWeaverState();
 
   const {
-    isSidebarVisible, isInspectorVisible, isSettingsOpen,
-    openFirstNoteOnVaultOpen, showHiddenEntries,
-    focusedCardUid, focusedWindow, activeWidgetTool,
-    crashpadPast, crashpadFuture,
-    setExpandedFolders, setActiveSidebarTab,
-    setIsSidebarVisible, setIsInspectorVisible, setIsSettingsOpen,
-    setOpenFirstNoteOnVaultOpen, setShowHiddenEntries,
-    setFocusedCardUid, setFocusedWindow, setActiveWidgetTool,
-    setCrashpadPast, setCrashpadFuture,
+    isSidebarVisible,
+    isInspectorVisible,
+    isSettingsOpen,
+    openFirstNoteOnVaultOpen,
+    showHiddenEntries,
+    focusedCardUid,
+    focusedWindow,
+    activeWidgetTool,
+    crashpadPast,
+    crashpadFuture,
+    setExpandedFolders,
+    setActiveSidebarTab,
+    setIsSidebarVisible,
+    setIsInspectorVisible,
+    setIsSettingsOpen,
+    setOpenFirstNoteOnVaultOpen,
+    setShowHiddenEntries,
+    setFocusedCardUid,
+    setFocusedWindow,
+    setActiveWidgetTool,
+    setCrashpadPast,
+    setCrashpadFuture,
     pushCrashpadHistory,
   } = useUIState();
 
   // ── Confirm dialog state (Stage 6) ────────────────────────────────────────
 
-  const [pendingDestructiveOps, setPendingDestructiveOps] = useState<WeavePlanOperation[] | null>(null);
+  const [pendingDestructiveOps, setPendingDestructiveOps] = useState<WeavePlanOperation[] | null>(
+    null,
+  );
   const pendingApplyOpsRef = useRef<WeavePlanOperation[]>([]);
 
   // ── Refs (component-local, not shared state) ──────────────────────────────
@@ -174,11 +239,12 @@ export default function App() {
   } = useEditorTabs();
 
   const hasUnsavedChanges =
-    activeEditorKind === 'markdown' && (draftContent !== savedContent || draftPath !== (activeNote?.filePath ?? DEFAULT_DRAFT_PATH));
+    activeEditorKind === 'markdown' &&
+    (draftContent !== savedContent || draftPath !== (activeNote?.filePath ?? DEFAULT_DRAFT_PATH));
   const currentMarkdownEditorPath = draftPath || activeNote?.filePath || DEFAULT_DRAFT_PATH;
   const currentEditorPath =
     activeEditorKind === 'crashpad'
-      ? activeCrashpad?.filePath ?? ''
+      ? (activeCrashpad?.filePath ?? '')
       : activeEditorKind === 'card'
         ? activeCardFilePath
         : currentMarkdownEditorPath;
@@ -222,11 +288,21 @@ export default function App() {
     renameCardDetailState,
   });
   const currentNoteCards = useMemo(
-    () => sortCardViewRecords((activeNote?.parsedCards ?? []).map((card) => toCardViewRecordFromParsedCard(card, activeNote?.filePath ?? draftPath))),
+    () =>
+      sortCardViewRecords(
+        (activeNote?.parsedCards ?? []).map((card) =>
+          toCardViewRecordFromParsedCard(card, activeNote?.filePath ?? draftPath),
+        ),
+      ),
     [activeNote, draftPath],
   );
   const currentVaultCards = useMemo(
-    () => sortCardViewRecords(allCards.map((card) => toCardViewRecordFromCard(card, vault?.cardStore?.cardStorePath, selectedNotePath || null))),
+    () =>
+      sortCardViewRecords(
+        allCards.map((card) =>
+          toCardViewRecordFromCard(card, vault?.cardStore?.cardStorePath, selectedNotePath || null),
+        ),
+      ),
     [allCards, selectedNotePath, vault?.cardStore?.cardStorePath],
   );
   const cardFileCards = useMemo(() => {
@@ -273,7 +349,15 @@ export default function App() {
     }
 
     return cardScope === 'current-vault' ? currentVaultCards : currentNoteCards;
-  }, [cardFileCards, cardScope, crashpadCards, currentNoteCards, currentVaultCards, isCardEditor, isCrashpadEditor]);
+  }, [
+    cardFileCards,
+    cardScope,
+    crashpadCards,
+    currentNoteCards,
+    currentVaultCards,
+    isCardEditor,
+    isCrashpadEditor,
+  ]);
   const focusedCard = useMemo(
     () => visibleCards.find((card) => card.uid === focusedCardUid) ?? visibleCards[0] ?? null,
     [focusedCardUid, visibleCards],
@@ -282,7 +366,8 @@ export default function App() {
     () => getDefaultWeaveCardUid(crashpadCards, focusedCardUid),
     [crashpadCards, focusedCardUid],
   );
-  const isCardsSurfaceActive = isCrashpadEditor || isCardEditor || (isMarkdownEditor && viewMode === 'cards');
+  const isCardsSurfaceActive =
+    isCrashpadEditor || isCardEditor || (isMarkdownEditor && viewMode === 'cards');
 
   isMarkdownEditorRef.current = isMarkdownEditor;
   isSavingRef.current = isSaving;
@@ -412,10 +497,7 @@ export default function App() {
     formatCardRestoreStatus,
   });
 
-  const {
-    handleUndoCrashpadAction,
-    handleRedoCrashpadAction,
-  } = useCrashpadHistoryActions({
+  const { handleUndoCrashpadAction, handleRedoCrashpadAction } = useCrashpadHistoryActions({
     vaultPath,
     activeCrashpad,
     crashpadPast,
@@ -539,11 +621,7 @@ export default function App() {
     setErrorMessage,
   });
 
-  const {
-    saveCurrentNote,
-    handleSaveNote,
-    handleDiscard,
-  } = useNoteSaveActions({
+  const { saveCurrentNote, handleSaveNote, handleDiscard } = useNoteSaveActions({
     isMarkdownEditor,
     vaultPath,
     currentTabPath,
@@ -654,7 +732,9 @@ export default function App() {
       await refreshWeaveProviderHealth();
       setErrorMessage(null);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to check Weaver provider health.');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Failed to check Weaver provider health.',
+      );
     }
   }, [activeCrashpad, isCrashpadEditor, refreshWeaveProviderHealth, vaultPath]);
 
@@ -677,7 +757,9 @@ export default function App() {
       const health = await refreshWeaveProviderHealth();
 
       if (health && !health.ok && health.errorCategory === 'auth-error') {
-        setErrorMessage('Invalid or expired OpenRouter API key. Update your key in Settings → Weaver.');
+        setErrorMessage(
+          'Invalid or expired OpenRouter API key. Update your key in Settings → Weaver.',
+        );
         return;
       }
 
@@ -709,7 +791,9 @@ export default function App() {
             },
       );
       setWeavePlanResult(result);
-      setStatusMessage(`Generated Weaver proposal with ${result.plan.operations.length} staged operations.`);
+      setStatusMessage(
+        `Generated Weaver proposal with ${result.plan.operations.length} staged operations.`,
+      );
     } catch (error) {
       setWeavePlanResult(null);
       // Strip Electron's "Error invoking remote method '...': Error: " IPC wrapper from the message
@@ -739,67 +823,87 @@ export default function App() {
 
   // ── Stage 6: Apply operations callback ────────────────────────────────────
 
-  const handleApplyWeaveOperations = useCallback(async (operations: WeavePlanOperation[]) => {
-    if (!vaultPath) {
-      setErrorMessage('No vault open.');
-      return;
-    }
-
-    if (operations.length === 0) {
-      setErrorMessage('No operations selected to apply.');
-      return;
-    }
-
-    // Check for destructive operations
-    const destructiveOps = operations.filter((op) => isDestructiveOperation(op.kind));
-    if (destructiveOps.length > 0 && !pendingDestructiveOps) {
-      pendingApplyOpsRef.current = operations;
-      setPendingDestructiveOps(destructiveOps);
-      return;
-    }
-
-    setIsApplyingWeavePlan(true);
-    setWeaveApplyResult(null);
-    setWeaveApplyError(null);
-
-    try {
-      const result = await window.crashWeaver.applyWeavePlan(vaultPath, operations);
-      setWeaveApplyResult(result);
-
-      if (result.allOk) {
-        setStatusMessage(`Applied ${result.appliedCount} Weaver operation(s) successfully.`);
-        // Refresh vault state and all catalogs to reflect changes
-        if (vaultPath) {
-          const updatedVault = await window.crashWeaver.updateIndex(vaultPath);
-          setVault(updatedVault);
-          await refreshCardsCatalog(vaultPath);
-          await refreshInternalDirectories(vaultPath);
-          await refreshCrashpadCatalog(vaultPath, activeCrashpad?.id ?? null);
-        }
-      } else {
-        setErrorMessage(
-          `Applied ${result.appliedCount}/${operations.length} operation(s). ${result.failedCount} failed. Check the results for details.`,
-        );
+  const handleApplyWeaveOperations = useCallback(
+    async (operations: WeavePlanOperation[]) => {
+      if (!vaultPath) {
+        setErrorMessage('No vault open.');
+        return;
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to apply Weaver operations.';
-      setWeaveApplyError(message);
-      setErrorMessage(message);
-    } finally {
-      setIsApplyingWeavePlan(false);
-      setPendingDestructiveOps(null);
-    }
-  }, [vaultPath, pendingDestructiveOps, setIsApplyingWeavePlan, setWeaveApplyResult, setWeaveApplyError, setStatusMessage, setErrorMessage, setVault, refreshCardsCatalog, refreshInternalDirectories, refreshCrashpadCatalog, activeCrashpad]);
+
+      if (operations.length === 0) {
+        setErrorMessage('No operations selected to apply.');
+        return;
+      }
+
+      // Check for destructive operations
+      const destructiveOps = operations.filter((op) => isDestructiveOperation(op.kind));
+      if (destructiveOps.length > 0 && !pendingDestructiveOps) {
+        pendingApplyOpsRef.current = operations;
+        setPendingDestructiveOps(destructiveOps);
+        return;
+      }
+
+      setIsApplyingWeavePlan(true);
+      setWeaveApplyResult(null);
+      setWeaveApplyError(null);
+
+      try {
+        const result = await window.crashWeaver.applyWeavePlan(vaultPath, operations);
+        setWeaveApplyResult(result);
+
+        if (result.allOk) {
+          setStatusMessage(`Applied ${result.appliedCount} Weaver operation(s) successfully.`);
+          // Refresh vault state and all catalogs to reflect changes
+          if (vaultPath) {
+            const updatedVault = await window.crashWeaver.updateIndex(vaultPath);
+            setVault(updatedVault);
+            await refreshCardsCatalog(vaultPath);
+            await refreshInternalDirectories(vaultPath);
+            await refreshCrashpadCatalog(vaultPath, activeCrashpad?.id ?? null);
+          }
+        } else {
+          setErrorMessage(
+            `Applied ${result.appliedCount}/${operations.length} operation(s). ${result.failedCount} failed. Check the results for details.`,
+          );
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to apply Weaver operations.';
+        setWeaveApplyError(message);
+        setErrorMessage(message);
+      } finally {
+        setIsApplyingWeavePlan(false);
+        setPendingDestructiveOps(null);
+      }
+    },
+    [
+      vaultPath,
+      pendingDestructiveOps,
+      setIsApplyingWeavePlan,
+      setWeaveApplyResult,
+      setWeaveApplyError,
+      setStatusMessage,
+      setErrorMessage,
+      setVault,
+      refreshCardsCatalog,
+      refreshInternalDirectories,
+      refreshCrashpadCatalog,
+      activeCrashpad,
+    ],
+  );
 
   useEffect(() => {
-    void window.crashWeaver.getWeaverSettings().then((settings) => {
-      setWeaverSettings(settings);
-      if (settings.preferredModel) {
-        setWeaveModel(settings.preferredModel);
-      } else {
-        setWeaveModel('openai/gpt-4o');
-      }
-    }).catch(() => undefined);
+    void window.crashWeaver
+      .getWeaverSettings()
+      .then((settings) => {
+        setWeaverSettings(settings);
+        if (settings.preferredModel) {
+          setWeaveModel(settings.preferredModel);
+        } else {
+          setWeaveModel('openai/gpt-4o');
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   // ── External vault change subscription (chokidar → renderer) ───────────
@@ -826,34 +930,52 @@ export default function App() {
     });
 
     return unsubscribe;
-  }, [vaultPath, setVault, refreshCardsCatalog, refreshInternalDirectories, refreshCrashpadCatalog, activeCrashpad]);
+  }, [
+    vaultPath,
+    setVault,
+    refreshCardsCatalog,
+    refreshInternalDirectories,
+    refreshCrashpadCatalog,
+    activeCrashpad,
+  ]);
 
-  const handleWeaveModelChange = useCallback((nextModel: string) => {
-    const previousModel = weaveModel;
-    setWeaveModel(nextModel);
-    setErrorMessage(null);
+  const handleWeaveModelChange = useCallback(
+    (nextModel: string) => {
+      const previousModel = weaveModel;
+      setWeaveModel(nextModel);
+      setErrorMessage(null);
 
-    void window.crashWeaver.setWeaverPreferredModel(nextModel)
-      .then((updated) => {
-        setWeaverSettings(updated);
-      })
-      .catch((error) => {
-        setWeaveModel(previousModel);
-        setErrorMessage(error instanceof Error ? error.message : 'Failed to save Weaver preferred model.');
-      });
-  }, [weaveModel]);
+      void window.crashWeaver
+        .setWeaverPreferredModel(nextModel)
+        .then((updated) => {
+          setWeaverSettings(updated);
+        })
+        .catch((error) => {
+          setWeaveModel(previousModel);
+          setErrorMessage(
+            error instanceof Error ? error.message : 'Failed to save Weaver preferred model.',
+          );
+        });
+    },
+    [weaveModel],
+  );
 
-  const handleSetWeaverApiKey = useCallback(async (key: string) => {
-    await window.crashWeaver.setWeaverApiKey(key);
-    const updated = await window.crashWeaver.getWeaverSettings();
-    setWeaverSettings(updated);
-    const health = await refreshWeaveProviderHealth().catch(() => undefined);
-    if (health && !health.ok && health.errorCategory === 'auth-error') {
-      setErrorMessage('API key saved, but OpenRouter rejected it as invalid or expired. Please check your key.');
-    } else {
-      setStatusMessage('OpenRouter API key saved. Weaver will now use the live provider.');
-    }
-  }, [refreshWeaveProviderHealth]);
+  const handleSetWeaverApiKey = useCallback(
+    async (key: string) => {
+      await window.crashWeaver.setWeaverApiKey(key);
+      const updated = await window.crashWeaver.getWeaverSettings();
+      setWeaverSettings(updated);
+      const health = await refreshWeaveProviderHealth().catch(() => undefined);
+      if (health && !health.ok && health.errorCategory === 'auth-error') {
+        setErrorMessage(
+          'API key saved, but OpenRouter rejected it as invalid or expired. Please check your key.',
+        );
+      } else {
+        setStatusMessage('OpenRouter API key saved. Weaver will now use the live provider.');
+      }
+    },
+    [refreshWeaveProviderHealth],
+  );
 
   const handleClearWeaverApiKey = useCallback(async () => {
     await window.crashWeaver.clearWeaverApiKey();
@@ -872,21 +994,26 @@ export default function App() {
 
   const fetchWeaverSessions = useCallback(async () => {
     try {
-      const list = await window.crashWeaver.listWeaverSessions(vaultPath ?? undefined) as WeaverSessionSummary[];
+      const list = (await window.crashWeaver.listWeaverSessions(
+        vaultPath ?? undefined,
+      )) as WeaverSessionSummary[];
       setWeaveSessions(list);
     } catch {
       // Silently fail — sessions are not critical
     }
   }, [vaultPath]);
 
-  const handleDeleteWeaverSession = useCallback(async (sessionId: string) => {
-    try {
-      await window.crashWeaver.deleteWeaverSession(sessionId, vaultPath ?? undefined);
-      setWeaveSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
-    } catch {
-      // Silently fail
-    }
-  }, [vaultPath]);
+  const handleDeleteWeaverSession = useCallback(
+    async (sessionId: string) => {
+      try {
+        await window.crashWeaver.deleteWeaverSession(sessionId, vaultPath ?? undefined);
+        setWeaveSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+      } catch {
+        // Silently fail
+      }
+    },
+    [vaultPath],
+  );
 
   const handleClearWeaverSessions = useCallback(async () => {
     try {
@@ -952,11 +1079,7 @@ export default function App() {
         </button>
       </div>
 
-      <section
-        className="layoutGrid"
-        ref={layoutRef}
-        style={layoutStyle}
-      >
+      <section className="layoutGrid" ref={layoutRef} style={layoutStyle}>
         <aside className="widgetRail">
           <button
             type="button"
@@ -1005,7 +1128,9 @@ export default function App() {
             <div className="viewModeBar">
               <div className="editorTabsBar">
                 {displayTabs.map((tabPath) => {
-                  const isActiveTab = tabPath === currentEditorPath || (isMarkdownEditor && !hasUnsavedChanges && tabPath === selectedNotePath);
+                  const isActiveTab =
+                    tabPath === currentEditorPath ||
+                    (isMarkdownEditor && !hasUnsavedChanges && tabPath === selectedNotePath);
                   const isDirtyTab = hasUnsavedChanges && tabPath === currentEditorPath;
 
                   return (
@@ -1100,10 +1225,20 @@ export default function App() {
                   />
                   <div className="sourceActions">
                     <div className="editorActionWidget" aria-label="Editor actions">
-                      <button type="button" className="editorIconButton" title="Undo (Ctrl+Z)" onClick={handleUndo}>
+                      <button
+                        type="button"
+                        className="editorIconButton"
+                        title="Undo (Ctrl+Z)"
+                        onClick={handleUndo}
+                      >
                         ↺
                       </button>
-                      <button type="button" className="editorIconButton" title="Redo (Ctrl+Shift+Z)" onClick={handleRedo}>
+                      <button
+                        type="button"
+                        className="editorIconButton"
+                        title="Redo (Ctrl+Shift+Z)"
+                        onClick={handleRedo}
+                      >
                         ↻
                       </button>
                       <button
@@ -1201,7 +1336,9 @@ export default function App() {
                     markSourceLocallyScrolling();
 
                     if (currentTabPath) {
-                      updateMarkdownTabViewState(currentTabPath, { sourceScrollTop: event.currentTarget.scrollTop });
+                      updateMarkdownTabViewState(currentTabPath, {
+                        sourceScrollTop: event.currentTarget.scrollTop,
+                      });
                     }
                   }}
                   onFocus={() => setFocusedWindow('source-editor')}
@@ -1217,7 +1354,9 @@ export default function App() {
                   markPreviewLocallyScrolling();
 
                   if (currentTabPath) {
-                    updateMarkdownTabViewState(currentTabPath, { previewScrollTop: event.currentTarget.scrollTop });
+                    updateMarkdownTabViewState(currentTabPath, {
+                      previewScrollTop: event.currentTarget.scrollTop,
+                    });
                   }
                 }}
                 // Preview HTML is built from the user's own vault content.

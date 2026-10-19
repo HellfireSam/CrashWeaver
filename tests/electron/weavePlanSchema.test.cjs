@@ -66,33 +66,34 @@ test('guided insert rejects edit-note-content when editContent permission is dis
   const request = validateWeavePlanRequest(createGuidedRequest(rootPath));
 
   assert.throws(
-    () => validateWeavePlanResult(
-      {
-        plan: {
-          kind: 'guided-insert',
-          permissions: { editContent: false, createNote: false },
-          summary: 'Attempt to edit surrounding note content.',
-          operations: [
-            {
-              kind: 'edit-note-content',
-              targetPath: 'notes/graph.md',
-              payload: {
-                action: 'insert-after-heading',
-                targetText: '# Graph Theory',
-                replacementMarkdown: '# Graph Theory\n\nUpdated prose.',
+    () =>
+      validateWeavePlanResult(
+        {
+          plan: {
+            kind: 'guided-insert',
+            permissions: { editContent: false, createNote: false },
+            summary: 'Attempt to edit surrounding note content.',
+            operations: [
+              {
+                kind: 'edit-note-content',
+                targetPath: 'notes/graph.md',
+                payload: {
+                  action: 'insert-after-heading',
+                  targetText: '# Graph Theory',
+                  replacementMarkdown: '# Graph Theory\n\nUpdated prose.',
+                },
+                rationale: 'This should be rejected because editContent is off.',
               },
-              rationale: 'This should be rejected because editContent is off.',
-            },
-          ],
-          warnings: [],
-          referencedCards: ['CW-001'],
+            ],
+            warnings: [],
+            referencedCards: ['CW-001'],
+          },
+          model: 'stub',
+          provider: 'stub',
+          latencyMs: 1,
         },
-        model: 'stub',
-        provider: 'stub',
-        latencyMs: 1,
-      },
-      request,
-    ),
+        request,
+      ),
     /cannot include edit-note-content/i,
   );
 });
@@ -207,7 +208,8 @@ test('intelligent plans accept note and directory rename or delete operations ou
                 buildBoundaryBlock('CW-001'),
               ].join('\n'),
             },
-            rationale: 'Create an overview note that gives the card a durable home in the new cluster.',
+            rationale:
+              'Create an overview note that gives the card a durable home in the new cluster.',
           },
         ],
         warnings: [],
@@ -221,10 +223,8 @@ test('intelligent plans accept note and directory rename or delete operations ou
   );
 
   assert.equal(result.plan.kind, 'intelligent');
-  assert.deepEqual(result.plan.operations.map((operation) => operation.kind), [
-    'rename-note',
-    'create-directory',
-    'delete-directory',
-    'create-note',
-  ]);
+  assert.deepEqual(
+    result.plan.operations.map((operation) => operation.kind),
+    ['rename-note', 'create-directory', 'delete-directory', 'create-note'],
+  );
 });

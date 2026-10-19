@@ -47,7 +47,10 @@ test('system instruction frames crashpad as source-only and create-note as subst
   const instruction = buildSystemPrompt(profile, 2, 1);
 
   assert.match(instruction, /Crashpad is source context only/i);
-  assert.match(instruction, /create-note.*must.*meaningful markdown prose|create-note payload must contain substantive markdown prose/i);
+  assert.match(
+    instruction,
+    /create-note.*must.*meaningful markdown prose|create-note payload must contain substantive markdown prose/i,
+  );
 });
 
 test('intelligent prompt describes vault-wide note and directory restructuring', () => {
@@ -83,12 +86,34 @@ test('buildContextLayer includes focused card uid, type, and referenced notes', 
       referencedIn: [{ notePath: 'notes/graph.md', startLine: 2, endLine: 5 }],
     },
     candidateNotes: [
-      { filePath: 'notes/graph.md', title: 'Graph Theory', tags: ['math'], updatedAt: '2026-01-01T00:00:00Z', directoryPath: 'notes', score: 220, reasons: ['Card already references this note.'] },
+      {
+        filePath: 'notes/graph.md',
+        title: 'Graph Theory',
+        tags: ['math'],
+        updatedAt: '2026-01-01T00:00:00Z',
+        directoryPath: 'notes',
+        score: 220,
+        reasons: ['Card already references this note.'],
+      },
     ],
     directorySummaries: [
-      { directoryPath: 'notes', noteCount: 3, candidateCount: 1, sampleNotes: ['notes/graph.md'], score: 220, reasons: ['Contains existing card references.'] },
+      {
+        directoryPath: 'notes',
+        noteCount: 3,
+        candidateCount: 1,
+        sampleNotes: ['notes/graph.md'],
+        score: 220,
+        reasons: ['Contains existing card references.'],
+      },
     ],
-    retrievalBudget: { maxCandidateNotes: 10, maxDirectorySummaries: 8, maxNoteReads: 2, maxExcerptChars: 1400, maxFullNoteChars: 4200, maxRetrievedChars: 7000 },
+    retrievalBudget: {
+      maxCandidateNotes: 10,
+      maxDirectorySummaries: 8,
+      maxNoteReads: 2,
+      maxExcerptChars: 1400,
+      maxFullNoteChars: 4200,
+      maxRetrievedChars: 7000,
+    },
     warnings: [],
   };
 
@@ -109,10 +134,24 @@ test('buildContextLayer warns when no candidate notes are ranked', () => {
     rootPath: 'D:/vault',
     requestKind: 'intelligent',
     intent: 'Test',
-    card: { uid: 'CW-001', type: [], rawContentExcerpt: '', memoryTechnique: '', qaPairs: [], referencedIn: [] },
+    card: {
+      uid: 'CW-001',
+      type: [],
+      rawContentExcerpt: '',
+      memoryTechnique: '',
+      qaPairs: [],
+      referencedIn: [],
+    },
     candidateNotes: [],
     directorySummaries: [],
-    retrievalBudget: { maxCandidateNotes: 10, maxDirectorySummaries: 8, maxNoteReads: 2, maxExcerptChars: 1400, maxFullNoteChars: 4200, maxRetrievedChars: 7000 },
+    retrievalBudget: {
+      maxCandidateNotes: 10,
+      maxDirectorySummaries: 8,
+      maxNoteReads: 2,
+      maxExcerptChars: 1400,
+      maxFullNoteChars: 4200,
+      maxRetrievedChars: 7000,
+    },
     warnings: ['No candidate notes ranked above zero.'],
   };
 
@@ -142,10 +181,24 @@ test('buildInitialUserTurn carries the request spec and context without repeatin
     rootPath: 'D:/vault',
     requestKind: 'guided-insert',
     intent: 'Insert into graph notes.',
-    card: { uid: 'CW-001', type: [], rawContentExcerpt: '', memoryTechnique: '', qaPairs: [], referencedIn: [] },
+    card: {
+      uid: 'CW-001',
+      type: [],
+      rawContentExcerpt: '',
+      memoryTechnique: '',
+      qaPairs: [],
+      referencedIn: [],
+    },
     candidateNotes: [],
     directorySummaries: [],
-    retrievalBudget: { maxCandidateNotes: 8, maxDirectorySummaries: 6, maxNoteReads: 1, maxExcerptChars: 1200, maxFullNoteChars: 3200, maxRetrievedChars: 3600 },
+    retrievalBudget: {
+      maxCandidateNotes: 8,
+      maxDirectorySummaries: 6,
+      maxNoteReads: 1,
+      maxExcerptChars: 1200,
+      maxFullNoteChars: 3200,
+      maxRetrievedChars: 3600,
+    },
     warnings: [],
   };
 
@@ -173,7 +226,12 @@ test('buildInitialUserTurn carries the request spec and context without repeatin
 // ── Observation message ───────────────────────────────────────────────────────
 
 test('buildObservationMessage formats successful tool result', () => {
-  const result = { ok: true, toolName: 'read_note_excerpt', usage: {}, data: { content: 'Found relevant text.' } };
+  const result = {
+    ok: true,
+    toolName: 'read_note_excerpt',
+    usage: {},
+    data: { content: 'Found relevant text.' },
+  };
   const msg = buildObservationMessage('read_note_excerpt', result, 2);
 
   assert.match(msg, /TOOL RESULT: read_note_excerpt/);

@@ -74,11 +74,7 @@ async function createIndexedVault(rootPath) {
     writeNote(
       rootPath,
       'archive/misc.md',
-      [
-        '# Misc',
-        '',
-        'Unrelated archive material.',
-      ].join('\n'),
+      ['# Misc', '', 'Unrelated archive material.'].join('\n'),
     ),
   ]);
   const indexPath = path.join(rootPath, '.crashweaver', 'index.json');
@@ -117,8 +113,12 @@ test('buildWeaveContextSnapshot prioritizes references, active note, and keyword
     assert.ok(candidatePaths.includes('projects/testing.md'));
     assert.ok(candidatePaths.includes('knowledge/reliability-review.md'));
 
-    const referencedNote = snapshot.candidateNotes.find((note) => note.filePath === 'knowledge/reliability-playbook.md');
-    const activeNote = snapshot.candidateNotes.find((note) => note.filePath === 'projects/testing.md');
+    const referencedNote = snapshot.candidateNotes.find(
+      (note) => note.filePath === 'knowledge/reliability-playbook.md',
+    );
+    const activeNote = snapshot.candidateNotes.find(
+      (note) => note.filePath === 'projects/testing.md',
+    );
 
     assert.ok(referencedNote);
     assert.ok(activeNote);

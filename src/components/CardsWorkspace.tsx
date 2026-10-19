@@ -56,16 +56,20 @@ export function CardsWorkspace({
           <p className="panelTitle">Cards Workspace</p>
           <p className="blocksTitle">
             {cardScope === 'current-vault'
-              ? vaultPath ?? 'Current vault'
-              : activeNote?.filePath ?? 'Select a note to inspect parsed cards.'}
+              ? (vaultPath ?? 'Current vault')
+              : (activeNote?.filePath ?? 'Select a note to inspect parsed cards.')}
           </p>
         </div>
         <div className="blocksPills">
           <span className="blocksPill">{visibleCards.length} cards</span>
           <span className="blocksPill ok">Focus: {formatFocusWindow(focusedWindow)}</span>
-          <span className="blocksPill">{cardScope === 'current-note' ? 'Current note scope' : 'Current vault scope'}</span>
+          <span className="blocksPill">
+            {cardScope === 'current-note' ? 'Current note scope' : 'Current vault scope'}
+          </span>
           {cardScope === 'current-note' ? (
-            <span className={`blocksPill ${(activeNote?.parseDiagnostics?.length ?? 0) ? 'warning' : 'ok'}`}>
+            <span
+              className={`blocksPill ${(activeNote?.parseDiagnostics?.length ?? 0) ? 'warning' : 'ok'}`}
+            >
               {activeNote?.parseDiagnostics?.length ?? 0} diagnostics
             </span>
           ) : null}
@@ -75,7 +79,9 @@ export function CardsWorkspace({
       {!activeNote && cardScope === 'current-note' ? (
         <div className="placeholderCard compact">
           <p className="placeholderTitle">No active note</p>
-          <p className="placeholderBody">Open a markdown note to inspect parsed card boundaries and the linked card content.</p>
+          <p className="placeholderBody">
+            Open a markdown note to inspect parsed card boundaries and the linked card content.
+          </p>
         </div>
       ) : null}
 
@@ -83,12 +89,14 @@ export function CardsWorkspace({
         <div className="vaultCardsHint">
           <p className="detailKey">Future vault card picker</p>
           <p className="detailValue">
-            This vault-wide card view will grow into a searchable picker later, with tag, keyword, familiarity, and other filters.
+            This vault-wide card view will grow into a searchable picker later, with tag, keyword,
+            familiarity, and other filters.
           </p>
         </div>
       ) : null}
 
-      {!visibleCards.length && ((cardScope === 'current-note' && activeNote) || cardScope === 'current-vault') ? (
+      {!visibleCards.length &&
+      ((cardScope === 'current-note' && activeNote) || cardScope === 'current-vault') ? (
         <div className="placeholderCard compact">
           <p className="placeholderTitle">No cards found</p>
           <p className="placeholderBody">
@@ -144,10 +152,14 @@ export function CardsWorkspace({
                     <h2>{focusedCard.uid}</h2>
                   </div>
                   <div className="cardHeroMeta">
-                    <span className={`cardStatusBadge ${focusedCard.cardExists ? 'ok' : 'missing'}`}>
+                    <span
+                      className={`cardStatusBadge ${focusedCard.cardExists ? 'ok' : 'missing'}`}
+                    >
                       {focusedCard.cardExists ? 'Card JSON linked' : 'Card JSON missing'}
                     </span>
-                    <span className="blocksPill">{focusedCard.source === 'current-note' ? 'Current note' : 'Current vault'}</span>
+                    <span className="blocksPill">
+                      {focusedCard.source === 'current-note' ? 'Current note' : 'Current vault'}
+                    </span>
                   </div>
                 </header>
 
@@ -174,7 +186,9 @@ export function CardsWorkspace({
                   <button
                     type="button"
                     className={`cardSegmentTab ${activeCardDetailTab === 'memory-technique' ? 'active' : ''}`}
-                    onClick={() => onSwitchCardDetailTab('memory-technique', 'view.memory-technique')}
+                    onClick={() =>
+                      onSwitchCardDetailTab('memory-technique', 'view.memory-technique')
+                    }
                   >
                     Memory Technique
                   </button>
@@ -203,7 +217,8 @@ export function CardsWorkspace({
                       // Raw card markdown is user content rendered for preview.
                       dangerouslySetInnerHTML={{
                         __html: renderMarkdownPreview(
-                          focusedCard.rawContent || 'No raw content is currently stored for this card.',
+                          focusedCard.rawContent ||
+                            'No raw content is currently stored for this card.',
                           vaultPath,
                           imageDirectories,
                         ),
@@ -219,14 +234,17 @@ export function CardsWorkspace({
                       className={`cardDetailText ${focusedCardElement === 'memory_tricks.memory_technique' ? 'focusOutline' : ''}`}
                       onClick={() => onSetCardFocusElement('memory_tricks.memory_technique')}
                     >
-                      {focusedCard.memoryTricks.memory_technique || 'No memory technique is stored yet.'}
+                      {focusedCard.memoryTricks.memory_technique ||
+                        'No memory technique is stored yet.'}
                     </p>
                   </section>
                 ) : null}
 
                 {activeCardDetailTab === 'qna' ? (
                   <section className="cardDetailSection cardTemplatePanel">
-                    <p className="detailKey">QnA prompts ({focusedCard.memoryTricks.qa_pairs.length})</p>
+                    <p className="detailKey">
+                      QnA prompts ({focusedCard.memoryTricks.qa_pairs.length})
+                    </p>
                     {focusedCard.memoryTricks.qa_pairs.length ? (
                       <ul className="cardQuestionList">
                         {focusedCard.memoryTricks.qa_pairs.map((pair, index) => {
@@ -243,7 +261,10 @@ export function CardsWorkspace({
                               <p className="detailKey">Q{index + 1}</p>
                               <p className="detailValue">{pair.q}</p>
                               <p className="detailKey">A</p>
-                              <p className={`detailValue ${isAnswerVisible ? '' : 'concealedAnswer'}`} style={{ whiteSpace: 'pre-wrap' }}>
+                              <p
+                                className={`detailValue ${isAnswerVisible ? '' : 'concealedAnswer'}`}
+                                style={{ whiteSpace: 'pre-wrap' }}
+                              >
                                 {pair.a}
                               </p>
                               <button
@@ -268,13 +289,18 @@ export function CardsWorkspace({
                 ) : null}
 
                 {activeCardDetailTab === 'metadata' ? (
-                  <CardMetadataPanel card={focusedCard} onOpenNote={vaultPath ? onOpenNote : undefined} />
+                  <CardMetadataPanel
+                    card={focusedCard}
+                    onOpenNote={vaultPath ? onOpenNote : undefined}
+                  />
                 ) : null}
               </>
             ) : (
               <div className="placeholderCard compact">
                 <p className="placeholderTitle">No focused card</p>
-                <p className="placeholderBody">Select a card from the list to inspect its full attributes and memory tricks.</p>
+                <p className="placeholderBody">
+                  Select a card from the list to inspect its full attributes and memory tricks.
+                </p>
               </div>
             )}
           </section>

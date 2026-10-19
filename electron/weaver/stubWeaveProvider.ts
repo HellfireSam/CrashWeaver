@@ -37,7 +37,10 @@ function buildVaultNotePath(request: WeavePlanRequest) {
   return `notes/${slugify(request.intent || request.cardUid || 'weaver-proposal')}.md`;
 }
 
-function buildGuidedInsertCreateNoteOperation(request: WeavePlanRequest, targetPath: string): WeavePlanOperation {
+function buildGuidedInsertCreateNoteOperation(
+  request: WeavePlanRequest,
+  targetPath: string,
+): WeavePlanOperation {
   const title = request.intent?.trim() || `Card ${request.cardUid}`;
 
   return {
@@ -58,7 +61,8 @@ function buildGuidedInsertCreateNoteOperation(request: WeavePlanRequest, targetP
         'It captures the focused crashpad idea in a note that can accumulate references, examples, and follow-up structure.',
       ].join('\n'),
     },
-    rationale: 'Create a real vault note that can host the focused card with supporting prose around it.',
+    rationale:
+      'Create a real vault note that can host the focused card with supporting prose around it.',
   };
 }
 
@@ -94,12 +98,15 @@ function buildPlanOperations(request: WeavePlanRequest) {
             `This section now anchors ${request.cardUid} inside the note so the surrounding prose explains why the card belongs here.`,
           ].join('\n'),
         },
-        rationale: 'Edit the surrounding note prose so the staged insertion reads as an intentional part of the note.',
+        rationale:
+          'Edit the surrounding note prose so the staged insertion reads as an intentional part of the note.',
       });
     }
 
     if (request.permissions.createNote) {
-      operations.push(buildGuidedInsertCreateNoteOperation(request, `notes/${proposalSlug}-guide.md`));
+      operations.push(
+        buildGuidedInsertCreateNoteOperation(request, `notes/${proposalSlug}-guide.md`),
+      );
     }
 
     return operations;
@@ -120,7 +127,8 @@ function buildPlanOperations(request: WeavePlanRequest) {
       boundaryBlock,
       ...(request.selectedText ? { selectedText: request.selectedText } : {}),
     },
-    rationale: 'Anchor the focused card in an existing note before proposing broader restructuring around it.',
+    rationale:
+      'Anchor the focused card in an existing note before proposing broader restructuring around it.',
   });
   operations.push({
     kind: 'edit-note-content',
@@ -134,7 +142,8 @@ function buildPlanOperations(request: WeavePlanRequest) {
         `This note now frames ${request.cardUid} as part of a clearer vault structure with explicit follow-up material.`,
       ].join('\n'),
     },
-    rationale: 'Intelligent mode can reshape surrounding prose when that makes the inserted card easier to understand.',
+    rationale:
+      'Intelligent mode can reshape surrounding prose when that makes the inserted card easier to understand.',
   });
 
   if (request.strength === 'light') {
@@ -147,7 +156,8 @@ function buildPlanOperations(request: WeavePlanRequest) {
     payload: {
       purpose: 'Create a focused folder for the note cluster built around the selected card.',
     },
-    rationale: 'Standard intelligent planning may create a directory when the card deserves a clearer home in the vault.',
+    rationale:
+      'Standard intelligent planning may create a directory when the card deserves a clearer home in the vault.',
   });
   operations.push({
     kind: 'rename-note',
@@ -155,7 +165,8 @@ function buildPlanOperations(request: WeavePlanRequest) {
     payload: {
       fromPath: notePath,
       toPath: renamedNotePath,
-      renameReason: 'Rename the note so its title reflects the focused card and the new vault role it should play.',
+      renameReason:
+        'Rename the note so its title reflects the focused card and the new vault role it should play.',
     },
     rationale: 'Rename the note to make its purpose obvious in search and navigation.',
   });
@@ -167,9 +178,15 @@ function buildPlanOperations(request: WeavePlanRequest) {
       toPath: movedNotePath,
       moveReason: 'Move the renamed note into the dedicated working directory for this topic.',
     },
-    rationale: 'Move the renamed note beside related material so the cluster becomes easier to browse.',
+    rationale:
+      'Move the renamed note beside related material so the cluster becomes easier to browse.',
   });
-  operations.push(buildGuidedInsertCreateNoteOperation({ ...request, kind: 'guided-insert', permissions: { editContent: false, createNote: true } }, createdNotePath));
+  operations.push(
+    buildGuidedInsertCreateNoteOperation(
+      { ...request, kind: 'guided-insert', permissions: { editContent: false, createNote: true } },
+      createdNotePath,
+    ),
+  );
 
   if (request.strength === 'go-ham') {
     operations.push({
@@ -178,9 +195,11 @@ function buildPlanOperations(request: WeavePlanRequest) {
       payload: {
         fromPath: workspaceDirectoryPath,
         toPath: renamedDirectoryPath,
-        renameReason: 'Rename the working directory once the card cluster has a clearer long-term knowledge role.',
+        renameReason:
+          'Rename the working directory once the card cluster has a clearer long-term knowledge role.',
       },
-      rationale: 'Go Ham can rename the supporting directory when it substantially improves the vault taxonomy.',
+      rationale:
+        'Go Ham can rename the supporting directory when it substantially improves the vault taxonomy.',
     });
     operations.push({
       kind: 'move-directory',
@@ -188,25 +207,31 @@ function buildPlanOperations(request: WeavePlanRequest) {
       payload: {
         fromPath: renamedDirectoryPath,
         toPath: `archive/${proposalSlug}`,
-        moveReason: 'Move the directory when a different parent folder better matches the vault structure.',
+        moveReason:
+          'Move the directory when a different parent folder better matches the vault structure.',
       },
-      rationale: 'Go Ham can relocate entire directories when the broader structure is worth the churn.',
+      rationale:
+        'Go Ham can relocate entire directories when the broader structure is worth the churn.',
     });
     operations.push({
       kind: 'delete-note',
       targetPath: `notes/archive/${proposalSlug}-scratch.md`,
       payload: {
-        deleteReason: 'Remove the stale scratch note after its useful content is consolidated into the reworked cluster.',
+        deleteReason:
+          'Remove the stale scratch note after its useful content is consolidated into the reworked cluster.',
       },
-      rationale: 'Go Ham may delete a redundant note when it no longer contributes unique value after consolidation.',
+      rationale:
+        'Go Ham may delete a redundant note when it no longer contributes unique value after consolidation.',
     });
     operations.push({
       kind: 'delete-directory',
       targetPath: `notes/weaver/${proposalSlug}-staging`,
       payload: {
-        deleteReason: 'Delete the obsolete staging directory once the proposed structure supersedes it.',
+        deleteReason:
+          'Delete the obsolete staging directory once the proposed structure supersedes it.',
       },
-      rationale: 'Go Ham may delete an empty or obsolete staging folder after the new structure replaces it.',
+      rationale:
+        'Go Ham may delete an empty or obsolete staging folder after the new structure replaces it.',
     });
   }
 
@@ -225,41 +250,45 @@ export class StubWeaveProvider {
       `Crashpad context ${request.activeCrashpadId} is source-only — no crashpad file is ever targeted by this plan.`,
       'This is a Stage 5 stub plan. No filesystem writes occur until a later approval layer exists.',
     ];
-    const plan = request.kind === 'guided-insert'
-      ? {
-          kind: 'guided-insert' as const,
-          permissions: request.permissions,
-          summary: `Stub Weaver staged ${operations.length} operation${operations.length === 1 ? '' : 's'} for focused card ${request.cardUid} from ${request.activeCrashpadId}.`,
-          operations,
-          warnings,
-          referencedCards: [request.cardUid],
-        }
-      : {
-          kind: 'intelligent' as const,
-          strength: request.strength,
-          summary: `Stub Weaver staged ${operations.length} operation${operations.length === 1 ? '' : 's'} for focused card ${request.cardUid} from ${request.activeCrashpadId}.`,
-          operations,
-          warnings,
-          referencedCards: [request.cardUid],
-        };
+    const plan =
+      request.kind === 'guided-insert'
+        ? {
+            kind: 'guided-insert' as const,
+            permissions: request.permissions,
+            summary: `Stub Weaver staged ${operations.length} operation${operations.length === 1 ? '' : 's'} for focused card ${request.cardUid} from ${request.activeCrashpadId}.`,
+            operations,
+            warnings,
+            referencedCards: [request.cardUid],
+          }
+        : {
+            kind: 'intelligent' as const,
+            strength: request.strength,
+            summary: `Stub Weaver staged ${operations.length} operation${operations.length === 1 ? '' : 's'} for focused card ${request.cardUid} from ${request.activeCrashpadId}.`,
+            operations,
+            warnings,
+            referencedCards: [request.cardUid],
+          };
 
     const notePath = buildVaultNotePath(request);
     const trace = [
       {
-        thought: "I need to analyze the existing structure in the vault relative to this card and user intent.",
-        action: "Tool Call: list_notes with arguments: {}",
-        observation: "Notes found in vault: notes/demo.md, notes/getting-started.md, notes/reference.md."
+        thought:
+          'I need to analyze the existing structure in the vault relative to this card and user intent.',
+        action: 'Tool Call: list_notes with arguments: {}',
+        observation:
+          'Notes found in vault: notes/demo.md, notes/getting-started.md, notes/reference.md.',
       },
       {
         thought: `I will read the content of ${notePath} to identify the right insertion point.`,
         action: `Tool Call: read_note with arguments: { "notePath": "${notePath}" }`,
-        observation: "Found existing sections: # Introduction, # Overview, # Related cards."
+        observation: 'Found existing sections: # Introduction, # Overview, # Related cards.',
       },
       {
-        thought: "I now have all the context to layout the requested insertion of the card within this note structure.",
+        thought:
+          'I now have all the context to layout the requested insertion of the card within this note structure.',
         action: `Proposed Weaver Plan with ${operations.length} operations.`,
-        observation: "Plan successfully validated and ready to apply."
-      }
+        observation: 'Plan successfully validated and ready to apply.',
+      },
     ];
 
     return {
@@ -289,17 +318,68 @@ export class StubWeaveProvider {
   async listModels(): Promise<WeaveModelInfo[]> {
     // Curated set returned when no live API key is configured.
     return [
-      { id: 'deepseek/deepseek-v3-base:free', name: 'DeepSeek V3 Base', costLabel: 'Free', isFree: true },
+      {
+        id: 'deepseek/deepseek-v3-base:free',
+        name: 'DeepSeek V3 Base',
+        costLabel: 'Free',
+        isFree: true,
+      },
       { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1', costLabel: 'Free', isFree: true },
-      { id: 'meta-llama/llama-4-scout:free', name: 'Llama 4 Scout', costLabel: 'Free', isFree: true },
-      { id: 'meta-llama/llama-4-maverick:free', name: 'Llama 4 Maverick', costLabel: 'Free', isFree: true },
+      {
+        id: 'meta-llama/llama-4-scout:free',
+        name: 'Llama 4 Scout',
+        costLabel: 'Free',
+        isFree: true,
+      },
+      {
+        id: 'meta-llama/llama-4-maverick:free',
+        name: 'Llama 4 Maverick',
+        costLabel: 'Free',
+        isFree: true,
+      },
       { id: 'google/gemma-3-27b-it:free', name: 'Gemma 3 27B', costLabel: 'Free', isFree: true },
-      { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', costLabel: '$0.15/M', isFree: false, contextLength: 128000 },
-      { id: 'openai/gpt-4o', name: 'GPT-4o', costLabel: '$5/M', isFree: false, contextLength: 128000 },
-      { id: 'anthropic/claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', costLabel: '$3/M', isFree: false, contextLength: 200000 },
-      { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', costLabel: '$3/M', isFree: false, contextLength: 200000 },
-      { id: 'google/gemini-flash-1.5', name: 'Gemini Flash 1.5', costLabel: '$0.08/M', isFree: false, contextLength: 1000000 },
-      { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', costLabel: '$1.25/M', isFree: false, contextLength: 1000000 },
+      {
+        id: 'openai/gpt-4o-mini',
+        name: 'GPT-4o Mini',
+        costLabel: '$0.15/M',
+        isFree: false,
+        contextLength: 128000,
+      },
+      {
+        id: 'openai/gpt-4o',
+        name: 'GPT-4o',
+        costLabel: '$5/M',
+        isFree: false,
+        contextLength: 128000,
+      },
+      {
+        id: 'anthropic/claude-3-5-sonnet',
+        name: 'Claude 3.5 Sonnet',
+        costLabel: '$3/M',
+        isFree: false,
+        contextLength: 200000,
+      },
+      {
+        id: 'anthropic/claude-sonnet-4-5',
+        name: 'Claude Sonnet 4.5',
+        costLabel: '$3/M',
+        isFree: false,
+        contextLength: 200000,
+      },
+      {
+        id: 'google/gemini-flash-1.5',
+        name: 'Gemini Flash 1.5',
+        costLabel: '$0.08/M',
+        isFree: false,
+        contextLength: 1000000,
+      },
+      {
+        id: 'google/gemini-2.5-pro',
+        name: 'Gemini 2.5 Pro',
+        costLabel: '$1.25/M',
+        isFree: false,
+        contextLength: 1000000,
+      },
     ];
   }
 }

@@ -48,7 +48,7 @@ test('cosineSimilarity handles zero-norm vector (all zeros)', () => {
 
 test('cosineSimilarity handles real-world embedding-like values', () => {
   const a = [0.12, -0.05, 0.33, 0.18, -0.22, 0.07];
-  const b = [0.10, -0.03, 0.30, 0.20, -0.19, 0.09];
+  const b = [0.1, -0.03, 0.3, 0.2, -0.19, 0.09];
   const result = cosineSimilarity(a, b);
   // Should be very high (> 0.95) since vectors are nearly identical
   assert.ok(result > 0.95, `expected > 0.95, got ${result}`);
@@ -71,6 +71,12 @@ test('EMBEDDING_SIMILARITY_BOOST is a positive number', () => {
 });
 
 test('EMBEDDING_SIMILARITY_BOOST is in a reasonable range (50–400)', () => {
-  assert.ok(EMBEDDING_SIMILARITY_BOOST >= 50, 'should be at least 50 to meaningfully affect ranking');
-  assert.ok(EMBEDDING_SIMILARITY_BOOST <= 400, 'should not exceed 400 to avoid drowning keyword signals');
+  assert.ok(
+    EMBEDDING_SIMILARITY_BOOST >= 50,
+    'should be at least 50 to meaningfully affect ranking',
+  );
+  assert.ok(
+    EMBEDDING_SIMILARITY_BOOST <= 400,
+    'should not exceed 400 to avoid drowning keyword signals',
+  );
 });

@@ -23,13 +23,13 @@ const START_BOUNDARY_PATTERN = /^%%CW_CARD_START\s+uid:([A-Za-z0-9_-]+)%%$/;
 const END_BOUNDARY_PATTERN = /^%%CW_CARD_END\s+uid:([A-Za-z0-9_-]+)%%$/;
 ```
 
-| Slot | Accepted form | Notes |
-| --- | --- | --- |
-| Marker text | literal `%%CW_CARD_START` / `%%CW_CARD_END` | No case folding: both patterns are case-sensitive, and the fallback prefix checks use `String.prototype.startsWith` with the same literal. |
-| Separator | `\s+` | One or more whitespace characters between the marker text and `uid:`. |
-| UID key | literal `uid:` | Lowercase only. No whitespace is permitted between `uid:` and the UID, or between the UID and `%%`. |
-| UID | `[A-Za-z0-9_-]+` | ASCII letters, digits, underscore and hyphen; at least one character. The card store enforces the same alphabet with `CARD_UID_PATTERN` in `electron/cardStoreService.ts`. |
-| Terminator | `%%` at end of line | The patterns are anchored with `^` and `$`, and the parser matches one trimmed line at a time. |
+| Slot        | Accepted form                               | Notes                                                                                                                                                                      |
+| ----------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Marker text | literal `%%CW_CARD_START` / `%%CW_CARD_END` | No case folding: both patterns are case-sensitive, and the fallback prefix checks use `String.prototype.startsWith` with the same literal.                                 |
+| Separator   | `\s+`                                       | One or more whitespace characters between the marker text and `uid:`.                                                                                                      |
+| UID key     | literal `uid:`                              | Lowercase only. No whitespace is permitted between `uid:` and the UID, or between the UID and `%%`.                                                                        |
+| UID         | `[A-Za-z0-9_-]+`                            | ASCII letters, digits, underscore and hyphen; at least one character. The card store enforces the same alphabet with `CARD_UID_PATTERN` in `electron/cardStoreService.ts`. |
+| Terminator  | `%%` at end of line                         | The patterns are anchored with `^` and `$`, and the parser matches one trimmed line at a time.                                                                             |
 
 A marker is recognised only when it is a whole line. `parseCrashCardsFromNote` computes
 `const line = rawLine.trim()` before matching, so indentation and trailing whitespace are tolerated
@@ -54,14 +54,14 @@ the canonical marker exactly.
 - A start marker while a boundary is already active is reported and ignored, whatever UID it names.
 - A still-active boundary at end of file is reported once.
 
-| Note content | Result |
-| --- | --- |
-| Valid start and end for the same UID | One card, no diagnostic. |
-| Nested start (`START a`, then `START b`) | `nested-start-boundary` for `b`; `b`'s start is ignored. A later `END b` becomes `mismatched-boundary-uid` while `END a` closes the outer card, whose block swallows the inner markers; if `END a` comes first, `END b` becomes `unmatched-end-boundary`. |
-| Crossing pairs (`START a`, `END b`, `END a`) | `mismatched-boundary-uid` at `END b`; the `a` card still closes at `END a`, so its block contains the stray `END b` line. |
-| Duplicate UID pairs in one note | The parser emits no diagnostic; `dedupeParsedCards` in `electron/cardSyncService.ts` keeps the first card and reports the rest. |
-| Unpaired start | `unmatched-start-boundary` at the start marker's line. |
-| Unpaired end | `unmatched-end-boundary` at the end marker's line. |
+| Note content                                 | Result                                                                                                                                                                                                                                                    |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Valid start and end for the same UID         | One card, no diagnostic.                                                                                                                                                                                                                                  |
+| Nested start (`START a`, then `START b`)     | `nested-start-boundary` for `b`; `b`'s start is ignored. A later `END b` becomes `mismatched-boundary-uid` while `END a` closes the outer card, whose block swallows the inner markers; if `END a` comes first, `END b` becomes `unmatched-end-boundary`. |
+| Crossing pairs (`START a`, `END b`, `END a`) | `mismatched-boundary-uid` at `END b`; the `a` card still closes at `END a`, so its block contains the stray `END b` line.                                                                                                                                 |
+| Duplicate UID pairs in one note              | The parser emits no diagnostic; `dedupeParsedCards` in `electron/cardSyncService.ts` keeps the first card and reports the rest.                                                                                                                           |
+| Unpaired start                               | `unmatched-start-boundary` at the start marker's line.                                                                                                                                                                                                    |
+| Unpaired end                                 | `unmatched-end-boundary` at the end marker's line.                                                                                                                                                                                                        |
 
 Malformed markers do not stop the walk. A line whose trimmed text begins with `%%CW_CARD_START` but
 does not match `START_BOUNDARY_PATTERN` is reported, ignored, and does not open a boundary; the same
@@ -73,14 +73,14 @@ lowercase `%%cw_card_start uid:x%%` is silently ignored rather than reported.
 `CardParseDiagnosticCode` in `electron/vault-contract.ts` names the parser codes; the shape is
 `CardParseDiagnostic` (`code`, `line`, `message`, `severity`, optional `uid`).
 
-| Code | Cause | Line reported | `uid` |
-| --- | --- | --- | --- |
-| `invalid-start-boundary` | A line starts with `%%CW_CARD_START` but does not match the pattern. | The offending line. | absent |
-| `invalid-end-boundary` | A line starts with `%%CW_CARD_END` but does not match the pattern. | The offending line. | absent |
-| `nested-start-boundary` | A start marker arrives while a boundary is active. | The nested start line. | nested UID |
-| `mismatched-boundary-uid` | An end marker's UID differs from the active start UID. | The end marker line. | end UID |
-| `unmatched-end-boundary` | An end marker arrives with no active boundary. | The end marker line. | end UID |
-| `unmatched-start-boundary` | A boundary is still active at end of file. | The start marker line. | start UID |
+| Code                       | Cause                                                                | Line reported          | `uid`      |
+| -------------------------- | -------------------------------------------------------------------- | ---------------------- | ---------- |
+| `invalid-start-boundary`   | A line starts with `%%CW_CARD_START` but does not match the pattern. | The offending line.    | absent     |
+| `invalid-end-boundary`     | A line starts with `%%CW_CARD_END` but does not match the pattern.   | The offending line.    | absent     |
+| `nested-start-boundary`    | A start marker arrives while a boundary is active.                   | The nested start line. | nested UID |
+| `mismatched-boundary-uid`  | An end marker's UID differs from the active start UID.               | The end marker line.   | end UID    |
+| `unmatched-end-boundary`   | An end marker arrives with no active boundary.                       | The end marker line.   | end UID    |
+| `unmatched-start-boundary` | A boundary is still active at end of file.                           | The start marker line. | start UID  |
 
 The parser's `createDiagnostic` helper hardcodes `severity: 'error'`, so every diagnostic above blocks.
 `electron/cardSyncService.ts` adds one more report of its own through `createDiagnostic`, reusing the
@@ -125,7 +125,7 @@ inclusive line numbers; for example `electron/weaver/weaveContextService.ts` sli
   variation such as `%%CW_CARD_START  uid:x%%` parses yet is not removed or renamed.
 - **Code fences.** The parser has no fence awareness: a marker line inside a fenced code block is a
   boundary like any other, and diagnostics are emitted for fenced malformed markers too.
-- **Inline mentions.** A marker embedded mid-line is ignored silently. If the trimmed line *begins*
+- **Inline mentions.** A marker embedded mid-line is ignored silently. If the trimmed line _begins_
   with the marker text, the invalid-marker diagnostic fires instead, so `%%CW_CARD_START uid:x%% extra`
   is reported rather than accepted.
 - **Marker visibility.** The marker form is a markdown comment, and it is intended to stay one. No
@@ -140,14 +140,14 @@ Pure text transforms live in `electron/services/cardBoundaryService.ts`; the exp
 them read and write files. Every service that rewrites note text also calls `syncNoteToCardStore`, so
 the card JSON references follow the text.
 
-| Operation | Text transform | Service export | Reaches |
-| --- | --- | --- | --- |
-| Insert a pair into a note | none (the block is the payload) | `applyInsertBoundaryPair` in `electron/weaver/weaveApplyService.ts`, called from `applyWeaveOperations` | Note text, then card JSON through `syncNoteToCardStore`. |
-| Rewrite the text between a pair | none dedicated | no boundary-specific export: the Weaver's `edit-note-content` handler `applyEditNoteContent`, or a direct save through `writeNote` in `electron/vaultService.ts` | Note text; card JSON follows via the sync pass. The prose inside a pair is ordinary note text. |
-| Strip ranges | `removeCardBoundaryLines` | `removeCardBoundariesAcrossReferences` in `electron/services/cardReferenceMutationService.ts`, called from `deleteCard` in `electron/vaultService.ts` | Note text (marker lines only, never the wrapped prose), then card JSON. |
-| Rename a UID across references | `replaceCardBoundaryUids` | `renameCardBoundariesAcrossReferences` in the same service, called from `renameCard` in `electron/vaultService.ts` | Note text, then card JSON; `renameCard` also writes the new card file, deletes the old one, and updates crashpad references. |
-| Restore a removed pair | `restoreCardBoundaryLines` | `reinsertCardBoundariesForReferences` in `electron/services/cardRestoreMutationService.ts`, called from `restoreDeletedCard` in `electron/vaultService.ts` | Note text, then card JSON. |
-| Drop references only | none | `removeNoteReferencesFromCardStore` in `electron/cardSyncService.ts`, or `removeCardReference` in `electron/cardStoreService.ts` | Card JSON only. |
+| Operation                       | Text transform                  | Service export                                                                                                                                                   | Reaches                                                                                                                      |
+| ------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Insert a pair into a note       | none (the block is the payload) | `applyInsertBoundaryPair` in `electron/weaver/weaveApplyService.ts`, called from `applyWeaveOperations`                                                          | Note text, then card JSON through `syncNoteToCardStore`.                                                                     |
+| Rewrite the text between a pair | none dedicated                  | no boundary-specific export: the Weaver's `edit-note-content` handler `applyEditNoteContent`, or a direct save through `writeNote` in `electron/vaultService.ts` | Note text; card JSON follows via the sync pass. The prose inside a pair is ordinary note text.                               |
+| Strip ranges                    | `removeCardBoundaryLines`       | `removeCardBoundariesAcrossReferences` in `electron/services/cardReferenceMutationService.ts`, called from `deleteCard` in `electron/vaultService.ts`            | Note text (marker lines only, never the wrapped prose), then card JSON.                                                      |
+| Rename a UID across references  | `replaceCardBoundaryUids`       | `renameCardBoundariesAcrossReferences` in the same service, called from `renameCard` in `electron/vaultService.ts`                                               | Note text, then card JSON; `renameCard` also writes the new card file, deletes the old one, and updates crashpad references. |
+| Restore a removed pair          | `restoreCardBoundaryLines`      | `reinsertCardBoundariesForReferences` in `electron/services/cardRestoreMutationService.ts`, called from `restoreDeletedCard` in `electron/vaultService.ts`       | Note text, then card JSON.                                                                                                   |
+| Drop references only            | none                            | `removeNoteReferencesFromCardStore` in `electron/cardSyncService.ts`, or `removeCardReference` in `electron/cardStoreService.ts`                                 | Card JSON only.                                                                                                              |
 
 Details that follow from those implementations:
 

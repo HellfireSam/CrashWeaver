@@ -135,7 +135,9 @@ function toVaultFileUrl(
 
         const relativePath = strippedPath === label ? '' : strippedPath.slice(label.length + 1);
         return toLocalAssetUrl(
-          relativePath ? joinFilePath(imageDirectory, relativePath) : normalizeFileSystemPath(imageDirectory),
+          relativePath
+            ? joinFilePath(imageDirectory, relativePath)
+            : normalizeFileSystemPath(imageDirectory),
           suffix,
         );
       }
@@ -172,7 +174,11 @@ function sanitizeUrlValue(value: string) {
   return SAFE_URL_PROTOCOLS.has(protocol) ? trimmed : null;
 }
 
-function sanitizeAndRewriteRenderedHtml(rendered: string, vaultRoot?: string | null, imageDirectories: string[] = []) {
+function sanitizeAndRewriteRenderedHtml(
+  rendered: string,
+  vaultRoot?: string | null,
+  imageDirectories: string[] = [],
+) {
   const parser = new DOMParser();
   const document = parser.parseFromString(rendered, 'text/html');
 
@@ -195,7 +201,9 @@ function sanitizeAndRewriteRenderedHtml(rendered: string, vaultRoot?: string | n
 
     if (source !== null) {
       const rewritten =
-        vaultRoot != null ? toVaultFileUrl(source, vaultRoot, imageDirectories, 'src') ?? source : source;
+        vaultRoot != null
+          ? (toVaultFileUrl(source, vaultRoot, imageDirectories, 'src') ?? source)
+          : source;
       const safeValue = sanitizeUrlValue(rewritten);
 
       if (safeValue) {
@@ -208,7 +216,8 @@ function sanitizeAndRewriteRenderedHtml(rendered: string, vaultRoot?: string | n
     const href = element.getAttribute('href');
 
     if (href !== null) {
-      const rewritten = vaultRoot != null ? toVaultFileUrl(href, vaultRoot, [], 'href') ?? href : href;
+      const rewritten =
+        vaultRoot != null ? (toVaultFileUrl(href, vaultRoot, [], 'href') ?? href) : href;
       const safeValue = sanitizeUrlValue(rewritten);
 
       if (safeValue) {
@@ -222,7 +231,11 @@ function sanitizeAndRewriteRenderedHtml(rendered: string, vaultRoot?: string | n
   return document.body.innerHTML;
 }
 
-export function renderMarkdownPreview(content: string, vaultRoot?: string | null, imageDirectories: string[] = []): string {
+export function renderMarkdownPreview(
+  content: string,
+  vaultRoot?: string | null,
+  imageDirectories: string[] = [],
+): string {
   const rendered = markdown.render(content);
   return sanitizeAndRewriteRenderedHtml(rendered, vaultRoot, imageDirectories);
 }

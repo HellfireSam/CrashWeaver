@@ -23,9 +23,12 @@ export function AppSidebar({ onToggleFolder, onSelectFile }: AppSidebarProps) {
   const { vaultPath, vault, allCards, internalDirectories, crashpadSummaries } = useVaultState();
   const { isReading, selectedExplorerPath } = useEditorState();
   const {
-    activeSidebarTab, expandedFolders, showHiddenEntries,
+    activeSidebarTab,
+    expandedFolders,
+    showHiddenEntries,
     isSidebarVisible,
-    setActiveSidebarTab, setFocusedWindow,
+    setActiveSidebarTab,
+    setFocusedWindow,
   } = useUIState();
 
   const explorerItems = useMemo<ExplorerEntry[]>(() => {
@@ -43,7 +46,10 @@ export function AppSidebar({ onToggleFolder, onSelectFile }: AppSidebarProps) {
     for (const card of allCards) {
       const cardStorePath = vault?.cardStore?.cardStorePath;
       if (!cardStorePath || !vaultPath) continue;
-      const relativePath = normalizeRelativePath(vaultPath, `${cardStorePath.replace(/\\/g, '/')}/${card.uid}.json`);
+      const relativePath = normalizeRelativePath(
+        vaultPath,
+        `${cardStorePath.replace(/\\/g, '/')}/${card.uid}.json`,
+      );
       if (!isPathInsideVault(relativePath)) continue;
       cardEntries.push({ kind: 'file', path: relativePath, fileKind: 'card' });
     }
@@ -104,7 +110,10 @@ export function AppSidebar({ onToggleFolder, onSelectFile }: AppSidebarProps) {
             <p className="detailKey">Path</p>
             <p className="detailValue">{vaultPath ?? 'No vault selected.'}</p>
             <p className="detailKey">Card store</p>
-            <p className="detailValue">{vault?.cardStore?.cardStorePath ?? 'Uses the default card store path when a vault is opened.'}</p>
+            <p className="detailValue">
+              {vault?.cardStore?.cardStorePath ??
+                'Uses the default card store path when a vault is opened.'}
+            </p>
             <p className="detailKey">Markdown files</p>
             <p className="detailValue">{vault?.notes.length ?? 0}</p>
             <p className="detailKey">Crashpads</p>
@@ -112,7 +121,9 @@ export function AppSidebar({ onToggleFolder, onSelectFile }: AppSidebarProps) {
             <p className="detailKey">Indexed entries</p>
             <p className="detailValue">{vault?.index.entries.length ?? 0}</p>
             <p className="detailKey">Last rebuild</p>
-            <p className="detailValue">{formatCardRebuildSummary(vault?.lastCardRebuild) ?? 'Card sync has not run yet.'}</p>
+            <p className="detailValue">
+              {formatCardRebuildSummary(vault?.lastCardRebuild) ?? 'Card sync has not run yet.'}
+            </p>
           </div>
         </div>
       )}

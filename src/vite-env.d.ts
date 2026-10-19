@@ -40,15 +40,26 @@ declare global {
       listCards: (rootPath: string) => Promise<CardDocument[]>;
       createCard: (rootPath: string, uid: string) => Promise<CardDocument>;
       saveCard: (rootPath: string, card: CardDocument) => Promise<CardDocument>;
-      renameCard: (rootPath: string, previousUid: string, card: CardDocument) => Promise<CardRenameResult>;
-      deleteCard: (rootPath: string, uid: string, options: CardDeleteOptions) => Promise<CardDeleteResult>;
+      renameCard: (
+        rootPath: string,
+        previousUid: string,
+        card: CardDocument,
+      ) => Promise<CardRenameResult>;
+      deleteCard: (
+        rootPath: string,
+        uid: string,
+        options: CardDeleteOptions,
+      ) => Promise<CardDeleteResult>;
       restoreDeletedCard: (
         rootPath: string,
         snapshot: CrashpadDeletedCardSnapshot,
         options: CardRestoreOptions,
       ) => Promise<CardRestoreResult>;
       setCardStorePath: (rootPath: string, cardStorePath: string) => Promise<VaultDescriptor>;
-      setImageDirectories: (rootPath: string, imageDirectories: string[]) => Promise<VaultDescriptor>;
+      setImageDirectories: (
+        rootPath: string,
+        imageDirectories: string[],
+      ) => Promise<VaultDescriptor>;
       listCrashpads: (rootPath: string) => Promise<CrashpadSummary[]>;
       openCrashpad: (rootPath: string, crashpadId: string) => Promise<CrashpadDocument | null>;
       createCrashpad: (rootPath: string, name: string) => Promise<CrashpadDocument>;
@@ -81,7 +92,10 @@ declare global {
       /** Delete all Weaver session log files. Returns count of files deleted. */
       clearWeaverSessions: (rootPath?: string) => Promise<number>;
       /** Apply a list of Weaver plan operations to the vault. Returns per-operation results. */
-      applyWeavePlan: (rootPath: string, operations: WeavePlanOperation[]) => Promise<WeaveApplyResult>;
+      applyWeavePlan: (
+        rootPath: string,
+        operations: WeavePlanOperation[],
+      ) => Promise<WeaveApplyResult>;
       /** Subscribe to external vault file changes (chokidar). Returns an unsubscribe function. */
       onVaultExternalChange: (callback: (changedPaths: string[]) => void) => () => void;
     };

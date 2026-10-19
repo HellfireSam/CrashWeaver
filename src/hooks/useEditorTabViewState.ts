@@ -57,16 +57,27 @@ export function useEditorTabViewState({
   replaceOpenTabPath,
   renameCardDetailState,
 }: UseEditorTabViewStateOptions) {
-  const [markdownTabViewStates, setMarkdownTabViewStates] = useState<Record<string, MarkdownTabViewState>>({});
-  const [crashpadTabViewStates, setCrashpadTabViewStates] = useState<Record<string, CrashpadTabViewState>>({});
+  const [markdownTabViewStates, setMarkdownTabViewStates] = useState<
+    Record<string, MarkdownTabViewState>
+  >({});
+  const [crashpadTabViewStates, setCrashpadTabViewStates] = useState<
+    Record<string, CrashpadTabViewState>
+  >({});
   const [focusedCardUidByTab, setFocusedCardUidByTab] = useState<Record<string, string | null>>({});
 
   const updateMarkdownTabViewState = useCallback(
-    (filePath: string, nextState: Partial<MarkdownTabViewState> | ((currentState: MarkdownTabViewState) => MarkdownTabViewState)) => {
+    (
+      filePath: string,
+      nextState:
+        | Partial<MarkdownTabViewState>
+        | ((currentState: MarkdownTabViewState) => MarkdownTabViewState),
+    ) => {
       setMarkdownTabViewStates((previous) => {
         const currentState = previous[filePath] ?? DEFAULT_MARKDOWN_TAB_VIEW_STATE;
         const resolvedState =
-          typeof nextState === 'function' ? nextState(currentState) : { ...currentState, ...nextState };
+          typeof nextState === 'function'
+            ? nextState(currentState)
+            : { ...currentState, ...nextState };
 
         if (
           currentState.viewMode === resolvedState.viewMode &&
@@ -87,11 +98,18 @@ export function useEditorTabViewState({
   );
 
   const updateCrashpadTabViewState = useCallback(
-    (filePath: string, nextState: Partial<CrashpadTabViewState> | ((currentState: CrashpadTabViewState) => CrashpadTabViewState)) => {
+    (
+      filePath: string,
+      nextState:
+        | Partial<CrashpadTabViewState>
+        | ((currentState: CrashpadTabViewState) => CrashpadTabViewState),
+    ) => {
       setCrashpadTabViewStates((previous) => {
         const currentState = previous[filePath] ?? DEFAULT_CRASHPAD_TAB_VIEW_STATE;
         const resolvedState =
-          typeof nextState === 'function' ? nextState(currentState) : { ...currentState, ...nextState };
+          typeof nextState === 'function'
+            ? nextState(currentState)
+            : { ...currentState, ...nextState };
 
         if (
           currentState.activePanel === resolvedState.activePanel &&
@@ -157,7 +175,7 @@ export function useEditorTabViewState({
   const activeCrashpadViewState = useMemo(
     () =>
       isCrashpadEditor && currentTabPath
-        ? crashpadTabViewStates[currentTabPath] ?? DEFAULT_CRASHPAD_TAB_VIEW_STATE
+        ? (crashpadTabViewStates[currentTabPath] ?? DEFAULT_CRASHPAD_TAB_VIEW_STATE)
         : DEFAULT_CRASHPAD_TAB_VIEW_STATE,
     [crashpadTabViewStates, currentTabPath, isCrashpadEditor],
   );
@@ -165,7 +183,7 @@ export function useEditorTabViewState({
   const activeMarkdownViewState = useMemo(
     () =>
       isMarkdownEditor && currentTabPath
-        ? markdownTabViewStates[currentTabPath] ?? DEFAULT_MARKDOWN_TAB_VIEW_STATE
+        ? (markdownTabViewStates[currentTabPath] ?? DEFAULT_MARKDOWN_TAB_VIEW_STATE)
         : DEFAULT_MARKDOWN_TAB_VIEW_STATE,
     [currentTabPath, isMarkdownEditor, markdownTabViewStates],
   );

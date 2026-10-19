@@ -12,7 +12,7 @@ export interface WeaveTraceItem {
   thought?: string;
   action: string;
   observation: string;
-  toolResult?: unknown;  // Full result stored only when explicitly retained
+  toolResult?: unknown; // Full result stored only when explicitly retained
 }
 
 export interface WeaveTraceCompactItem {
@@ -21,12 +21,12 @@ export interface WeaveTraceCompactItem {
   observationLength?: number;
   observationSummary?: string;
   isLargeObservation?: boolean;
-  resultHash?: string;  // SHA256 hash of full result for audit trail
+  resultHash?: string; // SHA256 hash of full result for audit trail
   toolResult?: unknown;
 }
 
-const MAX_OBSERVATION_CHARS = 400;  // Truncate observations in compact mode
-const MAX_RESULT_CHARS = 2000;       // Hard cap on raw result storage
+const MAX_OBSERVATION_CHARS = 400; // Truncate observations in compact mode
+const MAX_RESULT_CHARS = 2000; // Hard cap on raw result storage
 
 /**
  * Generates a fast non-cryptographic hash of a string for trace deduplication
@@ -38,8 +38,8 @@ function quickHashString(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;  // Convert to 32-bit integer
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash).toString(36).slice(0, 12);
 }
@@ -48,13 +48,16 @@ function quickHashString(str: string): string {
  * Compacts a trace item by truncating observations and summarizing large results.
  * When debug/verbose mode is off, only essential metadata is retained.
  */
-export function compactTraceItem(item: WeaveTraceItem, includeRawResult = false): WeaveTraceCompactItem {
+export function compactTraceItem(
+  item: WeaveTraceItem,
+  includeRawResult = false,
+): WeaveTraceCompactItem {
   const observation = item.observation || '';
   const isLarge = observation.length > MAX_OBSERVATION_CHARS;
-  
-  const resultStr = item.toolResult 
-    ? typeof item.toolResult === 'string' 
-      ? item.toolResult 
+
+  const resultStr = item.toolResult
+    ? typeof item.toolResult === 'string'
+      ? item.toolResult
       : JSON.stringify(item.toolResult)
     : '';
 
@@ -62,9 +65,7 @@ export function compactTraceItem(item: WeaveTraceItem, includeRawResult = false)
     thought: item.thought,
     action: item.action,
     observationLength: observation.length,
-    observationSummary: isLarge 
-      ? observation.slice(0, MAX_OBSERVATION_CHARS) + '…'
-      : observation,
+    observationSummary: isLarge ? observation.slice(0, MAX_OBSERVATION_CHARS) + '…' : observation,
     isLargeObservation: isLarge,
     resultHash: resultStr ? quickHashString(resultStr) : undefined,
     ...(includeRawResult && item.toolResult && resultStr.length <= MAX_RESULT_CHARS
@@ -93,8 +94,7 @@ export class WeaveTraceAccumulator {
 
     // If this single item exceeds the budget, truncate its observation
     if (itemStr.length > this.maxCharCountPerItem) {
-      compacted.observationSummary = (compacted.observationSummary || '')
-        .slice(0, 100) + '…';
+      compacted.observationSummary = (compacted.observationSummary || '').slice(0, 100) + '…';
       if ('toolResult' in compacted) {
         delete compacted.toolResult;
       }
@@ -112,9 +112,8 @@ export class WeaveTraceAccumulator {
     return {
       itemCount: this.items.length,
       totalCharCount: this.totalCharCount,
-      avgCharCountPerItem: this.items.length > 0 
-        ? Math.round(this.totalCharCount / this.items.length)
-        : 0,
+      avgCharCountPerItem:
+        this.items.length > 0 ? Math.round(this.totalCharCount / this.items.length) : 0,
     };
   }
 }

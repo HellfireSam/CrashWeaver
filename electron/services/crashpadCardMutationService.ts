@@ -1,6 +1,10 @@
 import { listCrashpads, readCrashpad, writeCrashpad } from '../crashpadService';
 
-export async function renameCardUidAcrossCrashpads(rootPath: string, previousUid: string, nextUid: string) {
+export async function renameCardUidAcrossCrashpads(
+  rootPath: string,
+  previousUid: string,
+  nextUid: string,
+) {
   const crashpadSummaries = await listCrashpads(rootPath);
   let updatedCrashpads = 0;
 

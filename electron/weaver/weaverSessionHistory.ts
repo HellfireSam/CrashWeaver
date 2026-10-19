@@ -145,7 +145,8 @@ function buildSteps(events: JsonLineEvent[]): WeaverSessionStep[] {
         step.thought = typeof p.thought === 'string' ? p.thought : undefined;
         step.actionType = typeof p.actionType === 'string' ? p.actionType : undefined;
         step.toolCallCount = typeof p.toolCallCount === 'number' ? p.toolCallCount : undefined;
-        step.rawContentLength = typeof p.rawContentLength === 'number' ? p.rawContentLength : undefined;
+        step.rawContentLength =
+          typeof p.rawContentLength === 'number' ? p.rawContentLength : undefined;
         break;
       case 'node-execute-tool':
         step.toolName = typeof p.toolName === 'string' ? p.toolName : undefined;
@@ -159,7 +160,10 @@ function buildSteps(events: JsonLineEvent[]): WeaverSessionStep[] {
         step.repairAttempt = typeof p.repairAttempt === 'number' ? p.repairAttempt : undefined;
         break;
       case 'node-finalize':
-        step.thought = typeof p.planKind === 'string' ? `Finalized ${p.planKind} plan with ${p.operationCount ?? '?'} operations` : undefined;
+        step.thought =
+          typeof p.planKind === 'string'
+            ? `Finalized ${p.planKind} plan with ${p.operationCount ?? '?'} operations`
+            : undefined;
         break;
       case 'node-validate-success':
         step.plan = p;
@@ -172,7 +176,8 @@ function buildSteps(events: JsonLineEvent[]): WeaverSessionStep[] {
       case 'plan-final':
         step.plan = (p as Record<string, unknown>).plan ?? p;
         {
-          const planObj = (p as Record<string, unknown>).plan as Record<string, unknown> | undefined;
+          const planObj = (p as Record<string, unknown>).plan as
+            Record<string, unknown> | undefined;
           const ops = planObj?.operations;
           const count = Array.isArray(ops) ? ops.length : '?';
           const summary = typeof planObj?.summary === 'string' ? planObj.summary : '';

@@ -49,9 +49,7 @@ export function usePaneLayout({
       const splitterAllowance =
         (isSidebarVisible ? LAYOUT.SPLITTER_WIDTH : 0) +
         (isInspectorVisible ? LAYOUT.SPLITTER_WIDTH : 0);
-      const preferredEditorWidth = Math.round(
-        rect.width * LAYOUT.PREFERRED_EDITOR_WIDTH_RATIO,
-      );
+      const preferredEditorWidth = Math.round(rect.width * LAYOUT.PREFERRED_EDITOR_WIDTH_RATIO);
       const minimumEditorWidth = Math.max(
         300,
         Math.min(
@@ -71,18 +69,14 @@ export function usePaneLayout({
           return;
         }
 
-        const maxSidebarWidth =
-          availablePanelWidth - minimumEditorWidth - minimumInspectorWidth;
+        const maxSidebarWidth = availablePanelWidth - minimumEditorWidth - minimumInspectorWidth;
         const nextSidebarWidth = Math.min(
           clampedSidebarWidth,
           Math.max(minimumSidebarWidth, maxSidebarWidth),
         );
         const nextInspectorWidth = Math.max(
           minimumInspectorWidth,
-          Math.min(
-            inspectorWidth,
-            availablePanelWidth - nextSidebarWidth - minimumEditorWidth,
-          ),
+          Math.min(inspectorWidth, availablePanelWidth - nextSidebarWidth - minimumEditorWidth),
         );
 
         setSidebarWidth(Math.round(nextSidebarWidth));
@@ -104,18 +98,14 @@ export function usePaneLayout({
           return;
         }
 
-        const maxInspectorWidth =
-          availablePanelWidth - minimumEditorWidth - minimumSidebarWidth;
+        const maxInspectorWidth = availablePanelWidth - minimumEditorWidth - minimumSidebarWidth;
         const nextInspectorWidth = Math.min(
           clampedInspectorWidth,
           Math.max(minimumInspectorWidth, maxInspectorWidth),
         );
         const nextSidebarWidth = Math.max(
           minimumSidebarWidth,
-          Math.min(
-            sidebarWidth,
-            availablePanelWidth - nextInspectorWidth - minimumEditorWidth,
-          ),
+          Math.min(sidebarWidth, availablePanelWidth - nextInspectorWidth - minimumEditorWidth),
         );
 
         setInspectorWidth(Math.round(nextInspectorWidth));
@@ -202,10 +192,7 @@ export function usePaneLayout({
       }
 
       if (remainingOverflow > 0 && isSidebarVisible) {
-        const reducibleSidebarWidth = Math.max(
-          0,
-          nextSidebarWidth - LAYOUT.MIN_SIDEBAR_WIDTH,
-        );
+        const reducibleSidebarWidth = Math.max(0, nextSidebarWidth - LAYOUT.MIN_SIDEBAR_WIDTH);
         const sidebarReduction = Math.min(reducibleSidebarWidth, remainingOverflow);
         nextSidebarWidth -= sidebarReduction;
       }
@@ -237,10 +224,7 @@ export function usePaneLayout({
     visibleCardsLength,
   ]);
 
-  function handleResizeStart(
-    event: React.MouseEvent<HTMLDivElement>,
-    direction: 'left' | 'right',
-  ) {
+  function handleResizeStart(event: React.MouseEvent<HTMLDivElement>, direction: 'left' | 'right') {
     event.preventDefault();
     window.getSelection()?.removeAllRanges();
     setActiveResizer(direction);

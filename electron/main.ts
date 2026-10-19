@@ -169,7 +169,11 @@ async function watchVault(rootPath: string) {
   const resolvedRoot = path.resolve(rootPath);
   const cardStore = await getVaultCardStore(resolvedRoot);
 
-  if (vaultWatcher && watchedVaultRoot === resolvedRoot && watchedCardStorePath === cardStore.cardStorePath) {
+  if (
+    vaultWatcher &&
+    watchedVaultRoot === resolvedRoot &&
+    watchedCardStorePath === cardStore.cardStorePath
+  ) {
     return;
   }
 
@@ -179,22 +183,28 @@ async function watchVault(rootPath: string) {
 
   vaultWatcher = chokidar.watch(resolvedRoot, {
     ignored: [
-      /(^|[\\/])\./,                     // dotfiles / dot-directories
-      '**/.crashweaver/**',              // internal CrashWeaver metadata
+      /(^|[\\/])\./, // dotfiles / dot-directories
+      '**/.crashweaver/**', // internal CrashWeaver metadata
       new RegExp(`^${escapeRegExp(cardStore.cardStorePath)}`), // card store JSON files
     ],
     ignoreInitial: true,
     awaitWriteFinish: {
-      stabilityThreshold: 300,           // 300ms after last write before emitting
+      stabilityThreshold: 300, // 300ms after last write before emitting
       pollInterval: 100,
     },
     persistent: true,
-    depth: 99,                           // effectively unlimited for practical vaults
+    depth: 99, // effectively unlimited for practical vaults
   });
 
-  vaultWatcher.on('add',    (filePath: string) => { void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath); });
-  vaultWatcher.on('change', (filePath: string) => { void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath); });
-  vaultWatcher.on('unlink', (filePath: string) => { void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath); });
+  vaultWatcher.on('add', (filePath: string) => {
+    void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath);
+  });
+  vaultWatcher.on('change', (filePath: string) => {
+    void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath);
+  });
+  vaultWatcher.on('unlink', (filePath: string) => {
+    void handleWatcherEvent(filePath, resolvedRoot, cardStore.cardStorePath);
+  });
 
   vaultWatcher.on('error', (error: unknown) => {
     console.error('CrashWeaver watcher error', error);
@@ -283,11 +293,14 @@ ipcMain.handle('vault:read-note', async (_event, rootPath: string, filePath: str
   readNote(rootPath, filePath),
 );
 
-ipcMain.handle('vault:write-note', async (_event, rootPath: string, input: { filePath: string; content: string }) => {
-  const result = await writeNote(rootPath, input);
-  await enqueueWatchVault(rootPath);
-  return result;
-});
+ipcMain.handle(
+  'vault:write-note',
+  async (_event, rootPath: string, input: { filePath: string; content: string }) => {
+    const result = await writeNote(rootPath, input);
+    await enqueueWatchVault(rootPath);
+    return result;
+  },
+);
 
 ipcMain.handle('vault:update-index', async (_event, rootPath: string) => {
   const vault = await updateIndex(rootPath);
@@ -295,7 +308,9 @@ ipcMain.handle('vault:update-index', async (_event, rootPath: string) => {
   return vault;
 });
 
-ipcMain.handle('vault:list-internal-directories', async (_event, rootPath: string) => listInternalDirectories(rootPath));
+ipcMain.handle('vault:list-internal-directories', async (_event, rootPath: string) =>
+  listInternalDirectories(rootPath),
+);
 
 ipcMain.handle('card-store:select-folder', async (_event, rootPath: string) => {
   const config = await getVaultCardStore(rootPath);
@@ -327,26 +342,40 @@ ipcMain.handle('vault:select-image-directories', async (_event, rootPath: string
   return result.filePaths;
 });
 
-ipcMain.handle('card-store:get-config', async (_event, rootPath: string) => getVaultCardStore(rootPath));
+ipcMain.handle('card-store:get-config', async (_event, rootPath: string) =>
+  getVaultCardStore(rootPath),
+);
 
 ipcMain.handle('card-store:list-cards', async (_event, rootPath: string) => listCards(rootPath));
 
-ipcMain.handle('card-store:create-card', async (_event, rootPath: string, uid: string) => createCard(rootPath, uid));
-
-ipcMain.handle('card-store:save-card', async (_event, rootPath: string, card: CardDocument) => saveCard(rootPath, card));
-
-ipcMain.handle('card-store:rename-card', async (_event, rootPath: string, previousUid: string, card: CardDocument) =>
-  renameCard(rootPath, previousUid, card),
+ipcMain.handle('card-store:create-card', async (_event, rootPath: string, uid: string) =>
+  createCard(rootPath, uid),
 );
 
-ipcMain.handle('card-store:delete-card', async (_event, rootPath: string, uid: string, options: CardDeleteOptions) =>
-  deleteCard(rootPath, uid, options),
+ipcMain.handle('card-store:save-card', async (_event, rootPath: string, card: CardDocument) =>
+  saveCard(rootPath, card),
+);
+
+ipcMain.handle(
+  'card-store:rename-card',
+  async (_event, rootPath: string, previousUid: string, card: CardDocument) =>
+    renameCard(rootPath, previousUid, card),
+);
+
+ipcMain.handle(
+  'card-store:delete-card',
+  async (_event, rootPath: string, uid: string, options: CardDeleteOptions) =>
+    deleteCard(rootPath, uid, options),
 );
 
 ipcMain.handle(
   'card-store:restore-card',
-  async (_event, rootPath: string, snapshot: CrashpadDeletedCardSnapshot, options: CardRestoreOptions) =>
-    restoreDeletedCard(rootPath, snapshot, options),
+  async (
+    _event,
+    rootPath: string,
+    snapshot: CrashpadDeletedCardSnapshot,
+    options: CardRestoreOptions,
+  ) => restoreDeletedCard(rootPath, snapshot, options),
 );
 
 ipcMain.handle('card-store:set-path', async (_event, rootPath: string, cardStorePath: string) => {
@@ -355,17 +384,24 @@ ipcMain.handle('card-store:set-path', async (_event, rootPath: string, cardStore
   return vault;
 });
 
-ipcMain.handle('vault:set-image-directories', async (_event, rootPath: string, imageDirectories: string[]) => {
-  const vault = await updateVaultImageDirectories(rootPath, imageDirectories);
-  await enqueueWatchVault(rootPath);
-  return vault;
-});
+ipcMain.handle(
+  'vault:set-image-directories',
+  async (_event, rootPath: string, imageDirectories: string[]) => {
+    const vault = await updateVaultImageDirectories(rootPath, imageDirectories);
+    await enqueueWatchVault(rootPath);
+    return vault;
+  },
+);
 
 ipcMain.handle('crashpad:list', async (_event, rootPath: string) => listVaultCrashpads(rootPath));
 
-ipcMain.handle('crashpad:open', async (_event, rootPath: string, crashpadId: string) => openCrashpad(rootPath, crashpadId));
+ipcMain.handle('crashpad:open', async (_event, rootPath: string, crashpadId: string) =>
+  openCrashpad(rootPath, crashpadId),
+);
 
-ipcMain.handle('crashpad:create', async (_event, rootPath: string, name: string) => createVaultCrashpad(rootPath, name));
+ipcMain.handle('crashpad:create', async (_event, rootPath: string, name: string) =>
+  createVaultCrashpad(rootPath, name),
+);
 
 ipcMain.handle('crashpad:save', async (_event, rootPath: string, crashpad: CrashpadDocument) =>
   saveCrashpad(rootPath, crashpad),
@@ -382,17 +418,20 @@ ipcMain.handle('weave:health-check', async () => checkWeaveProvider());
 ipcMain.handle('weave:list-models', async () => listWeaveModels());
 ipcMain.handle('weave:is-stub-provider', async () => isStubProviderActive());
 
-ipcMain.handle('weave:apply-plan', async (_event, rootPath: string, operations: WeavePlanOperation[]) => {
-  const config = await getVaultCardStore(rootPath);
-  const cardStorePath = config.cardStorePath;
-  const result = await applyWeaveOperations(rootPath, cardStorePath, operations, {
-    dryRun: false,
-    stopOnError: true,
-  });
-  // Trigger vault re-index so the file tree and card references refresh
-  await enqueueWatchVault(rootPath);
-  return result;
-});
+ipcMain.handle(
+  'weave:apply-plan',
+  async (_event, rootPath: string, operations: WeavePlanOperation[]) => {
+    const config = await getVaultCardStore(rootPath);
+    const cardStorePath = config.cardStorePath;
+    const result = await applyWeaveOperations(rootPath, cardStorePath, operations, {
+      dryRun: false,
+      stopOnError: true,
+    });
+    // Trigger vault re-index so the file tree and card references refresh
+    await enqueueWatchVault(rootPath);
+    return result;
+  },
+);
 
 ipcMain.handle('weave:get-settings', async () => getWeaverSettings());
 
@@ -404,7 +443,9 @@ ipcMain.handle('weave:set-preferred-model', async (_event, preferredModel: strin
   setWeaverPreferredModel(preferredModel),
 );
 
-ipcMain.handle('weave:get-request-logs-directory', async () => getConfiguredWeaverRequestLogsDirectory());
+ipcMain.handle('weave:get-request-logs-directory', async () =>
+  getConfiguredWeaverRequestLogsDirectory(),
+);
 
 ipcMain.handle('weave:set-request-logs-directory', async (_event, directoryPath: string | null) =>
   setConfiguredWeaverRequestLogsDirectory(directoryPath),
@@ -416,18 +457,26 @@ ipcMain.handle('weave:clear-api-key', async () => clearWeaveApiKey());
 
 ipcMain.handle('weave:list-sessions', async (_event, rootPath?: string) => listSessions(rootPath));
 
-ipcMain.handle('weave:get-session', async (_event, sessionId: string, rootPath?: string) => getSession(sessionId, rootPath));
+ipcMain.handle('weave:get-session', async (_event, sessionId: string, rootPath?: string) =>
+  getSession(sessionId, rootPath),
+);
 
-ipcMain.handle('weave:delete-session', async (_event, sessionId: string, rootPath?: string) => deleteSession(sessionId, rootPath));
+ipcMain.handle('weave:delete-session', async (_event, sessionId: string, rootPath?: string) =>
+  deleteSession(sessionId, rootPath),
+);
 
-ipcMain.handle('weave:clear-sessions', async (_event, rootPath?: string) => clearSessions(rootPath));
+ipcMain.handle('weave:clear-sessions', async (_event, rootPath?: string) =>
+  clearSessions(rootPath),
+);
 
 ipcMain.handle('crashpad:get-delete-preferences', async (_event, rootPath: string) =>
   getVaultCrashpadDeletePreferences(rootPath),
 );
 
-ipcMain.handle('crashpad:set-delete-preferences', async (_event, rootPath: string, preferences: CrashpadDeletePreferences) =>
-  updateVaultCrashpadDeletePreferences(rootPath, preferences),
+ipcMain.handle(
+  'crashpad:set-delete-preferences',
+  async (_event, rootPath: string, preferences: CrashpadDeletePreferences) =>
+    updateVaultCrashpadDeletePreferences(rootPath, preferences),
 );
 
 void app.whenReady().then(() => {

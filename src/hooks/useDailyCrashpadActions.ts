@@ -13,8 +13,13 @@ function getTodayDateStamp() {
 type UseDailyCrashpadActionsOptions = {
   vaultPath: string | null;
   canSwitchEditors: (nextPath: string) => boolean;
-  refreshInternalDirectories: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
-  refreshCrashpadCatalog: (rootPath: string, preferredCrashpadId?: string | null) => Promise<CrashpadDocument | null>;
+  refreshInternalDirectories: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
+  refreshCrashpadCatalog: (
+    rootPath: string,
+    preferredCrashpadId?: string | null,
+  ) => Promise<CrashpadDocument | null>;
   openCrashpadInEditor: (rootPath: string, crashpadId: string) => Promise<CrashpadDocument>;
   setIsReading: (reading: boolean) => void;
   setActiveWidgetTool: (tool: 'explorer' | 'daily-crashpad' | 'extensions') => void;

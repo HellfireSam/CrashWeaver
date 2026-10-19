@@ -7,9 +7,13 @@ export function useCardDetailState(
   focusedCardUid: string | null,
   setFocusedWindow: React.Dispatch<React.SetStateAction<FocusWindow>>,
 ) {
-  const [activeCardDetailTabs, setActiveCardDetailTabs] = useState<Record<string, CardDetailTab>>({});
+  const [activeCardDetailTabs, setActiveCardDetailTabs] = useState<Record<string, CardDetailTab>>(
+    {},
+  );
   const [focusedCardElements, setFocusedCardElements] = useState<Record<string, string>>({});
-  const [revealedQaAnswersByKey, setRevealedQaAnswersByKey] = useState<Record<string, Record<string, boolean>>>({});
+  const [revealedQaAnswersByKey, setRevealedQaAnswersByKey] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
   const [cardDetailScrollTops, setCardDetailScrollTops] = useState<Record<string, number>>({});
   const cardDetailPanelRef = useRef<HTMLElement>(null);
   const previousStateRef = useRef<{ storageKey: string | null; focusedCardUid: string | null }>({
@@ -17,9 +21,13 @@ export function useCardDetailState(
     focusedCardUid: null,
   });
 
-  const activeCardDetailTab = storageKey ? activeCardDetailTabs[storageKey] ?? 'content' : 'content';
-  const focusedCardElement = storageKey ? focusedCardElements[storageKey] ?? 'card.general' : 'card.general';
-  const revealedQaAnswers = storageKey ? revealedQaAnswersByKey[storageKey] ?? {} : {};
+  const activeCardDetailTab = storageKey
+    ? (activeCardDetailTabs[storageKey] ?? 'content')
+    : 'content';
+  const focusedCardElement = storageKey
+    ? (focusedCardElements[storageKey] ?? 'card.general')
+    : 'card.general';
+  const revealedQaAnswers = storageKey ? (revealedQaAnswersByKey[storageKey] ?? {}) : {};
 
   useEffect(() => {
     if (!storageKey) {
@@ -28,7 +36,10 @@ export function useCardDetailState(
 
     const scrollTop = cardDetailScrollTops[storageKey] ?? 0;
     const frame = window.requestAnimationFrame(() => {
-      if (cardDetailPanelRef.current && Math.abs(cardDetailPanelRef.current.scrollTop - scrollTop) > 1) {
+      if (
+        cardDetailPanelRef.current &&
+        Math.abs(cardDetailPanelRef.current.scrollTop - scrollTop) > 1
+      ) {
         cardDetailPanelRef.current.scrollTop = scrollTop;
       }
     });
@@ -40,7 +51,8 @@ export function useCardDetailState(
 
   useEffect(() => {
     const previousState = previousStateRef.current;
-    const didFocusedCardChangeWithinTab = previousState.storageKey === storageKey && previousState.focusedCardUid !== focusedCardUid;
+    const didFocusedCardChangeWithinTab =
+      previousState.storageKey === storageKey && previousState.focusedCardUid !== focusedCardUid;
     previousStateRef.current = { storageKey, focusedCardUid };
 
     if (!storageKey || !didFocusedCardChangeWithinTab) {

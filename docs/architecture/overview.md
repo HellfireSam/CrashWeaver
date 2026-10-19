@@ -14,7 +14,7 @@ depth and are linked from each section below.
 
 The vault is the folder the user opens as their knowledge base. Inside it, a note is a markdown
 file that carries prose plus UID boundaries — paired start/end markers naming the UID whose text
-the span belongs to. A note therefore records *where* a card appears, never the card's full
+the span belongs to. A note therefore records _where_ a card appears, never the card's full
 payload.
 
 The card is the core unit: a piece of knowledge to remember, its categorisation, its memory
@@ -23,15 +23,15 @@ the only thing linking a note's boundaries to a card's payload. A reference is a
 to a specific line span in a specific note; a card holds many, and a card whose references have
 all gone is an orphaned card.
 
-| Concept | Where it lives in code | What it is |
-| --- | --- | --- |
-| Crash Card | `electron/vault-contract.ts`'s `CardDocument` | The unit: `uid`, `type`, `raw_content`, `metadata`, `memory_tricks`, `referenced_in` |
-| Note | `electron/vaultService.ts`'s `readNoteDocument`, `electron/cardParser.ts` | A markdown file plus parsed cards and diagnostics |
-| UID boundary | `electron/cardParser.ts`'s `formatCardStartBoundary` / `formatCardEndBoundary` | The `%%CW_CARD_START uid:<UID>%%` / `%%CW_CARD_END uid:<UID>%%` pair |
-| Card store | `electron/cardStoreService.ts`, `electron/settingsService.ts`'s `getDefaultCardStorePath` | One JSON file per card, `<uid>.json`, default `.crashweaver/cards` inside the vault |
-| Reference | `CardDocument.referenced_in`, `electron/cardStoreService.ts`'s `upsertCardReference` | `note_path` + `start_line` + `end_line` |
-| Diagnostic | `electron/vault-contract.ts`'s `CardParseDiagnostic` | A parser report of a malformed boundary |
-| Crashpad | `electron/crashpadService.ts`, `src/components/CrashpadWorkspace.tsx` | The authoring surface where cards are composed and arranged before being woven into notes |
+| Concept      | Where it lives in code                                                                    | What it is                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Crash Card   | `electron/vault-contract.ts`'s `CardDocument`                                             | The unit: `uid`, `type`, `raw_content`, `metadata`, `memory_tricks`, `referenced_in`      |
+| Note         | `electron/vaultService.ts`'s `readNoteDocument`, `electron/cardParser.ts`                 | A markdown file plus parsed cards and diagnostics                                         |
+| UID boundary | `electron/cardParser.ts`'s `formatCardStartBoundary` / `formatCardEndBoundary`            | The `%%CW_CARD_START uid:<UID>%%` / `%%CW_CARD_END uid:<UID>%%` pair                      |
+| Card store   | `electron/cardStoreService.ts`, `electron/settingsService.ts`'s `getDefaultCardStorePath` | One JSON file per card, `<uid>.json`, default `.crashweaver/cards` inside the vault       |
+| Reference    | `CardDocument.referenced_in`, `electron/cardStoreService.ts`'s `upsertCardReference`      | `note_path` + `start_line` + `end_line`                                                   |
+| Diagnostic   | `electron/vault-contract.ts`'s `CardParseDiagnostic`                                      | A parser report of a malformed boundary                                                   |
+| Crashpad     | `electron/crashpadService.ts`, `src/components/CrashpadWorkspace.tsx`                     | The authoring surface where cards are composed and arranged before being woven into notes |
 
 Categorisation is a card's `type` list; mnemonic aids are `memory_tricks` — one memory technique
 phrase plus question/answer pairs. Familiarity and next review are the scheduling state carried
@@ -86,13 +86,13 @@ CrashWeaver keeps content and structure apart. The table names where each surfac
 main writers; notes and the card store each have more than one, and every write is bounded by the
 vault-root guard.
 
-| Surface | File path | Main writers | Holds |
-| --- | --- | --- | --- |
-| Note | `<vault>/**.md` | `electron/vaultService.ts`'s `writeNote`; the boundary-mutation services (`renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences`, `reinsertCardBoundariesForReferences`); `electron/weaver/weaveApplyService.ts` | Prose plus UID boundaries; parsed cards and diagnostics |
-| Card store | `<cardStorePath>/<uid>.json`, default `<vault>/.crashweaver/cards` | `electron/cardStoreService.ts`; `electron/weaver/weaveApplyService.ts`'s `applyCreateNote` | The card's full payload: `type`, `raw_content`, `metadata`, `memory_tricks`, `referenced_in` |
-| Crashpad | `<vault>/.crashweaver/crashpads/<id>.crashpad.json` | `electron/crashpadService.ts` | The authoring surface: card entries with `origin` `existing` or `new`, plus deleted-card snapshots |
-| Vault index | `<vault>/.crashweaver/index.json` | `electron/services/vaultIndexService.ts` via `electron/vaultService.ts`'s `writeIndex` | The note catalog with title, tags and review metadata |
-| Settings | `crashweaver-settings.json` under Electron's `userData` | `electron/settingsService.ts` | Per-vault card-store path, image directories, crashpad delete preferences, Weaver settings and the API key — encrypted with Electron's `safeStorage`, or stored with a `plain:` prefix when Electron reports encryption unavailable |
+| Surface     | File path                                                          | Main writers                                                                                                                                                                                                                             | Holds                                                                                                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Note        | `<vault>/**.md`                                                    | `electron/vaultService.ts`'s `writeNote`; the boundary-mutation services (`renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences`, `reinsertCardBoundariesForReferences`); `electron/weaver/weaveApplyService.ts` | Prose plus UID boundaries; parsed cards and diagnostics                                                                                                                                                                             |
+| Card store  | `<cardStorePath>/<uid>.json`, default `<vault>/.crashweaver/cards` | `electron/cardStoreService.ts`; `electron/weaver/weaveApplyService.ts`'s `applyCreateNote`                                                                                                                                               | The card's full payload: `type`, `raw_content`, `metadata`, `memory_tricks`, `referenced_in`                                                                                                                                        |
+| Crashpad    | `<vault>/.crashweaver/crashpads/<id>.crashpad.json`                | `electron/crashpadService.ts`                                                                                                                                                                                                            | The authoring surface: card entries with `origin` `existing` or `new`, plus deleted-card snapshots                                                                                                                                  |
+| Vault index | `<vault>/.crashweaver/index.json`                                  | `electron/services/vaultIndexService.ts` via `electron/vaultService.ts`'s `writeIndex`                                                                                                                                                   | The note catalog with title, tags and review metadata                                                                                                                                                                               |
+| Settings    | `crashweaver-settings.json` under Electron's `userData`            | `electron/settingsService.ts`                                                                                                                                                                                                            | Per-vault card-store path, image directories, crashpad delete preferences, Weaver settings and the API key — encrypted with Electron's `safeStorage`, or stored with a `plain:` prefix when Electron reports encryption unavailable |
 
 A note's boundary markers are the only structural markup the app writes into the user's prose.
 `electron/cardParser.ts`'s `parseCrashCardsFromNote` scans line by line and returns
@@ -187,14 +187,14 @@ schema validation, the diff UI and per-kind apply semantics in full.
 
 ## Where the code lives
 
-| Path | Contents |
-| --- | --- |
-| `electron/` | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the shared contract (`vault-contract.ts`), and the vault services: cards, notes, boundaries, crashpads, settings, index |
-| `electron/weaver/` | The Weaver: service facade, context retrieval, ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging and session history |
-| `src/` | The renderer: `App.tsx`, `components/`, `hooks/`, `state/` contexts, and `lib/` helpers |
-| `tests/electron/` | `node:test` suites for the main-process services and the Weaver, loaded from the compiled `dist-electron/` output |
-| `dist/` | Vite's renderer build output, loaded by the window in production (git-ignored) |
-| `dist-electron/` | `tsc`'s CommonJS build of `electron/`, referenced by `package.json`'s `main` (git-ignored) |
+| Path                                                          | Contents                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `electron/`                                                   | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the shared contract (`vault-contract.ts`), and the vault services: cards, notes, boundaries, crashpads, settings, index                                                                                                       |
+| `electron/weaver/`                                            | The Weaver: service facade, context retrieval, ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging and session history                                                                                                                                       |
+| `src/`                                                        | The renderer: `App.tsx`, `components/`, `hooks/`, `state/` contexts, and `lib/` helpers                                                                                                                                                                                                          |
+| `tests/electron/`                                             | `node:test` suites for the main-process services and the Weaver, loaded from the compiled `dist-electron/` output                                                                                                                                                                                |
+| `dist/`                                                       | Vite's renderer build output, loaded by the window in production (git-ignored)                                                                                                                                                                                                                   |
+| `dist-electron/`                                              | `tsc`'s CommonJS build of `electron/`, referenced by `package.json`'s `main` (git-ignored)                                                                                                                                                                                                       |
 | `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | Checked-in sample material for exercising the app manually: `mock-vault/` is the original sample vault, `mock-vault_sample/` is a copy to open and test against so the original stays untouched, and `template-mock-gallery/` is a template gallery. None of them is referenced by code or tests |
 
 The two halves meet at one file: `electron/vault-contract.ts` declares the request, document and

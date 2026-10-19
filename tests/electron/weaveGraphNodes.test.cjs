@@ -126,11 +126,7 @@ test('callModel routes to repair-semantic for bare plan without action envelope'
 });
 
 test('callModel routes to repair-semantic for syntactically-valid but wrong envelope', async () => {
-  const node = makeCallModelNode(
-    makeHttpClientWithContent(
-      JSON.stringify({ foo: 'bar' }),
-    ),
-  );
+  const node = makeCallModelNode(makeHttpClientWithContent(JSON.stringify({ foo: 'bar' })));
 
   const updates = await node(makeBaseState());
 
@@ -223,9 +219,7 @@ test('callModel extracts JSON from prose-embedded content', async () => {
 
 test('callModel routes to repair-syntactic for content with braces but invalid JSON', async () => {
   const node = makeCallModelNode(
-    makeHttpClientWithContent(
-      'Almost JSON but not quite: {"type": final, plan: {}}',
-    ),
+    makeHttpClientWithContent('Almost JSON but not quite: {"type": final, plan: {}}'),
   );
 
   const updates = await node(makeBaseState());
@@ -234,9 +228,7 @@ test('callModel routes to repair-syntactic for content with braces but invalid J
 });
 
 test('callModel fails for content without any braces at all', async () => {
-  const node = makeCallModelNode(
-    makeHttpClientWithContent('No JSON here, just prose.'),
-  );
+  const node = makeCallModelNode(makeHttpClientWithContent('No JSON here, just prose.'));
 
   const updates = await node(makeBaseState());
 
@@ -280,7 +272,9 @@ test('finalizeNode wraps pendingPlanData into a WeavePlanResult shell', () => {
     kind: 'guided-insert',
     permissions: { editContent: false, createNote: false },
     summary: 'A test plan.',
-    operations: [{ kind: 'insert-boundary-pair', targetPath: 'notes/x.md', payload: {}, rationale: 'Test' }],
+    operations: [
+      { kind: 'insert-boundary-pair', targetPath: 'notes/x.md', payload: {}, rationale: 'Test' },
+    ],
     warnings: [],
     referencedCards: ['CW-001'],
   };
@@ -386,7 +380,7 @@ test('validateNode routes to repair-schema on invalid plan', () => {
         kind: 'guided-insert',
         permissions: { editContent: false, createNote: false },
         summary: 'Invalid — no operations.',
-        operations: [],  // empty → schema validation fails
+        operations: [], // empty → schema validation fails
         warnings: [],
         referencedCards: ['CW-001'],
       },
@@ -444,7 +438,7 @@ test('validateNode fails when repair budget exhausted', () => {
       activeCrashpadId: 'cp-1',
       activeCrashpadPath: '.crashweaver/cp-1.crashpad.json',
     },
-    repairAttemptCount: 2,  // already at max for aggressive
+    repairAttemptCount: 2, // already at max for aggressive
     modelProfile: { repairStrategy: 'aggressive', timeoutMs: 60_000 },
     startTimeMs: startTime,
     pendingThought: null,
@@ -490,7 +484,9 @@ test('failNode preserves explicit error category and message', async () => {
 
 test('callModel invokes onProgress with parsedAs=tool when tool action returned', async () => {
   let lastEvent = null;
-  const onProgress = (event) => { lastEvent = event; };
+  const onProgress = (event) => {
+    lastEvent = event;
+  };
 
   const node = makeCallModelNode(
     makeHttpClientWithContent(
@@ -514,7 +510,9 @@ test('callModel invokes onProgress with parsedAs=tool when tool action returned'
 
 test('callModel invokes onProgress with parsedAs=final when final action returned', async () => {
   let lastEvent = null;
-  const onProgress = (event) => { lastEvent = event; };
+  const onProgress = (event) => {
+    lastEvent = event;
+  };
 
   const node = makeCallModelNode(
     makeHttpClientWithContent(
@@ -536,7 +534,9 @@ test('callModel invokes onProgress with parsedAs=final when final action returne
 
 test('executeTool invokes onProgress with start and end events', async () => {
   const events = [];
-  const onProgress = (event) => { events.push(event); };
+  const onProgress = (event) => {
+    events.push(event);
+  };
 
   const executeTool = makeExecuteToolNode(
     {
@@ -565,7 +565,9 @@ test('executeTool invokes onProgress with start and end events', async () => {
 
 test('repair node invokes onProgress with repair type', () => {
   let lastEvent = null;
-  const onProgress = (event) => { lastEvent = event; };
+  const onProgress = (event) => {
+    lastEvent = event;
+  };
 
   const repair = makeRepairNode(undefined, onProgress);
 
@@ -582,7 +584,9 @@ test('repair node invokes onProgress with repair type', () => {
 
 test('finalize node invokes onProgress with finalize-start', () => {
   let lastEvent = null;
-  const onProgress = (event) => { lastEvent = event; };
+  const onProgress = (event) => {
+    lastEvent = event;
+  };
 
   const finalize = makeFinalizeNode(undefined, onProgress);
   const startTime = Date.now() - 1000;
@@ -600,7 +604,9 @@ test('finalize node invokes onProgress with finalize-start', () => {
 
 test('fail node invokes onProgress with graph-fail', async () => {
   let lastEvent = null;
-  const onProgress = (event) => { lastEvent = event; };
+  const onProgress = (event) => {
+    lastEvent = event;
+  };
 
   const fail = makeFailNode(undefined, onProgress);
 

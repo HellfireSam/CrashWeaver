@@ -294,12 +294,14 @@ Finalize when you have enough context to justify your proposed operations.
 Do not call tools just to be thorough — finalize as soon as the plan is clear.`.trim();
   }
 
-  const noteReadLine = typeof maxNoteReads === 'number'
-    ? `Note-read budget: at most ${maxNoteReads} note read${maxNoteReads === 1 ? '' : 's'} via read_note_excerpt/read_note_full/read_note_span.`
-    : '';
-  const charsLine = typeof maxRetrievedChars === 'number'
-    ? `Total retrieval character budget: up to ${maxRetrievedChars} chars across all note reads.`
-    : '';
+  const noteReadLine =
+    typeof maxNoteReads === 'number'
+      ? `Note-read budget: at most ${maxNoteReads} note read${maxNoteReads === 1 ? '' : 's'} via read_note_excerpt/read_note_full/read_note_span.`
+      : '';
+  const charsLine =
+    typeof maxRetrievedChars === 'number'
+      ? `Total retrieval character budget: up to ${maxRetrievedChars} chars across all note reads.`
+      : '';
 
   return `# READ-ONLY RETRIEVAL TOOL LOOP
 You may use a bounded read-only retrieval loop before returning the final plan.
@@ -406,9 +408,7 @@ export function buildSystemPrompt(
   unrestricted?: boolean,
 ): string {
   const operationSchema =
-    requestKind === 'guided-insert'
-      ? GUIDED_INSERT_OPERATION_SCHEMA_LAYER
-      : OPERATION_SCHEMA_LAYER;
+    requestKind === 'guided-insert' ? GUIDED_INSERT_OPERATION_SCHEMA_LAYER : OPERATION_SCHEMA_LAYER;
 
   const layers: string[] = [
     TASK_CONTRACT_LAYER,
@@ -463,7 +463,9 @@ export function buildRequestSpecification(
   lines.push(`Focused card UID: ${request.cardUid}`);
   // When budget restrictions are disabled, don't confuse the LLM with artificial limits
   if (!settings?.disableBudgetRestrictions) {
-    lines.push(`Max operations: ${request.maxOperations ?? resolveDefaultMaxOperations(request, settings)}`);
+    lines.push(
+      `Max operations: ${request.maxOperations ?? resolveDefaultMaxOperations(request, settings)}`,
+    );
   }
 
   if (request.kind === 'guided-insert') {
@@ -472,7 +474,9 @@ export function buildRequestSpecification(
     lines.push(`Permissions: editContent=${editAllowed}, createNote=${createAllowed}`);
     lines.push('Guided insert always targets vault notes (not the crashpad).');
     if (!request.permissions.editContent) {
-      lines.push('CONSTRAINT: Do not emit edit-note-content. Only insert the boundary pair into an existing note.');
+      lines.push(
+        'CONSTRAINT: Do not emit edit-note-content. Only insert the boundary pair into an existing note.',
+      );
     }
     if (!request.permissions.createNote) {
       lines.push('CONSTRAINT: Do not emit create-note. Target only existing notes.');
@@ -481,7 +485,7 @@ export function buildRequestSpecification(
     lines.push(`Strength: ${getStrengthDescription(request.strength)}`);
     lines.push(
       'Intelligent mode may propose note and directory create, edit, move, rename, and delete operations ' +
-      'when they clearly improve vault organization around the focused card.',
+        'when they clearly improve vault organization around the focused card.',
     );
   }
 
@@ -568,9 +572,7 @@ export function buildContextLayer(snapshot: WeaveContextSnapshot): string {
     lines.push('## Directory Summaries');
     for (const dir of snapshot.directorySummaries) {
       const dirLabel = dir.directoryPath || '(vault root)';
-      lines.push(
-        `- ${dirLabel}: ${dir.noteCount} total notes, ${dir.candidateCount} candidates`,
-      );
+      lines.push(`- ${dirLabel}: ${dir.noteCount} total notes, ${dir.candidateCount} candidates`);
       if (dir.sampleNotes.length > 0) {
         lines.push(`  Sample notes: ${dir.sampleNotes.slice(0, 3).join(', ')}`);
       }

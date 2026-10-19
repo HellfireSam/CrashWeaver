@@ -5,14 +5,20 @@ const path = require('node:path');
 const os = require('node:os');
 
 const { applyWeaveOperations } = require('../../dist-electron/weaver/weaveApplyService.js');
-const { formatCardStartBoundary, formatCardEndBoundary } = require('../../dist-electron/cardParser.js');
+const {
+  formatCardStartBoundary,
+  formatCardEndBoundary,
+} = require('../../dist-electron/cardParser.js');
 
 /**
  * Creates a temporary test vault with the given structure.
  * Returns { rootPath, cardStorePath, cleanup }.
  */
 async function setupTestVault(notes) {
-  const rootPath = path.join(os.tmpdir(), `cw-test-apply-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const rootPath = path.join(
+    os.tmpdir(),
+    `cw-test-apply-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  );
   const cardStorePath = path.join(rootPath, '.crashweaver', 'cards');
   await fs.mkdir(cardStorePath, { recursive: true });
 
@@ -90,7 +96,10 @@ test('insert-boundary-pair: prepends to beginning of note', async () => {
 
     assert.equal(result.allOk, true);
     const content = await fs.readFile(path.join(rootPath, 'notes/target.md'), 'utf8');
-    assert.ok(content.startsWith(formatCardStartBoundary('CW-PREPEND')), 'Should start with boundary');
+    assert.ok(
+      content.startsWith(formatCardStartBoundary('CW-PREPEND')),
+      'Should start with boundary',
+    );
   } finally {
     await cleanup();
   }
@@ -98,7 +107,8 @@ test('insert-boundary-pair: prepends to beginning of note', async () => {
 
 test('insert-boundary-pair: after a specific heading', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
-    'notes/target.md': '# Intro\n\nIntro text.\n\n## Section A\n\nSection content.\n\n## Section B\n\nMore content.\n',
+    'notes/target.md':
+      '# Intro\n\nIntro text.\n\n## Section A\n\nSection content.\n\n## Section B\n\nMore content.\n',
   });
 
   try {
@@ -161,7 +171,8 @@ test('insert-boundary-pair: before a specific heading', async () => {
 
 test('insert-boundary-pair: after selection text', async () => {
   const { rootPath, cardStorePath, cleanup } = await setupTestVault({
-    'notes/target.md': '# Note\n\nThis is paragraph one.\n\nThis is paragraph two.\n\nThis is paragraph three.\n',
+    'notes/target.md':
+      '# Note\n\nThis is paragraph one.\n\nThis is paragraph two.\n\nThis is paragraph three.\n',
   });
 
   try {
@@ -425,7 +436,11 @@ test('delete-note: deletes a note file and cleans up card references', async () 
     memory_tricks: { memory_technique: '', qa_pairs: [] },
     referenced_in: [{ note_path: 'notes/to-delete.md', start_line: 3, end_line: 5 }],
   };
-  await fs.writeFile(path.join(cardStorePath, `${uid}.json`), JSON.stringify(cardData, null, 2), 'utf8');
+  await fs.writeFile(
+    path.join(cardStorePath, `${uid}.json`),
+    JSON.stringify(cardData, null, 2),
+    'utf8',
+  );
 
   try {
     const result = await applyWeaveOperations(rootPath, cardStorePath, [
@@ -444,8 +459,11 @@ test('delete-note: deletes a note file and cleans up card references', async () 
     // Card should no longer reference the deleted note
     const cardRaw = await fs.readFile(path.join(cardStorePath, `${uid}.json`), 'utf8');
     const card = JSON.parse(cardRaw);
-    assert.equal(card.referenced_in.filter((r) => r.note_path === 'notes/to-delete.md').length, 0,
-      'Card should not reference the deleted note');
+    assert.equal(
+      card.referenced_in.filter((r) => r.note_path === 'notes/to-delete.md').length,
+      0,
+      'Card should not reference the deleted note',
+    );
   } finally {
     await cleanup();
   }
@@ -541,18 +559,23 @@ test('dryRun: does not modify any files', async () => {
   try {
     const originalContent = await fs.readFile(path.join(rootPath, 'notes/safe.md'), 'utf8');
 
-    const result = await applyWeaveOperations(rootPath, cardStorePath, [
-      {
-        kind: 'insert-boundary-pair',
-        targetPath: 'notes/safe.md',
-        payload: {
-          cardUid: 'CW-DRY',
-          placement: 'append-to-note',
-          boundaryBlock: 'Should not be written',
+    const result = await applyWeaveOperations(
+      rootPath,
+      cardStorePath,
+      [
+        {
+          kind: 'insert-boundary-pair',
+          targetPath: 'notes/safe.md',
+          payload: {
+            cardUid: 'CW-DRY',
+            placement: 'append-to-note',
+            boundaryBlock: 'Should not be written',
+          },
+          rationale: 'Dry run test',
         },
-        rationale: 'Dry run test',
-      },
-    ], { dryRun: true });
+      ],
+      { dryRun: true },
+    );
 
     assert.equal(result.allOk, true);
     const contentAfter = await fs.readFile(path.join(rootPath, 'notes/safe.md'), 'utf8');
@@ -608,28 +631,33 @@ test('stopOnError false: continues after failure', async () => {
   });
 
   try {
-    const result = await applyWeaveOperations(rootPath, cardStorePath, [
-      {
-        kind: 'edit-note-content',
-        targetPath: 'notes/valid.md',
-        payload: {
-          action: 'replace-selection',
-          targetText: 'Non-existent text',
-          replacementMarkdown: 'Replacement',
+    const result = await applyWeaveOperations(
+      rootPath,
+      cardStorePath,
+      [
+        {
+          kind: 'edit-note-content',
+          targetPath: 'notes/valid.md',
+          payload: {
+            action: 'replace-selection',
+            targetText: 'Non-existent text',
+            replacementMarkdown: 'Replacement',
+          },
+          rationale: 'This will fail',
         },
-        rationale: 'This will fail',
-      },
-      {
-        kind: 'insert-boundary-pair',
-        targetPath: 'notes/valid.md',
-        payload: {
-          cardUid: 'CW-CONTINUE',
-          placement: 'append-to-note',
-          boundaryBlock: 'This should be applied',
+        {
+          kind: 'insert-boundary-pair',
+          targetPath: 'notes/valid.md',
+          payload: {
+            cardUid: 'CW-CONTINUE',
+            placement: 'append-to-note',
+            boundaryBlock: 'This should be applied',
+          },
+          rationale: 'Should still run',
         },
-        rationale: 'Should still run',
-      },
-    ], { stopOnError: false });
+      ],
+      { stopOnError: false },
+    );
 
     assert.equal(result.allOk, false);
     assert.equal(result.results[0].ok, false);

@@ -8,7 +8,11 @@ import type {
 } from '../../electron/vault-contract';
 import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
 import { traceToLiveEntries } from './WeaverProgressFeed';
-import { WeaverSessionHistory, type WeaverSessionSummary, type WeaverSessionDetail } from './WeaverSessionHistory';
+import {
+  WeaverSessionHistory,
+  type WeaverSessionSummary,
+  type WeaverSessionDetail,
+} from './WeaverSessionHistory';
 import { WeaverUnifiedDiffModal } from './WeaverUnifiedDiffModal';
 import { WeaverOperationItem } from './WeaverOperationItem';
 import type { WeaveApplyResult, WeavePlanOperation } from '../../electron/vault-contract';
@@ -90,7 +94,12 @@ const FEATURED_MODEL_IDS = new Set([
   'meta-llama/llama-4-maverick',
 ]);
 
-const WEAVE_WORKFLOWS: Array<{ value: WeaveKind; label: string; caption: string; icon: WeaverIconName }> = [
+const WEAVE_WORKFLOWS: Array<{
+  value: WeaveKind;
+  label: string;
+  caption: string;
+  icon: WeaverIconName;
+}> = [
   {
     value: 'guided-insert',
     label: 'Guided Insert',
@@ -115,14 +124,26 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
   switch (name) {
     case 'spark':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M12 3.5 13.9 8l4.6 1.9-4.6 1.9L12 16.5l-1.9-4.7L5.5 9.9 10.1 8 12 3.5Z" />
           <path d="M18 15.5 18.8 17.2 20.5 18 18.8 18.8 18 20.5 17.2 18.8 15.5 18 17.2 17.2 18 15.5Z" />
         </svg>
       );
     case 'model':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <circle cx="6.5" cy="12" r="2.5" />
           <circle cx="17.5" cy="6.5" r="2.5" />
           <circle cx="17.5" cy="17.5" r="2.5" />
@@ -132,7 +153,13 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'workflow':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M5 18 18 5" />
           <path d="m13.5 5 5.5.5-.5 5.5" />
           <path d="M4.5 7.5h5" />
@@ -141,7 +168,13 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'options':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M4 6h7" />
           <path d="M15 6h5" />
           <path d="M4 12h3" />
@@ -155,28 +188,52 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'cards':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <rect x="5" y="6" width="10" height="12" rx="2" />
           <path d="M9 4h8a2 2 0 0 1 2 2v10" />
         </svg>
       );
     case 'send':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M5 12h11" />
           <path d="m12 5 7 7-7 7" />
         </svg>
       );
     case 'close':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M6 6 18 18" />
           <path d="M18 6 6 18" />
         </svg>
       );
     case 'insert':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <rect x="4.5" y="6" width="10" height="12" rx="2" />
           <path d="M18 12h-3" />
           <path d="M16.5 10.5v3" />
@@ -184,14 +241,26 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'edit':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="m4.5 16.5 8.8-8.8 4 4-8.8 8.8H4.5v-4Z" />
           <path d="m12.2 7 2.3-2.3a1.8 1.8 0 0 1 2.5 0l2.3 2.3a1.8 1.8 0 0 1 0 2.5L17 11.8" />
         </svg>
       );
     case 'group':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <rect x="4.5" y="4.5" width="6" height="6" rx="1.5" />
           <rect x="13.5" y="4.5" width="6" height="6" rx="1.5" />
           <rect x="4.5" y="13.5" width="6" height="6" rx="1.5" />
@@ -200,13 +269,25 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'folder':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h4l1.8 2H18a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5v-9Z" />
         </svg>
       );
     case 'rename':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="m4.5 16.5 8.8-8.8 4 4-8.8 8.8H4.5v-4Z" />
           <path d="M13 6.5h6.5" />
           <path d="m17 4.5 2.5 2-2.5 2" />
@@ -214,7 +295,13 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'move':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M4 12h16" />
           <path d="m14 7 5 5-5 5" />
           <path d="m10 7-5 5 5 5" />
@@ -222,7 +309,13 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'delete':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M4.5 7h15" />
           <path d="M9 7V4.5h6V7" />
           <path d="m7 7 1 12.5h8L17 7" />
@@ -232,19 +325,37 @@ function WeaverIcon({ name }: { name: WeaverIconName }) {
       );
     case 'check':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
           <path d="m5 12.5 4.2 4.2L19 7" />
         </svg>
       );
     case 'chevron':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="m6 9 6 6 6-6" />
         </svg>
       );
     case 'note':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
           <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
           <path d="M14 3v5h5" />
           <path d="M9 13h6" />
@@ -259,7 +370,9 @@ function getCompactContextLabel(contextLabel: string) {
   return normalizedPath.split('/').filter(Boolean).pop() ?? contextLabel;
 }
 
-function getTraceDiagnosticCode(step: NonNullable<WeavePlanResult['trace']>[number]): string | null {
+function getTraceDiagnosticCode(
+  step: NonNullable<WeavePlanResult['trace']>[number],
+): string | null {
   return step.diagnostics?.code ?? null;
 }
 
@@ -378,19 +491,29 @@ export function WeaverProposalPanel({
   const modelListFetched = useRef(false);
   const isIntelligent = kind === 'intelligent';
   // Derive display label for the currently selected model from the live list, or format the raw ID.
-  const selectedModelName = modelList.find((m) => m.id === model)?.name
-    ?? (model.includes('/') ? model.split('/').pop()!.replace(/:free$/i, '') : model || 'Model');
-  const selectedWorkflow = WEAVE_WORKFLOWS.find((option) => option.value === kind) ?? WEAVE_WORKFLOWS[0];
-  const selectedStrength = WEAVE_STRENGTHS.find((option) => option.value === strength) ?? WEAVE_STRENGTHS[1];
+  const selectedModelName =
+    modelList.find((m) => m.id === model)?.name ??
+    (model.includes('/')
+      ? model
+          .split('/')
+          .pop()!
+          .replace(/:free$/i, '')
+      : model || 'Model');
+  const selectedWorkflow =
+    WEAVE_WORKFLOWS.find((option) => option.value === kind) ?? WEAVE_WORKFLOWS[0];
+  const selectedStrength =
+    WEAVE_STRENGTHS.find((option) => option.value === strength) ?? WEAVE_STRENGTHS[1];
   const selectedOptionsLabel = isIntelligent
     ? selectedStrength.label
-    : [editContentEnabled ? 'Edit content' : null, createNoteEnabled ? 'Create note' : null].filter(Boolean).join(' · ') || 'Insert only';
+    : [editContentEnabled ? 'Edit content' : null, createNoteEnabled ? 'Create note' : null]
+        .filter(Boolean)
+        .join(' · ') || 'Insert only';
   const compactContextLabel = getCompactContextLabel(contextLabel);
   const latestDiagnosticCode = planResult?.trace
-    ? [...planResult.trace]
-      .reverse()
-      .map((step) => getTraceDiagnosticCode(step))
-      .find((code) => Boolean(code)) ?? null
+    ? ([...planResult.trace]
+        .reverse()
+        .map((step) => getTraceDiagnosticCode(step))
+        .find((code) => Boolean(code)) ?? null)
     : null;
   const providerStatusLabel = isCheckingHealth
     ? 'Checking…'
@@ -406,11 +529,12 @@ export function WeaverProposalPanel({
       : providerHealth
         ? `${providerHealth.provider} · ${providerHealth.model}`
         : 'Provider status unavailable.';
-  const providerStatusClass = isCheckingHealth || (!healthChecked.current && !providerHealth)
-    ? ''
-    : providerHealth?.ok
-      ? 'ok'
-      : 'warning';
+  const providerStatusClass =
+    isCheckingHealth || (!healthChecked.current && !providerHealth)
+      ? ''
+      : providerHealth?.ok
+        ? 'ok'
+        : 'warning';
 
   // Track when a health check completes
   useEffect(() => {
@@ -421,7 +545,10 @@ export function WeaverProposalPanel({
 
   // Check if the stub (offline) provider is active
   useEffect(() => {
-    window.crashWeaver.isStubWeaveProvider().then(setIsStubProvider).catch(() => {});
+    window.crashWeaver
+      .isStubWeaveProvider()
+      .then(setIsStubProvider)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -514,10 +641,18 @@ export function WeaverProposalPanel({
       let detail: string | undefined;
 
       if (phase === 'call-model-end') {
-        if (e.parsedAs === 'tool') { detail = 'Calling tool…'; status = 'ok'; }
-        else if (e.parsedAs === 'final') { detail = 'Finalizing…'; status = 'ok'; }
-        else if (e.parsedAs === 'unparseable' || e.parsedAs === 'invalid-shape') { detail = 'Parse issue — repairing'; status = 'error'; }
-        else { status = 'ok'; }
+        if (e.parsedAs === 'tool') {
+          detail = 'Calling tool…';
+          status = 'ok';
+        } else if (e.parsedAs === 'final') {
+          detail = 'Finalizing…';
+          status = 'ok';
+        } else if (e.parsedAs === 'unparseable' || e.parsedAs === 'invalid-shape') {
+          detail = 'Parse issue — repairing';
+          status = 'error';
+        } else {
+          status = 'ok';
+        }
       } else if (phase === 'execute-tool-end') {
         status = e.ok ? 'ok' : 'error';
         detail = e.ok ? (e.observationSummary ?? 'Tool succeeded') : 'Tool failed';
@@ -563,10 +698,13 @@ export function WeaverProposalPanel({
       if (opening === 'model' && !modelListFetched.current) {
         modelListFetched.current = true;
         setModelListLoading(true);
-        void window.crashWeaver.listWeaveModels().then((list) => {
-          setModelList(list);
-          setModelListLoading(false);
-        }).catch(() => setModelListLoading(false));
+        void window.crashWeaver
+          .listWeaveModels()
+          .then((list) => {
+            setModelList(list);
+            setModelListLoading(false);
+          })
+          .catch(() => setModelListLoading(false));
       }
       return opening;
     });
@@ -577,14 +715,17 @@ export function WeaverProposalPanel({
     setActiveDock(null);
   }
 
-  const handleIntentKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-      event.preventDefault();
-      if (canGenerate && !isGenerating) {
-        void onGenerate();
+  const handleIntentKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        if (canGenerate && !isGenerating) {
+          void onGenerate();
+        }
       }
-    }
-  }, [canGenerate, isGenerating, onGenerate]);
+    },
+    [canGenerate, isGenerating, onGenerate],
+  );
 
   function handleSelectWorkflow(nextKind: WeaveKind) {
     onKindChange(nextKind);
@@ -606,10 +747,16 @@ export function WeaverProposalPanel({
     if (activeDock === 'model') {
       const query = modelSearch.toLowerCase();
       const filtered = query
-        ? modelList.filter((m) => m.name.toLowerCase().includes(query) || m.id.toLowerCase().includes(query))
+        ? modelList.filter(
+            (m) => m.name.toLowerCase().includes(query) || m.id.toLowerCase().includes(query),
+          )
         : modelList;
-      const primary = query ? filtered : filtered.filter((m) => m.isFree || FEATURED_MODEL_IDS.has(m.id.replace(/:free$/, '')));
-      const other = query ? [] : filtered.filter((m) => !m.isFree && !FEATURED_MODEL_IDS.has(m.id.replace(/:free$/, '')));
+      const primary = query
+        ? filtered
+        : filtered.filter((m) => m.isFree || FEATURED_MODEL_IDS.has(m.id.replace(/:free$/, '')));
+      const other = query
+        ? []
+        : filtered.filter((m) => !m.isFree && !FEATURED_MODEL_IDS.has(m.id.replace(/:free$/, '')));
 
       function ModelRow({ m }: { m: WeaveModelInfo }) {
         const isActive = model === m.id;
@@ -632,7 +779,14 @@ export function WeaverProposalPanel({
       return (
         <div className="weaverModelPicker">
           <div className="weaverModelSearchRow">
-            <svg className="weaverModelSearchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <svg
+              className="weaverModelSearchIcon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
               <circle cx="11" cy="11" r="7" />
               <path d="m16.5 16.5 4 4" />
             </svg>
@@ -650,9 +804,18 @@ export function WeaverProposalPanel({
               rel="noreferrer"
               className="weaverModelSettingsLink"
               title="Manage OpenRouter API keys"
-              onClick={(e) => { e.preventDefault(); void window.open('https://openrouter.ai/keys'); }}
+              onClick={(e) => {
+                e.preventDefault();
+                void window.open('https://openrouter.ai/keys');
+              }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
+              >
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
               </svg>
@@ -665,7 +828,9 @@ export function WeaverProposalPanel({
               <p className="weaverModelListStatus">No models match "{modelSearch}"</p>
             ) : (
               <>
-                {primary.map((m) => <ModelRow key={m.id} m={m} />)}
+                {primary.map((m) => (
+                  <ModelRow key={m.id} m={m} />
+                ))}
                 {other.length > 0 ? (
                   <>
                     <button
@@ -673,8 +838,14 @@ export function WeaverProposalPanel({
                       className="weaverModelOtherToggle"
                       onClick={() => setOtherExpanded((v) => !v)}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"
-                        style={{ transform: otherExpanded ? 'rotate(90deg)' : undefined }}>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        aria-hidden="true"
+                        style={{ transform: otherExpanded ? 'rotate(90deg)' : undefined }}
+                      >
                         <path d="m9 6 6 6-6 6" />
                       </svg>
                       Other Models
@@ -726,9 +897,7 @@ export function WeaverProposalPanel({
           <>
             <div className="weaverMenuHeader">
               <p className="weaverMenuTitle">Guided Insert</p>
-              <span className="weaverInlineMeta">
-                Insert is always allowed
-              </span>
+              <span className="weaverInlineMeta">Insert is always allowed</span>
             </div>
             <div className="weaverMenuList">
               <button
@@ -759,7 +928,10 @@ export function WeaverProposalPanel({
                 </span>
                 <span className="weaverMenuItemBody">
                   <strong>Create note</strong>
-                  <span>Allow Weaver to propose a new markdown note when insertion into an existing note is not enough.</span>
+                  <span>
+                    Allow Weaver to propose a new markdown note when insertion into an existing note
+                    is not enough.
+                  </span>
                 </span>
                 {createNoteEnabled ? (
                   <span className="weaverMenuItemCheck">
@@ -771,7 +943,10 @@ export function WeaverProposalPanel({
           </>
         ) : null}
 
-        <div className="weaverMenuHeader" style={isIntelligent ? undefined : { marginTop: '0.85rem' }}>
+        <div
+          className="weaverMenuHeader"
+          style={isIntelligent ? undefined : { marginTop: '0.85rem' }}
+        >
           <p className="weaverMenuTitle">Intelligent</p>
           <span className={`weaverInlineMeta ${!isIntelligent ? 'muted' : ''}`}>
             {isIntelligent ? 'Strength active' : 'Switch workflow to enable strength'}
@@ -803,16 +978,21 @@ export function WeaverProposalPanel({
             ))}
           </div>
         ) : (
-          <p className="weaverModelListStatus">Switch the workflow to Intelligent to choose restructuring strength.</p>
+          <p className="weaverModelListStatus">
+            Switch the workflow to Intelligent to choose restructuring strength.
+          </p>
         )}
       </div>
     );
   }
 
-  const handleReRun = useCallback((session: WeaverSessionDetail) => {
-    onReRunFromHistory?.(session);
-    setView('composer');
-  }, [onReRunFromHistory]);
+  const handleReRun = useCallback(
+    (session: WeaverSessionDetail) => {
+      onReRunFromHistory?.(session);
+      setView('composer');
+    },
+    [onReRunFromHistory],
+  );
 
   const handleHistoryBack = useCallback(() => {
     setView('composer');
@@ -843,17 +1023,17 @@ export function WeaverProposalPanel({
         <header className="weaverHeader">
           <span className="weaverHeaderTitle">Weaver</span>
           {isStubProvider ? (
-            <span className="weaverDemoBadge" title="No API key configured — Weaver is running in offline demo mode with stub plans.">
+            <span
+              className="weaverDemoBadge"
+              title="No API key configured — Weaver is running in offline demo mode with stub plans."
+            >
               Demo Mode
             </span>
           ) : null}
           <p className="weaverContextLabel" title={contextLabel}>
             {compactContextLabel}
           </p>
-          <span
-            className={`weaverStatusInline ${providerStatusClass}`}
-            title={providerStatusTitle}
-          >
+          <span className={`weaverStatusInline ${providerStatusClass}`} title={providerStatusTitle}>
             <span className="weaverStatusDot" />
             <span>{providerStatusLabel}</span>
           </span>
@@ -865,7 +1045,15 @@ export function WeaverProposalPanel({
             title="New session — clears current proposal"
             disabled={isGenerating}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
           </button>
@@ -876,12 +1064,26 @@ export function WeaverProposalPanel({
             aria-label="View session history"
             title="Session history"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
               <circle cx="12" cy="12" r="10" />
               <path d="M12 6v6l4 2" />
             </svg>
           </button>
-          <button type="button" className="weaverIconButton" onClick={onClose} aria-label="Close Weaver panel" title="Close Weaver panel">
+          <button
+            type="button"
+            className="weaverIconButton"
+            onClick={onClose}
+            aria-label="Close Weaver panel"
+            title="Close Weaver panel"
+          >
             <WeaverIcon name="close" />
           </button>
         </header>
@@ -937,7 +1139,11 @@ export function WeaverProposalPanel({
               className="weaverMenuSurface"
               role="dialog"
               aria-label={`Weaver ${activeDock} picker`}
-              style={menuPosition ? { left: `${menuPosition.left}px`, width: `${menuPosition.width}px` } : undefined}
+              style={
+                menuPosition
+                  ? { left: `${menuPosition.left}px`, width: `${menuPosition.width}px` }
+                  : undefined
+              }
             >
               {renderDockContent()}
             </div>
@@ -950,7 +1156,11 @@ export function WeaverProposalPanel({
               className={`weaverCardChip${evaluatingCardUid === cardUid ? ' evaluating' : ''}`}
               title={cardUid}
             >
-              {evaluatingCardUid === cardUid ? <span className="weaverCardChipPulse" /> : <span style={{ fontSize: '0.6rem', color: 'var(--text-subtle)' }}>1</span>}
+              {evaluatingCardUid === cardUid ? (
+                <span className="weaverCardChipPulse" />
+              ) : (
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-subtle)' }}>1</span>
+              )}
               <span>{cardUid.slice(-8)}</span>
             </span>
           </div>
@@ -980,7 +1190,9 @@ export function WeaverProposalPanel({
 
         <div className="weaverComposerFooter">
           <div className="weaverInlineMetaRow">
-            {planResult ? <span className="weaverInlineMeta">{planResult.plan.operations.length} ops</span> : null}
+            {planResult ? (
+              <span className="weaverInlineMeta">{planResult.plan.operations.length} ops</span>
+            ) : null}
             {planResult ? <span className="weaverInlineMeta">{planResult.latencyMs}ms</span> : null}
             {latestDiagnosticCode ? (
               <span className="weaverInlineMeta warn" title={latestDiagnosticCode}>
@@ -996,7 +1208,15 @@ export function WeaverProposalPanel({
             disabled={!canGenerate || isGenerating}
           >
             <WeaverIcon name="send" />
-            <span>{planResult ? (isGenerating ? 'Regenerating' : 'Regenerate') : isGenerating ? 'Generating' : 'Generate'}</span>
+            <span>
+              {planResult
+                ? isGenerating
+                  ? 'Regenerating'
+                  : 'Regenerate'
+                : isGenerating
+                  ? 'Generating'
+                  : 'Generate'}
+            </span>
           </button>
         </div>
       </div>
@@ -1006,7 +1226,9 @@ export function WeaverProposalPanel({
           <div className="weaverResultBar">
             <p className="weaverSummary">{planResult.plan.summary}</p>
             <div className="weaverResultMeta">
-              <span className="weaverInlineMeta ok">{planResult.plan.operations.length} staged</span>
+              <span className="weaverInlineMeta ok">
+                {planResult.plan.operations.length} staged
+              </span>
               <span className="weaverInlineMeta">{planResult.provider}</span>
               <span className="weaverInlineMeta">{planResult.model}</span>
             </div>
@@ -1046,27 +1268,52 @@ export function WeaverProposalPanel({
                 isExpanded={expandedOps.has(index)}
                 contextLabel={compactContextLabel}
                 onClickSummary={setModalOpIndex}
-                onToggleExpand={(i) => setExpandedOps((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(i)) next.delete(i); else next.add(i);
-                  return next;
-                })}
-                onAccept={onApplyOperations ? (i) => {
-                  setAcceptedOps((prev) => {
+                onToggleExpand={(i) =>
+                  setExpandedOps((prev) => {
                     const next = new Set(prev);
                     if (next.has(i)) next.delete(i);
-                    else { next.add(i); setRejectedOps((r) => { const nr = new Set(r); nr.delete(i); return nr; }); }
+                    else next.add(i);
                     return next;
-                  });
-                } : undefined}
-                onReject={onApplyOperations ? (i) => {
-                  setRejectedOps((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(i)) next.delete(i);
-                    else { next.add(i); setAcceptedOps((a) => { const na = new Set(a); na.delete(i); return na; }); }
-                    return next;
-                  });
-                } : undefined}
+                  })
+                }
+                onAccept={
+                  onApplyOperations
+                    ? (i) => {
+                        setAcceptedOps((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(i)) next.delete(i);
+                          else {
+                            next.add(i);
+                            setRejectedOps((r) => {
+                              const nr = new Set(r);
+                              nr.delete(i);
+                              return nr;
+                            });
+                          }
+                          return next;
+                        });
+                      }
+                    : undefined
+                }
+                onReject={
+                  onApplyOperations
+                    ? (i) => {
+                        setRejectedOps((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(i)) next.delete(i);
+                          else {
+                            next.add(i);
+                            setAcceptedOps((a) => {
+                              const na = new Set(a);
+                              na.delete(i);
+                              return na;
+                            });
+                          }
+                          return next;
+                        });
+                      }
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -1080,14 +1327,19 @@ export function WeaverProposalPanel({
                 onClick={() => {
                   const indices: number[] = [];
                   const ops = planResult.plan.operations.filter((_, i) => {
-                    if (acceptedOps.has(i)) { indices.push(i); return true; }
+                    if (acceptedOps.has(i)) {
+                      indices.push(i);
+                      return true;
+                    }
                     return false;
                   });
                   pendingApplyOriginalIndicesRef.current = indices;
                   onApplyOperations(ops);
                 }}
               >
-                {isApplying ? 'Applying…' : `Apply accepted${acceptedOps.size > 0 ? ` (${acceptedOps.size})` : ''}`}
+                {isApplying
+                  ? 'Applying…'
+                  : `Apply accepted${acceptedOps.size > 0 ? ` (${acceptedOps.size})` : ''}`}
               </button>
               <button
                 type="button"
@@ -1096,7 +1348,10 @@ export function WeaverProposalPanel({
                 onClick={() => {
                   const indices: number[] = [];
                   const ops = planResult.plan.operations.filter((_, i) => {
-                    if (!rejectedOps.has(i)) { indices.push(i); return true; }
+                    if (!rejectedOps.has(i)) {
+                      indices.push(i);
+                      return true;
+                    }
                     return false;
                   });
                   pendingApplyOriginalIndicesRef.current = indices;
@@ -1109,26 +1364,32 @@ export function WeaverProposalPanel({
           ) : null}
 
           {applyResult ? (
-            <div className={`weaverApplyResultBanner ${applyResult.allOk ? 'weaverApplySuccess' : 'weaverApplyPartial'}`}>
+            <div
+              className={`weaverApplyResultBanner ${applyResult.allOk ? 'weaverApplySuccess' : 'weaverApplyPartial'}`}
+            >
               <span className="weaverApplyResultIcon">{applyResult.allOk ? '✓' : '⚠'}</span>
               <span className="weaverApplyResultText">
                 {applyResult.appliedCount} applied, {applyResult.failedCount} failed
               </span>
               {applyResult.results.some((r) => !r.ok) ? (
                 <div className="weaverApplyResultErrors">
-                  {applyResult.results.filter((r) => !r.ok).map((r, i) => (
-                    <div key={i} className="weaverApplyErrorItem">
-                      <span className="weaverApplyErrorKind">{r.kind}</span>
-                      <code className="weaverApplyErrorPath">{r.targetPath}</code>
-                      <span className="weaverApplyErrorMessage">{r.error}</span>
-                    </div>
-                  ))}
+                  {applyResult.results
+                    .filter((r) => !r.ok)
+                    .map((r, i) => (
+                      <div key={i} className="weaverApplyErrorItem">
+                        <span className="weaverApplyErrorKind">{r.kind}</span>
+                        <code className="weaverApplyErrorPath">{r.targetPath}</code>
+                        <span className="weaverApplyErrorMessage">{r.error}</span>
+                      </div>
+                    ))}
                 </div>
               ) : null}
               {applyResult.warnings.length > 0 ? (
                 <div className="weaverApplyResultWarnings">
                   {applyResult.warnings.map((w, i) => (
-                    <p key={i} className="weaverWarningItem">{w}</p>
+                    <p key={i} className="weaverWarningItem">
+                      {w}
+                    </p>
                   ))}
                 </div>
               ) : null}

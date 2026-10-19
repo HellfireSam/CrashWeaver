@@ -160,14 +160,24 @@ export function SettingsModal({
             <div className="settingCallout">
               <p className="detailKey">Vault actions</p>
               <div className="settingsActionRow">
-                <button className="actionButton" type="button" onClick={() => {
-                  void onSelectVault();
-                }} disabled={isPicking}>
+                <button
+                  className="actionButton"
+                  type="button"
+                  onClick={() => {
+                    void onSelectVault();
+                  }}
+                  disabled={isPicking}
+                >
                   {isPicking ? 'Opening...' : vaultPath ? 'Change Vault' : 'Open Vault'}
                 </button>
-                <button className="actionButton ghost" type="button" onClick={() => {
-                  void onRefreshIndex();
-                }} disabled={!vaultPath || isRefreshingIndex}>
+                <button
+                  className="actionButton ghost"
+                  type="button"
+                  onClick={() => {
+                    void onRefreshIndex();
+                  }}
+                  disabled={!vaultPath || isRefreshingIndex}
+                >
                   {isRefreshingIndex ? 'Refreshing...' : 'Refresh Index'}
                 </button>
               </div>
@@ -175,10 +185,17 @@ export function SettingsModal({
 
             <div className="settingCallout">
               <p className="detailKey">Card store folder</p>
-              <p className="detailValue">{vault?.cardStore?.cardStorePath ?? 'No vault selected.'}</p>
-              <button className="actionButton" type="button" onClick={() => {
+              <p className="detailValue">
+                {vault?.cardStore?.cardStorePath ?? 'No vault selected.'}
+              </p>
+              <button
+                className="actionButton"
+                type="button"
+                onClick={() => {
                   void onSelectCardStore();
-                }} disabled={!vaultPath}>
+                }}
+                disabled={!vaultPath}
+              >
                 Choose Card Store
               </button>
             </div>
@@ -187,15 +204,25 @@ export function SettingsModal({
               <p className="detailKey">Image directories</p>
               {vault?.imageDirectories.length ? (
                 vault.imageDirectories.map((directoryPath) => (
-                  <p className="detailValue" key={directoryPath}>{directoryPath}</p>
+                  <p className="detailValue" key={directoryPath}>
+                    {directoryPath}
+                  </p>
                 ))
               ) : (
-                <p className="detailValue">No image directories selected. Relative image paths resolve from the vault root only.</p>
+                <p className="detailValue">
+                  No image directories selected. Relative image paths resolve from the vault root
+                  only.
+                </p>
               )}
               <div className="settingsActionRow">
-                <button className="actionButton" type="button" onClick={() => {
-                  void onSelectImageDirectories();
-                }} disabled={!vaultPath}>
+                <button
+                  className="actionButton"
+                  type="button"
+                  onClick={() => {
+                    void onSelectImageDirectories();
+                  }}
+                  disabled={!vaultPath}
+                >
                   Choose Image Directories
                 </button>
                 <button
@@ -256,7 +283,9 @@ export function SettingsModal({
 
               <p className="detailKey">Provider status</p>
               <p className="detailValue">
-                {weaverSettings?.configured ? 'OpenRouter API key configured.' : 'No API key — using stub provider.'}
+                {weaverSettings?.configured
+                  ? 'OpenRouter API key configured.'
+                  : 'No API key — using stub provider.'}
               </p>
 
               <p className="detailKey">OpenRouter API key</p>
@@ -297,16 +326,40 @@ export function SettingsModal({
                 )}
               </div>
 
-              <p className="detailValue" style={{ marginTop: '8px', opacity: 0.6, fontSize: '0.8em' }}>
-                Cloud mode sends selected vault context to OpenRouter. Do not enable if your vault contains sensitive information.
+              <p
+                className="detailValue"
+                style={{ marginTop: '8px', opacity: 0.6, fontSize: '0.8em' }}
+              >
+                Cloud mode sends selected vault context to OpenRouter. Do not enable if your vault
+                contains sensitive information.
               </p>
 
               {/* Client-Side Budget Resolver Settings */}
               {onUpdateWeaverSettings && (
-                <div style={{ marginTop: '1.2rem', paddingTop: '1rem', borderTop: '1px solid var(--border-soft)' }}>
-                  <p className="detailKey" style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: '0.4rem' }}>Budgets & Restrictions</p>
-                  
-                  <label className="toggleRow" htmlFor="disableBudgetRestrictions" style={{ marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div
+                  style={{
+                    marginTop: '1.2rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid var(--border-soft)',
+                  }}
+                >
+                  <p
+                    className="detailKey"
+                    style={{ fontWeight: 600, fontSize: '0.82rem', marginBottom: '0.4rem' }}
+                  >
+                    Budgets & Restrictions
+                  </p>
+
+                  <label
+                    className="toggleRow"
+                    htmlFor="disableBudgetRestrictions"
+                    style={{
+                      marginBottom: '0.8rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                    }}
+                  >
                     <input
                       id="disableBudgetRestrictions"
                       type="checkbox"
@@ -320,11 +373,34 @@ export function SettingsModal({
                     <span>Disable All LLM Token & Timeout Restrictions</span>
                   </label>
 
-                  {!(weaverSettings?.disableBudgetRestrictions) && (
-                    <div style={{ display: 'grid', gap: '0.8rem', gridTemplateColumns: 'minmax(0, 1fr)' }}>
+                  {!weaverSettings?.disableBudgetRestrictions && (
+                    <div
+                      style={{
+                        display: 'grid',
+                        gap: '0.8rem',
+                        gridTemplateColumns: 'minmax(0, 1fr)',
+                      }}
+                    >
                       <div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Guided Insert Mode (Default: 1400 tokens / 30s)</p>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100–32000 | Timeout: 5000–600000 ms</p>
+                        <p
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            margin: '0.2rem 0',
+                          }}
+                        >
+                          Guided Insert Mode (Default: 1400 tokens / 30s)
+                        </p>
+                        <p
+                          style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            margin: '0.3rem 0',
+                          }}
+                        >
+                          Tokens: 100–32000 | Timeout: 5000–600000 ms
+                        </p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
@@ -334,7 +410,13 @@ export function SettingsModal({
                             min="100"
                             max="32000"
                             value={weaverSettings?.guidedInsertBaseMaxTokens ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ guidedInsertBaseMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                guidedInsertBaseMaxTokens: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -344,14 +426,37 @@ export function SettingsModal({
                             min="5000"
                             max="600000"
                             value={weaverSettings?.guidedInsertBaseTimeoutMs ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ guidedInsertBaseTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                guidedInsertBaseTimeoutMs: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                         </div>
                       </div>
 
                       <div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Guided Insert Mode Expanded (Default: 2200 tokens / 45s)</p>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100–32000 | Timeout: 5000–600000 ms</p>
+                        <p
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            margin: '0.2rem 0',
+                          }}
+                        >
+                          Guided Insert Mode Expanded (Default: 2200 tokens / 45s)
+                        </p>
+                        <p
+                          style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            margin: '0.3rem 0',
+                          }}
+                        >
+                          Tokens: 100–32000 | Timeout: 5000–600000 ms
+                        </p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
@@ -361,7 +466,13 @@ export function SettingsModal({
                             min="100"
                             max="32000"
                             value={weaverSettings?.guidedInsertExpandedMaxTokens ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ guidedInsertExpandedMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                guidedInsertExpandedMaxTokens: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -371,14 +482,37 @@ export function SettingsModal({
                             min="5000"
                             max="600000"
                             value={weaverSettings?.guidedInsertExpandedTimeoutMs ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ guidedInsertExpandedTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                guidedInsertExpandedTimeoutMs: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                         </div>
                       </div>
 
                       <div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Intelligent Light Mode (Default: 1500 tokens / 30s / 2 iterations)</p>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20</p>
+                        <p
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            margin: '0.2rem 0',
+                          }}
+                        >
+                          Intelligent Light Mode (Default: 1500 tokens / 30s / 2 iterations)
+                        </p>
+                        <p
+                          style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            margin: '0.3rem 0',
+                          }}
+                        >
+                          Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20
+                        </p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
@@ -388,7 +522,13 @@ export function SettingsModal({
                             min="100"
                             max="32000"
                             value={weaverSettings?.intelligentLightMaxTokens ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentLightMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentLightMaxTokens: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -398,7 +538,13 @@ export function SettingsModal({
                             min="5000"
                             max="600000"
                             value={weaverSettings?.intelligentLightTimeoutMs ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentLightTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentLightTimeoutMs: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -408,14 +554,37 @@ export function SettingsModal({
                             min="1"
                             max="20"
                             value={weaverSettings?.intelligentLightIterationLimit ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentLightIterationLimit: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentLightIterationLimit: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                         </div>
                       </div>
 
                       <div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Intelligent Standard Mode (Default: 3000 tokens / 60s / 4 iterations)</p>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20</p>
+                        <p
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            margin: '0.2rem 0',
+                          }}
+                        >
+                          Intelligent Standard Mode (Default: 3000 tokens / 60s / 4 iterations)
+                        </p>
+                        <p
+                          style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            margin: '0.3rem 0',
+                          }}
+                        >
+                          Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20
+                        </p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
@@ -425,7 +594,13 @@ export function SettingsModal({
                             min="100"
                             max="32000"
                             value={weaverSettings?.intelligentStandardMaxTokens ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentStandardMaxTokens: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -435,7 +610,13 @@ export function SettingsModal({
                             min="5000"
                             max="600000"
                             value={weaverSettings?.intelligentStandardTimeoutMs ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentStandardTimeoutMs: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -445,14 +626,37 @@ export function SettingsModal({
                             min="1"
                             max="20"
                             value={weaverSettings?.intelligentStandardIterationLimit ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardIterationLimit: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentStandardIterationLimit: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                         </div>
                       </div>
 
                       <div>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0.2rem 0' }}>Intelligent Go Ham Mode (Default: 6000 tokens / 120s / 6 iterations)</p>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20</p>
+                        <p
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            margin: '0.2rem 0',
+                          }}
+                        >
+                          Intelligent Go Ham Mode (Default: 6000 tokens / 120s / 6 iterations)
+                        </p>
+                        <p
+                          style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            margin: '0.3rem 0',
+                          }}
+                        >
+                          Tokens: 100-32000 | Timeout: 5000-600000 ms | Iterations: 1-20
+                        </p>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input
                             className="notePathInput"
@@ -462,7 +666,13 @@ export function SettingsModal({
                             min="100"
                             max="32000"
                             value={weaverSettings?.intelligentGoHamMaxTokens ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamMaxTokens: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentGoHamMaxTokens: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -472,7 +682,13 @@ export function SettingsModal({
                             min="5000"
                             max="600000"
                             value={weaverSettings?.intelligentGoHamTimeoutMs ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamTimeoutMs: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentGoHamTimeoutMs: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                           <input
                             className="notePathInput"
@@ -482,18 +698,57 @@ export function SettingsModal({
                             min="1"
                             max="20"
                             value={weaverSettings?.intelligentGoHamIterationLimit ?? ''}
-                            onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamIterationLimit: e.target.value ? Number(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              void onUpdateWeaverSettings({
+                                intelligentGoHamIterationLimit: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              })
+                            }
                           />
                         </div>
                       </div>
 
                       {/* Max Operations Settings */}
-                      <div style={{ marginTop: '0.4rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-soft)' }}>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 0.5rem' }}>Max Plan Operations (1–20)</p>
-                        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0.3rem 0' }}>Limits how many operations a generated plan may contain. Higher values allow more complex restructuring proposals.</p>
+                      <div
+                        style={{
+                          marginTop: '0.4rem',
+                          paddingTop: '0.6rem',
+                          borderTop: '1px dashed var(--border-soft)',
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            margin: '0 0 0.5rem',
+                          }}
+                        >
+                          Max Plan Operations (1–20)
+                        </p>
+                        <p
+                          style={{
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            margin: '0.3rem 0',
+                          }}
+                        >
+                          Limits how many operations a generated plan may contain. Higher values
+                          allow more complex restructuring proposals.
+                        </p>
                         <div style={{ display: 'grid', gap: '0.45rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Guided Insert</span>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                color: 'var(--text-muted)',
+                                width: '100px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Guided Insert
+                            </span>
                             <input
                               className="notePathInput"
                               style={{ flex: 1, minWidth: 0 }}
@@ -502,11 +757,26 @@ export function SettingsModal({
                               min="1"
                               max="20"
                               value={weaverSettings?.guidedInsertMaxOperations ?? ''}
-                              onChange={(e) => void onUpdateWeaverSettings({ guidedInsertMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                              onChange={(e) =>
+                                void onUpdateWeaverSettings({
+                                  guidedInsertMaxOperations: e.target.value
+                                    ? Number(e.target.value)
+                                    : undefined,
+                                })
+                              }
                             />
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Light</span>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                color: 'var(--text-muted)',
+                                width: '100px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Light
+                            </span>
                             <input
                               className="notePathInput"
                               style={{ flex: 1, minWidth: 0 }}
@@ -515,11 +785,26 @@ export function SettingsModal({
                               min="1"
                               max="20"
                               value={weaverSettings?.intelligentLightMaxOperations ?? ''}
-                              onChange={(e) => void onUpdateWeaverSettings({ intelligentLightMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                              onChange={(e) =>
+                                void onUpdateWeaverSettings({
+                                  intelligentLightMaxOperations: e.target.value
+                                    ? Number(e.target.value)
+                                    : undefined,
+                                })
+                              }
                             />
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Standard</span>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                color: 'var(--text-muted)',
+                                width: '100px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Standard
+                            </span>
                             <input
                               className="notePathInput"
                               style={{ flex: 1, minWidth: 0 }}
@@ -528,11 +813,26 @@ export function SettingsModal({
                               min="1"
                               max="20"
                               value={weaverSettings?.intelligentStandardMaxOperations ?? ''}
-                              onChange={(e) => void onUpdateWeaverSettings({ intelligentStandardMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                              onChange={(e) =>
+                                void onUpdateWeaverSettings({
+                                  intelligentStandardMaxOperations: e.target.value
+                                    ? Number(e.target.value)
+                                    : undefined,
+                                })
+                              }
                             />
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', width: '100px', flexShrink: 0 }}>Go Ham</span>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                color: 'var(--text-muted)',
+                                width: '100px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Go Ham
+                            </span>
                             <input
                               className="notePathInput"
                               style={{ flex: 1, minWidth: 0 }}
@@ -541,7 +841,13 @@ export function SettingsModal({
                               min="1"
                               max="20"
                               value={weaverSettings?.intelligentGoHamMaxOperations ?? ''}
-                              onChange={(e) => void onUpdateWeaverSettings({ intelligentGoHamMaxOperations: e.target.value ? Number(e.target.value) : undefined })}
+                              onChange={(e) =>
+                                void onUpdateWeaverSettings({
+                                  intelligentGoHamMaxOperations: e.target.value
+                                    ? Number(e.target.value)
+                                    : undefined,
+                                })
+                              }
                             />
                           </div>
                         </div>
@@ -564,17 +870,23 @@ export function SettingsModal({
             <p className="detailKey">Index entries</p>
             <p className="detailValue">{vault?.index.entries.length ?? 0}</p>
             <p className="detailKey">Card store mode</p>
-            <p className="detailValue">{vault?.cardStore?.isDefaultPath ? 'Default path' : 'Custom path'}</p>
+            <p className="detailValue">
+              {vault?.cardStore?.isDefaultPath ? 'Default path' : 'Custom path'}
+            </p>
             <p className="detailKey">Image directories</p>
             <p className="detailValue">{vault?.imageDirectories.length ?? 0}</p>
             <p className="detailKey">Last index refresh</p>
             <p className="detailValue">{vault?.index.updatedAt ?? 'Not available'}</p>
             <p className="detailKey">Last card rebuild</p>
-            <p className="detailValue">{formatCardRebuildSummary(vault?.lastCardRebuild) ?? 'Not available'}</p>
+            <p className="detailValue">
+              {formatCardRebuildSummary(vault?.lastCardRebuild) ?? 'Not available'}
+            </p>
             <p className="detailKey">Current note</p>
             <p className="detailValue">{activeNote?.filePath ?? 'None selected'}</p>
             <p className="detailKey">Current note size</p>
-            <p className="detailValue">{activeNote ? `${activeNote.size} bytes` : 'Not available'}</p>
+            <p className="detailValue">
+              {activeNote ? `${activeNote.size} bytes` : 'Not available'}
+            </p>
           </div>
         </div>
       </section>

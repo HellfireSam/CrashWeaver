@@ -1,5 +1,17 @@
 import { useMemo } from 'react';
-import type { WeavePlanOperation, InsertBoundaryPairPayload, EditNoteContentPayload, CreateNotePayload, RenameNotePayload, MoveNotePayload, DeleteNotePayload, CreateDirectoryPayload, RenameDirectoryPayload, MoveDirectoryPayload, DeleteDirectoryPayload } from '../../electron/vault-contract';
+import type {
+  WeavePlanOperation,
+  InsertBoundaryPairPayload,
+  EditNoteContentPayload,
+  CreateNotePayload,
+  RenameNotePayload,
+  MoveNotePayload,
+  DeleteNotePayload,
+  CreateDirectoryPayload,
+  RenameDirectoryPayload,
+  MoveDirectoryPayload,
+  DeleteDirectoryPayload,
+} from '../../electron/vault-contract';
 
 // ── Boundary format helpers (inlined from cardParser.ts for renderer use) ───
 
@@ -118,7 +130,12 @@ function InsertBoundaryDiff({ payload }: { payload: InsertBoundaryPairPayload })
       </div>
       <div className="weaverDiffMeta">
         Placement: <strong>{payload.placement}</strong>
-        {payload.headingText ? <> · Heading: <strong>{payload.headingText}</strong></> : null}
+        {payload.headingText ? (
+          <>
+            {' '}
+            · Heading: <strong>{payload.headingText}</strong>
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -211,7 +228,9 @@ function DeleteNoteDiff({ payload }: { payload: DeleteNotePayload }) {
     <div className="weaverDiffPreview weaverDiffDestructive">
       <div className="weaverDiffHeader">⚠ Delete note</div>
       <p className="weaverDiffReason">{payload.deleteReason}</p>
-      <p className="weaverDiffWarning">This note and all its content will be permanently deleted.</p>
+      <p className="weaverDiffWarning">
+        This note and all its content will be permanently deleted.
+      </p>
     </div>
   );
 }
@@ -264,7 +283,9 @@ function DeleteDirectoryDiff({ payload }: { payload: DeleteDirectoryPayload }) {
     <div className="weaverDiffPreview weaverDiffDestructive">
       <div className="weaverDiffHeader">⚠ Delete directory</div>
       <p className="weaverDiffReason">{payload.deleteReason}</p>
-      <p className="weaverDiffWarning">This directory and all its contents will be permanently deleted.</p>
+      <p className="weaverDiffWarning">
+        This directory and all its contents will be permanently deleted.
+      </p>
     </div>
   );
 }

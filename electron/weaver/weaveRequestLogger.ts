@@ -41,7 +41,9 @@ function sanitizePayload(value: unknown): unknown {
 
   if (typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>);
-    const sanitized = Object.fromEntries(entries.map(([key, entry]) => [key, sanitizePayload(entry)]));
+    const sanitized = Object.fromEntries(
+      entries.map(([key, entry]) => [key, sanitizePayload(entry)]),
+    );
     return sanitized;
   }
 

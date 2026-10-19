@@ -16,7 +16,9 @@ describe('renderMarkdownPreview security hardening', () => {
   });
 
   it('removes href values that use unsafe protocols', () => {
-    const rendered = renderMarkdownPreview('<a href="javascript:alert(1)">bad</a> [good](https://example.com)');
+    const rendered = renderMarkdownPreview(
+      '<a href="javascript:alert(1)">bad</a> [good](https://example.com)',
+    );
 
     expect(rendered).not.toContain('javascript:');
     expect(rendered).toContain('https://example.com');

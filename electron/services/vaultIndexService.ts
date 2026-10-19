@@ -3,7 +3,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { writeTextAtomically } from '../utils/jsonFile';
-import type { ReviewMetadata, VaultIndex, VaultIndexEntry, VaultNoteDocument } from '../vault-contract';
+import type {
+  ReviewMetadata,
+  VaultIndex,
+  VaultIndexEntry,
+  VaultNoteDocument,
+} from '../vault-contract';
 
 const MARKDOWN_EXTENSION = '.md';
 
@@ -28,12 +33,19 @@ function coerceStoredIndex(value: Partial<VaultIndex>): VaultIndex | null {
   }
 
   const entries = value.entries
-    .filter((entry): entry is VaultIndexEntry => Boolean(entry && typeof entry.filePath === 'string'))
+    .filter((entry): entry is VaultIndexEntry =>
+      Boolean(entry && typeof entry.filePath === 'string'),
+    )
     .map((entry) => ({
       id: typeof entry.id === 'string' ? entry.id : createEntryId(entry.filePath),
       filePath: entry.filePath,
-      title: typeof entry.title === 'string' ? entry.title : path.basename(entry.filePath, MARKDOWN_EXTENSION),
-      tags: Array.isArray(entry.tags) ? entry.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+      title:
+        typeof entry.title === 'string'
+          ? entry.title
+          : path.basename(entry.filePath, MARKDOWN_EXTENSION),
+      tags: Array.isArray(entry.tags)
+        ? entry.tags.filter((tag): tag is string => typeof tag === 'string')
+        : [],
       updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : new Date().toISOString(),
       review: entry.review ?? createDefaultReviewMetadata(),
     }));
@@ -61,7 +73,10 @@ async function readStoredIndexFile(filePath: string): Promise<VaultIndex | null>
   }
 }
 
-async function readStoredIndex(indexFilePath: string, legacyIndexFilePath: string): Promise<VaultIndex | null> {
+async function readStoredIndex(
+  indexFilePath: string,
+  legacyIndexFilePath: string,
+): Promise<VaultIndex | null> {
   const internalIndex = await readStoredIndexFile(indexFilePath);
 
   if (internalIndex) {
@@ -71,7 +86,10 @@ async function readStoredIndex(indexFilePath: string, legacyIndexFilePath: strin
   return readStoredIndexFile(legacyIndexFilePath);
 }
 
-export async function readVaultIndex(indexFilePath: string, legacyIndexFilePath: string): Promise<VaultIndex | null> {
+export async function readVaultIndex(
+  indexFilePath: string,
+  legacyIndexFilePath: string,
+): Promise<VaultIndex | null> {
   return readStoredIndex(indexFilePath, legacyIndexFilePath);
 }
 

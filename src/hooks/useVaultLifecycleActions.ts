@@ -13,11 +13,24 @@ type UseVaultLifecycleActionsOptions = {
   setErrorMessage: (message: string | null) => void;
   setIsPicking: (value: boolean) => void;
   setIsRefreshingIndex: (value: boolean) => void;
-  loadVault: (rootPath: string, preferredNotePath?: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.openVault>>>;
-  refreshCardsCatalog: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
-  refreshInternalDirectories: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
-  refreshCrashpadCatalog: (rootPath: string, preferredCrashpadId?: string | null) => Promise<CrashpadDocument | null>;
-  openNoteInEditor: (rootPath: string, filePath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.readNote>>>;
+  loadVault: (
+    rootPath: string,
+    preferredNotePath?: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.openVault>>>;
+  refreshCardsCatalog: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
+  refreshInternalDirectories: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
+  refreshCrashpadCatalog: (
+    rootPath: string,
+    preferredCrashpadId?: string | null,
+  ) => Promise<CrashpadDocument | null>;
+  openNoteInEditor: (
+    rootPath: string,
+    filePath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.readNote>>>;
 };
 
 export function useVaultLifecycleActions({
@@ -91,7 +104,9 @@ export function useVaultLifecycleActions({
       }
 
       const rebuildSummary = formatCardRebuildSummary(updatedVault.lastCardRebuild);
-      setStatusMessage(rebuildSummary ? `Card store updated. ${rebuildSummary}` : 'Card store updated.');
+      setStatusMessage(
+        rebuildSummary ? `Card store updated. ${rebuildSummary}` : 'Card store updated.',
+      );
     } catch (error) {
       setErrorMessage(getErrorMessage(error, 'Unexpected card store configuration error.'));
     }
@@ -126,7 +141,10 @@ export function useVaultLifecycleActions({
         return;
       }
 
-      const updatedVault = await window.crashWeaver.setImageDirectories(vaultPath, selectedDirectories);
+      const updatedVault = await window.crashWeaver.setImageDirectories(
+        vaultPath,
+        selectedDirectories,
+      );
       setVault(updatedVault);
       setStatusMessage(
         updatedVault.imageDirectories.length
@@ -150,7 +168,9 @@ export function useVaultLifecycleActions({
     try {
       const updatedVault = await window.crashWeaver.setImageDirectories(vaultPath, []);
       setVault(updatedVault);
-      setStatusMessage('Image directories cleared. Relative image paths now resolve from the vault root only.');
+      setStatusMessage(
+        'Image directories cleared. Relative image paths now resolve from the vault root only.',
+      );
     } catch (error) {
       setErrorMessage(getErrorMessage(error, 'Unexpected image directory reset error.'));
     }

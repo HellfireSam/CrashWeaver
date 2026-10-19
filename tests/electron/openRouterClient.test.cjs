@@ -29,7 +29,10 @@ function createGuidedRequest(rootPath, overrides = {}) {
   };
 }
 
-function createChatResponse(content, usage = { prompt_tokens: 11, completion_tokens: 7, total_tokens: 18 }) {
+function createChatResponse(
+  content,
+  usage = { prompt_tokens: 11, completion_tokens: 7, total_tokens: 18 },
+) {
   return new Response(
     JSON.stringify({
       model: 'openai/gpt-4o',
@@ -127,9 +130,7 @@ async function createProviderFixture() {
     ...createdCard,
     type: ['topic'],
     raw_content: 'Focused topic card content.',
-    referenced_in: [
-      { note_path: 'notes/topic.md', start_line: 2, end_line: 4 },
-    ],
+    referenced_in: [{ note_path: 'notes/topic.md', start_line: 2, end_line: 4 }],
   });
 
   const notes = await Promise.all([
@@ -146,14 +147,14 @@ async function createProviderFixture() {
     writeNote(
       rootPath,
       'notes/adjacent.md',
-      [
-        '# Adjacent',
-        '',
-        'Secondary candidate note.',
-      ].join('\n'),
+      ['# Adjacent', '', 'Secondary candidate note.'].join('\n'),
     ),
   ]);
-  await writeVaultIndex(path.join(rootPath, '.crashweaver', 'index.json'), path.join(rootPath, 'index.json'), notes);
+  await writeVaultIndex(
+    path.join(rootPath, '.crashweaver', 'index.json'),
+    path.join(rootPath, 'index.json'),
+    notes,
+  );
 
   const request = createGuidedRequest(rootPath);
   const snapshot = await buildWeaveContextSnapshot(request);
@@ -173,10 +174,10 @@ test('OpenRouterWeaveProvider maps auth failures to auth-error', async () => {
   const fixture = await createProviderFixture();
 
   try {
-    const { fetchImpl } = createFetchSequence([
-      new Response('forbidden', { status: 401 }),
-    ]);
-    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, { fetchImpl });
+    const { fetchImpl } = createFetchSequence([new Response('forbidden', { status: 401 })]);
+    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      fetchImpl,
+    });
 
     await assert.rejects(
       provider.generatePlan(fixture.request, fixture.snapshot),
@@ -195,10 +196,10 @@ test('OpenRouterWeaveProvider surfaces provider-timeout when the chat request ti
     const abortError = new Error('The operation was aborted.');
     abortError.name = 'AbortError';
 
-    const { fetchImpl } = createFetchSequence([
-      abortError,
-    ]);
-    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, { fetchImpl });
+    const { fetchImpl } = createFetchSequence([abortError]);
+    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      fetchImpl,
+    });
 
     await assert.rejects(
       provider.generatePlan(fixture.request, fixture.snapshot),
@@ -213,10 +214,10 @@ test('OpenRouterWeaveProvider reports schema-error when the model response is no
   const fixture = await createProviderFixture();
 
   try {
-    const { fetchImpl } = createFetchSequence([
-      createChatResponse('this is not json at all'),
-    ]);
-    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, { fetchImpl });
+    const { fetchImpl } = createFetchSequence([createChatResponse('this is not json at all')]);
+    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      fetchImpl,
+    });
 
     await assert.rejects(
       provider.generatePlan(fixture.request, fixture.snapshot),
@@ -253,7 +254,8 @@ test('OpenRouterWeaveProvider completes a read-only tool loop and leaves workspa
               editContent: false,
               createNote: false,
             },
-            summary: 'Insert the focused card into the existing topic note without changing surrounding prose.',
+            summary:
+              'Insert the focused card into the existing topic note without changing surrounding prose.',
             operations: [
               {
                 kind: 'insert-boundary-pair',
@@ -276,14 +278,18 @@ test('OpenRouterWeaveProvider completes a read-only tool loop and leaves workspa
         }),
       ),
     ]);
-    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, { fetchImpl });
+    const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      fetchImpl,
+    });
 
     const result = await provider.generatePlan(fixture.request, fixture.snapshot, {
       requestLogDirectory: requestLogsDirectory,
     });
     const afterFiles = await snapshotWorkspaceFiles(fixture.rootPath);
     const afterFilesWithoutLogs = Object.fromEntries(
-      Object.entries(afterFiles).filter(([relativePath]) => !relativePath.startsWith('.crashweaver/weaver-request-logs/')),
+      Object.entries(afterFiles).filter(
+        ([relativePath]) => !relativePath.startsWith('.crashweaver/weaver-request-logs/'),
+      ),
     );
     const secondRequestBody = JSON.parse(Buffer.from(calls[1].init.body).toString('utf8'));
     const lastMessage = secondRequestBody.messages[secondRequestBody.messages.length - 1];
@@ -295,8 +301,14 @@ test('OpenRouterWeaveProvider completes a read-only tool loop and leaves workspa
     assert.equal(result.plan.kind, 'guided-insert');
     assert.equal(result.plan.operations[0].targetPath, 'notes/topic.md');
     assert.equal(result.usage.totalTokens, 36);
-    assert.match(lastMessage.content, /Tool result for read_note_excerpt|TOOL RESULT: read_note_excerpt/);
-    assert.match(lastMessage.content, /Deterministic topic note for live provider retrieval tests/i);
+    assert.match(
+      lastMessage.content,
+      /Tool result for read_note_excerpt|TOOL RESULT: read_note_excerpt/,
+    );
+    assert.match(
+      lastMessage.content,
+      /Deterministic topic note for live provider retrieval tests/i,
+    );
     assert.ok(logFiles.length >= 1);
     assert.ok(logEvents.includes('session-start') || logEvents.includes('graph-start'));
     assert.ok(logEvents.includes('openrouter-request') || logEvents.includes('node-call-model'));

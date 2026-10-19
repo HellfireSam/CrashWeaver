@@ -85,7 +85,8 @@ type ParsedAction =
 function parseActionFromJson(value: unknown): ParsedAction | null {
   if (!isRecord(value)) return null;
 
-  const thought = typeof value.thought === 'string' && value.thought.trim() ? value.thought.trim() : undefined;
+  const thought =
+    typeof value.thought === 'string' && value.thought.trim() ? value.thought.trim() : undefined;
 
   if (value.type === 'tool' && typeof value.toolName === 'string') {
     return {
@@ -177,7 +178,8 @@ export function makeCallModelNode(
 
     let rawContent: string;
     let resolvedModelName: string;
-    let rawUsage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined;
+    let rawUsage:
+      { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined;
 
     try {
       const response = await httpClient.chatCompletion(
@@ -249,11 +251,13 @@ export function makeCallModelNode(
           ...updates,
           pendingRoute: 'repair-syntactic' as WeaveAgentRoute,
           messages: [assistantMsg(rawContent)],
-          trace: [{
-            thought: "The model response failed to parse as valid JSON directly.",
-            action: `Raw output length: ${rawContent.length} chars`,
-            observation: "Syntactic repair triggered: Directing model to fix JSON formatting."
-          }]
+          trace: [
+            {
+              thought: 'The model response failed to parse as valid JSON directly.',
+              action: `Raw output length: ${rawContent.length} chars`,
+              observation: 'Syntactic repair triggered: Directing model to fix JSON formatting.',
+            },
+          ],
         };
       }
       return {
@@ -286,11 +290,14 @@ export function makeCallModelNode(
           ...updates,
           pendingRoute: 'repair-semantic' as WeaveAgentRoute,
           messages: [assistantMsg(rawContent)],
-          trace: [{
-            thought: "Parsed JSON does not match the expected Action envelope structure.",
-            action: `Raw output: ${rawContent.length > 500 ? rawContent.substring(0, 500) + '...' : rawContent}`,
-            observation: "Semantic repair triggered: Directing model to output a valid action structure."
-          }]
+          trace: [
+            {
+              thought: 'Parsed JSON does not match the expected Action envelope structure.',
+              action: `Raw output: ${rawContent.length > 500 ? rawContent.substring(0, 500) + '...' : rawContent}`,
+              observation:
+                'Semantic repair triggered: Directing model to output a valid action structure.',
+            },
+          ],
         };
       }
       return {
@@ -322,18 +329,19 @@ export function makeCallModelNode(
             pendingRoute: 'repair-exhaustion' as WeaveAgentRoute,
             messages: [assistantMsg(rawContent)],
             pendingThought: null,
-            trace: [{
-              thought: action.thought || undefined,
-              action: `Call Tool: "${action.toolName}"`,
-              observation: `Budget of ${modelProfile.iterationLimit} tool calls exhausted. Directing model to output final plan.`
-            }]
+            trace: [
+              {
+                thought: action.thought || undefined,
+                action: `Call Tool: "${action.toolName}"`,
+                observation: `Budget of ${modelProfile.iterationLimit} tool calls exhausted. Directing model to output final plan.`,
+              },
+            ],
           };
         }
         return {
           ...finalizedUpdates,
           pendingRoute: 'fail' as WeaveAgentRoute,
-          errorMessage:
-            'Weaver exhausted its read-only retrieval loop before returning a plan.',
+          errorMessage: 'Weaver exhausted its read-only retrieval loop before returning a plan.',
           errorCategory: 'provider-error' as WeaveErrorCategory,
         };
       }
@@ -380,9 +388,19 @@ export function makeExecuteToolNode(
     }
 
     const turnNumber = toolCallCount + 1;
-    const toolTarget = typeof pendingToolArgs?.filePath === 'string' ? pendingToolArgs.filePath : undefined;
-    const toolArgs = pendingToolArgs && Object.keys(pendingToolArgs).length > 0 ? { ...pendingToolArgs } : undefined;
-    onProgress?.({ phase: 'execute-tool-start', toolName: pendingToolName, toolTarget, toolArgs, turn: turnNumber });
+    const toolTarget =
+      typeof pendingToolArgs?.filePath === 'string' ? pendingToolArgs.filePath : undefined;
+    const toolArgs =
+      pendingToolArgs && Object.keys(pendingToolArgs).length > 0
+        ? { ...pendingToolArgs }
+        : undefined;
+    onProgress?.({
+      phase: 'execute-tool-start',
+      toolName: pendingToolName,
+      toolTarget,
+      toolArgs,
+      turn: turnNumber,
+    });
 
     const toolResult = await toolRuntime.execute(pendingToolName, pendingToolArgs ?? {});
     const newToolCount = toolCallCount + 1;
@@ -422,13 +440,16 @@ export function makeExecuteToolNode(
 
     const thought = pendingThought || undefined;
     const action = `Tool Call: "${pendingToolName}" with arguments:\n${JSON.stringify(pendingToolArgs, null, 2)}`;
-    let observation = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult, null, 2);
+    let observation =
+      typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult, null, 2);
     const diagnostics = getTraceDiagnostics(toolResult);
-    
+
     // Compact large observations to prevent unbounded trace growth
     const MAX_OBSERVATION_LEN = 800;
     if (observation.length > MAX_OBSERVATION_LEN) {
-      observation = observation.slice(0, MAX_OBSERVATION_LEN) + `\n[... truncated ${observation.length - MAX_OBSERVATION_LEN} characters]`;
+      observation =
+        observation.slice(0, MAX_OBSERVATION_LEN) +
+        `\n[... truncated ${observation.length - MAX_OBSERVATION_LEN} characters]`;
     }
 
     return {
@@ -482,7 +503,11 @@ export function makeRepairNode(
       });
     }
 
-    onProgress?.({ phase: 'repair', repairType: pendingRoute ?? 'unknown', repairAttempt: repairAttemptCount + 1 });
+    onProgress?.({
+      phase: 'repair',
+      repairType: pendingRoute ?? 'unknown',
+      repairAttempt: repairAttemptCount + 1,
+    });
 
     return {
       messages: [userMsg(repairMessage)],
@@ -524,10 +549,9 @@ export function makeFinalizeNode(
     };
 
     if (logger) {
-      const planKind =
-        isRecord(pendingPlanData)
-          ? String((pendingPlanData as Record<string, unknown>).kind ?? 'unknown')
-          : 'unknown';
+      const planKind = isRecord(pendingPlanData)
+        ? String((pendingPlanData as Record<string, unknown>).kind ?? 'unknown')
+        : 'unknown';
       void logger.log('node-finalize', {
         planKind,
         operationCount: Array.isArray(
@@ -598,7 +622,7 @@ export function makeValidateNode(
 
       const updatedResult = {
         ...validated,
-        trace: (state.trace || []).concat([{ thought, action, observation }])
+        trace: (state.trace || []).concat([{ thought, action, observation }]),
       };
 
       return {
@@ -611,7 +635,7 @@ export function makeValidateNode(
       const errorMsg =
         validationError instanceof Error ? validationError.message : String(validationError);
       onProgress?.({ phase: 'validate-end', ok: false });
-      const maxRepairs = (modelProfile?.repairStrategy === 'conservative' ? 1 : 2);
+      const maxRepairs = modelProfile?.repairStrategy === 'conservative' ? 1 : 2;
       const repairsRemaining = repairAttemptCount < maxRepairs;
       const timeOk =
         (modelProfile?.timeoutMs ?? 0) - (Date.now() - startTimeMs) > MIN_REMAINING_TIME_MS;
@@ -633,7 +657,7 @@ export function makeValidateNode(
           errorMessage: errorMsg,
           result: null,
           pendingThought: null,
-          trace: [{ thought, action, observation }]
+          trace: [{ thought, action, observation }],
         };
       }
 

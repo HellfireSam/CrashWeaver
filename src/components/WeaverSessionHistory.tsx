@@ -102,33 +102,52 @@ function truncateIntent(intent: string, maxLen: number = 72): string {
 
 function formatToolName(toolName: string): string {
   switch (toolName) {
-    case 'read_note_excerpt': return 'Read excerpt';
-    case 'read_note_full': return 'Read full note';
-    case 'read_note_span': return 'Read note span';
-    case 'search_notes': return 'Search notes';
-    case 'list_candidate_notes': return 'List candidates';
-    case 'list_directory_summary': return 'List directories';
-    case 'refresh_candidates': return 'Refresh candidates';
-    default: return toolName;
+    case 'read_note_excerpt':
+      return 'Read excerpt';
+    case 'read_note_full':
+      return 'Read full note';
+    case 'read_note_span':
+      return 'Read note span';
+    case 'search_notes':
+      return 'Search notes';
+    case 'list_candidate_notes':
+      return 'List candidates';
+    case 'list_directory_summary':
+      return 'List directories';
+    case 'refresh_candidates':
+      return 'Refresh candidates';
+    default:
+      return toolName;
   }
 }
 
 function getStepIcon(step: WeaverSessionStep): string {
   switch (step.event) {
-    case 'node-call-model': return step.actionType === 'tool' ? '🤔' : '📋';
-    case 'node-execute-tool': return step.toolOk ? '🔍' : '⚠️';
-    case 'node-repair': return '🔧';
-    case 'node-finalize': return '📋';
-    case 'node-validate-success': return '✅';
-    case 'plan-final': return '✨';
-    default: return '•';
+    case 'node-call-model':
+      return step.actionType === 'tool' ? '🤔' : '📋';
+    case 'node-execute-tool':
+      return step.toolOk ? '🔍' : '⚠️';
+    case 'node-repair':
+      return '🔧';
+    case 'node-finalize':
+      return '📋';
+    case 'node-validate-success':
+      return '✅';
+    case 'plan-final':
+      return '✨';
+    default:
+      return '•';
   }
 }
 
 function getStepLabel(step: WeaverSessionStep): string {
   switch (step.event) {
     case 'node-call-model':
-      return step.actionType === 'tool' ? 'Thinking' : step.actionType === 'final' ? 'Finalizing' : 'Model response';
+      return step.actionType === 'tool'
+        ? 'Thinking'
+        : step.actionType === 'final'
+          ? 'Finalizing'
+          : 'Model response';
     case 'node-execute-tool':
       return step.toolName ? formatToolName(step.toolName) : 'Tool executed';
     case 'node-repair':
@@ -175,8 +194,10 @@ function extractPlan(obj: unknown): PlanExtract | null {
   return {
     kind: typeof p.kind === 'string' ? p.kind : undefined,
     summary: typeof p.summary === 'string' ? p.summary : undefined,
-    operations: Array.isArray(p.operations) ? p.operations as PlanExtract['operations'] : undefined,
-    warnings: Array.isArray(p.warnings) ? p.warnings as string[] : undefined,
+    operations: Array.isArray(p.operations)
+      ? (p.operations as PlanExtract['operations'])
+      : undefined,
+    warnings: Array.isArray(p.warnings) ? (p.warnings as string[]) : undefined,
   };
 }
 
@@ -224,26 +245,35 @@ export function WeaverSessionHistory({
   }, [sessions, filterQuery]);
 
   // Load session detail when selected
-  const handleSelectSession = useCallback(async (sessionId: string) => {
-    setSelectedSessionId(sessionId);
-    setIsLoadingDetail(true);
-    try {
-      const detail = await window.crashWeaver.getWeaverSession(sessionId, vaultPath) as WeaverSessionDetail | null;
-      setSessionDetail(detail);
-    } catch {
-      setSessionDetail(null);
-    } finally {
-      setIsLoadingDetail(false);
-    }
-  }, [vaultPath]);
+  const handleSelectSession = useCallback(
+    async (sessionId: string) => {
+      setSelectedSessionId(sessionId);
+      setIsLoadingDetail(true);
+      try {
+        const detail = (await window.crashWeaver.getWeaverSession(
+          sessionId,
+          vaultPath,
+        )) as WeaverSessionDetail | null;
+        setSessionDetail(detail);
+      } catch {
+        setSessionDetail(null);
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    },
+    [vaultPath],
+  );
 
-  const handleDelete = useCallback((sessionId: string) => {
-    if (selectedSessionId === sessionId) {
-      setSelectedSessionId(null);
-      setSessionDetail(null);
-    }
-    onDeleteSession(sessionId);
-  }, [onDeleteSession, selectedSessionId]);
+  const handleDelete = useCallback(
+    (sessionId: string) => {
+      if (selectedSessionId === sessionId) {
+        setSelectedSessionId(null);
+        setSessionDetail(null);
+      }
+      onDeleteSession(sessionId);
+    },
+    [onDeleteSession, selectedSessionId],
+  );
 
   const handleClearAll = useCallback(() => {
     setSelectedSessionId(null);
@@ -256,7 +286,14 @@ export function WeaverSessionHistory({
     return (
       <div className="weaverSessionHistory">
         <div className="weaverSessionDetailHeader">
-          <button type="button" className="weaverSessionBackBtn" onClick={() => { setSelectedSessionId(null); setSessionDetail(null); }}>
+          <button
+            type="button"
+            className="weaverSessionBackBtn"
+            onClick={() => {
+              setSelectedSessionId(null);
+              setSessionDetail(null);
+            }}
+          >
             ← Back to History
           </button>
           <button
@@ -272,26 +309,38 @@ export function WeaverSessionHistory({
         <div className="weaverSessionDetailBody">
           <div className="weaverSessionDetailStatus">
             <span className={`weaverSessionStatusIcon ${sessionDetail.success ? 'ok' : 'error'}`}>
-              {isGenerating && sessionDetail.sessionId === activeSessionId ? '⏳' : sessionDetail.success ? '✅' : '❌'}
+              {isGenerating && sessionDetail.sessionId === activeSessionId
+                ? '⏳'
+                : sessionDetail.success
+                  ? '✅'
+                  : '❌'}
             </span>
             <span className="weaverSessionDetailKind">
               {getRequestKindLabel(sessionDetail.requestKind)} · {sessionDetail.cardUid.slice(-8)}
             </span>
           </div>
 
-          <p className="weaverSessionDetailIntent">{sessionDetail.intent || 'No intent recorded'}</p>
+          <p className="weaverSessionDetailIntent">
+            {sessionDetail.intent || 'No intent recorded'}
+          </p>
 
           <div className="weaverSessionDetailMeta">
             <span className="weaverSessionMetaItem">Model: {sessionDetail.model}</span>
             {sessionDetail.success ? (
               <>
                 <span className="weaverSessionMetaItem">Latency: {sessionDetail.latencyMs}ms</span>
-                <span className="weaverSessionMetaItem">Operations: {sessionDetail.operations}</span>
+                <span className="weaverSessionMetaItem">
+                  Operations: {sessionDetail.operations}
+                </span>
               </>
             ) : (
-              <span className="weaverSessionMetaItem error">Error: {sessionDetail.errorMessage || 'Unknown error'}</span>
+              <span className="weaverSessionMetaItem error">
+                Error: {sessionDetail.errorMessage || 'Unknown error'}
+              </span>
             )}
-            <span className="weaverSessionMetaItem">Started: {new Date(sessionDetail.startedAt).toLocaleString()}</span>
+            <span className="weaverSessionMetaItem">
+              Started: {new Date(sessionDetail.startedAt).toLocaleString()}
+            </span>
           </div>
 
           {sessionDetail.steps && sessionDetail.steps.length > 0 ? (
@@ -304,17 +353,21 @@ export function WeaverSessionHistory({
                   <div key={step.index} className={`weaverStepEntry ${step.event}`}>
                     <div className="weaverStepMarker">
                       <span className="weaverStepIcon">{getStepIcon(step)}</span>
-                      {idx < arr.length - 1 ? (
-                        <span className="weaverStepConnector" />
-                      ) : null}
+                      {idx < arr.length - 1 ? <span className="weaverStepConnector" /> : null}
                     </div>
                     <div className="weaverStepContent">
                       <div className="weaverStepHeader">
                         <span className="weaverStepLabel">{getStepLabel(step)}</span>
-                        {step.toolName && step.event === 'node-execute-tool' && step.toolArguments?.filePath ? (
-                          <span className="weaverStepTarget">{String(step.toolArguments.filePath)}</span>
+                        {step.toolName &&
+                        step.event === 'node-execute-tool' &&
+                        step.toolArguments?.filePath ? (
+                          <span className="weaverStepTarget">
+                            {String(step.toolArguments.filePath)}
+                          </span>
                         ) : null}
-                        <span className="weaverStepTs">{new Date(step.ts).toLocaleTimeString()}</span>
+                        <span className="weaverStepTs">
+                          {new Date(step.ts).toLocaleTimeString()}
+                        </span>
                       </div>
                       {step.thought ? (
                         <div className="weaverStepThought">{step.thought}</div>
@@ -337,56 +390,65 @@ export function WeaverSessionHistory({
             </div>
           ) : null}
 
-          {sessionDetail.plan ? (() => {
-            const plan = extractPlan(sessionDetail.plan);
-            return (
-              <>
-                {plan?.summary ? (
-                  <div className="weaverSessionPlanSummary">
-                    <h4 className="weaverSessionSectionTitle">Plan Summary</h4>
-                    <p className="weaverSessionSummaryText">{plan.summary}</p>
-                  </div>
-                ) : null}
+          {sessionDetail.plan
+            ? (() => {
+                const plan = extractPlan(sessionDetail.plan);
+                return (
+                  <>
+                    {plan?.summary ? (
+                      <div className="weaverSessionPlanSummary">
+                        <h4 className="weaverSessionSectionTitle">Plan Summary</h4>
+                        <p className="weaverSessionSummaryText">{plan.summary}</p>
+                      </div>
+                    ) : null}
 
-                {plan?.warnings && plan.warnings.length > 0 ? (
-                  <div className="weaverSessionWarnings">
-                    {plan.warnings.map((w, i) => (
-                      <p key={i} className="weaverWarningItem">{w}</p>
-                    ))}
-                  </div>
-                ) : null}
+                    {plan?.warnings && plan.warnings.length > 0 ? (
+                      <div className="weaverSessionWarnings">
+                        {plan.warnings.map((w, i) => (
+                          <p key={i} className="weaverWarningItem">
+                            {w}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
 
-                {plan?.operations && plan.operations.length > 0 ? (
-                  <div className="weaverSessionOps">
-                    <h4 className="weaverSessionSectionTitle">Operations ({plan.operations.length})</h4>
-                    <div className="weaverOperationList">
-                      {plan.operations.map((op, i) => (
-                        <WeaverOperationItem
-                          key={`${op.kind}-${op.targetPath ?? 'none'}-${i}`}
-                          operation={op as WeavePlanOperation}
-                          index={i}
-                          isExpanded={expandedSessionOps.has(i)}
-                          isApplied={false}
-                          onToggleExpand={(idx) => setExpandedSessionOps((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(idx)) next.delete(idx); else next.add(idx);
-                            return next;
-                          })}
-                        />
-                      ))}
+                    {plan?.operations && plan.operations.length > 0 ? (
+                      <div className="weaverSessionOps">
+                        <h4 className="weaverSessionSectionTitle">
+                          Operations ({plan.operations.length})
+                        </h4>
+                        <div className="weaverOperationList">
+                          {plan.operations.map((op, i) => (
+                            <WeaverOperationItem
+                              key={`${op.kind}-${op.targetPath ?? 'none'}-${i}`}
+                              operation={op as WeavePlanOperation}
+                              index={i}
+                              isExpanded={expandedSessionOps.has(i)}
+                              isApplied={false}
+                              onToggleExpand={(idx) =>
+                                setExpandedSessionOps((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(idx)) next.delete(idx);
+                                  else next.add(idx);
+                                  return next;
+                                })
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="weaverSessionDetailPlan">
+                      <h4 className="weaverSessionSectionTitle">Raw Plan JSON</h4>
+                      <pre className="weaverSessionPlanJson">
+                        {JSON.stringify(sessionDetail.plan, null, 2)}
+                      </pre>
                     </div>
-                  </div>
-                ) : null}
-
-                <div className="weaverSessionDetailPlan">
-                  <h4 className="weaverSessionSectionTitle">Raw Plan JSON</h4>
-                  <pre className="weaverSessionPlanJson">
-                    {JSON.stringify(sessionDetail.plan, null, 2)}
-                  </pre>
-                </div>
-              </>
-            );
-          })() : null}
+                  </>
+                );
+              })()
+            : null}
 
           <div className="weaverSessionDetailActions">
             <button
@@ -407,7 +469,14 @@ export function WeaverSessionHistory({
     return (
       <div className="weaverSessionHistory">
         <div className="weaverSessionDetailHeader">
-          <button type="button" className="weaverSessionBackBtn" onClick={() => { setSelectedSessionId(null); setSessionDetail(null); }}>
+          <button
+            type="button"
+            className="weaverSessionBackBtn"
+            onClick={() => {
+              setSelectedSessionId(null);
+              setSessionDetail(null);
+            }}
+          >
             ← Back to History
           </button>
         </div>
@@ -455,10 +524,16 @@ export function WeaverSessionHistory({
                 >
                   <span className="weaverSessionRowStatus">
                     <span className={`weaverSessionStatusIcon ${session.success ? 'ok' : 'error'}`}>
-                      {session.sessionId === activeSessionId && isGenerating ? '⏳' : session.success ? '✅' : '❌'}
+                      {session.sessionId === activeSessionId && isGenerating
+                        ? '⏳'
+                        : session.success
+                          ? '✅'
+                          : '❌'}
                     </span>
                   </span>
-                  <span className={`weaverSessionRowKind ${getRequestKindClass(session.requestKind)}`}>
+                  <span
+                    className={`weaverSessionRowKind ${getRequestKindClass(session.requestKind)}`}
+                  >
                     {getRequestKindLabel(session.requestKind)}
                   </span>
                   <span className="weaverSessionRowCard" title={session.cardUid}>
@@ -475,7 +550,9 @@ export function WeaverSessionHistory({
                         ? session.errorMessage.slice(0, 40)
                         : 'Failed'}
                   </span>
-                  <span className="weaverSessionRowTime">{getRelativeTimeLabel(session.startedAt)}</span>
+                  <span className="weaverSessionRowTime">
+                    {getRelativeTimeLabel(session.startedAt)}
+                  </span>
                   <span
                     className="weaverSessionRowDelete"
                     title="Delete session"

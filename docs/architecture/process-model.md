@@ -9,11 +9,11 @@ shape is in [the data model](./data-model.md); the Weaver's own flow is in
 
 ## The three processes
 
-| Process | Entry point | Runs as | Owns |
-| --- | --- | --- | --- |
-| Main | `electron/main.ts` | CommonJS, compiled to `dist-electron/main.js` | Window lifecycle, native dialogs, the Vault and Card store services, settings persistence, the Weaver pipeline, the filesystem watcher |
-| Preload | `electron/preload.ts` | CommonJS, compiled to `dist-electron/preload.js` | The `window.crashWeaver` object: one member per main-process channel |
-| Renderer | `src/main.tsx`, mounted into `index.html` | ES modules bundled by Vite into `dist/` | All UI and interaction, all in-memory application state |
+| Process  | Entry point                               | Runs as                                          | Owns                                                                                                                                   |
+| -------- | ----------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Main     | `electron/main.ts`                        | CommonJS, compiled to `dist-electron/main.js`    | Window lifecycle, native dialogs, the Vault and Card store services, settings persistence, the Weaver pipeline, the filesystem watcher |
+| Preload  | `electron/preload.ts`                     | CommonJS, compiled to `dist-electron/preload.js` | The `window.crashWeaver` object: one member per main-process channel                                                                   |
+| Renderer | `src/main.tsx`, mounted into `index.html` | ES modules bundled by Vite into `dist/`          | All UI and interaction, all in-memory application state                                                                                |
 
 ### Main process
 
@@ -63,14 +63,14 @@ its own, every export is an `interface` or a `type`, and every import site on bo
 TypeScript projects compile the same file. The contract holds shapes, not behaviour and not
 channel names:
 
-| Group | Representative exports | Who uses it |
-| --- | --- | --- |
-| Crash Card payload and review state | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `ReviewMetadata` | Main persists it; renderer renders it |
-| UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`, `CardParseDiagnosticCode` | Main produces Diagnostics; renderer displays them |
-| Vault | `VaultDescriptor`, `VaultNoteSummary`, `VaultNoteDocument`, `VaultIndex`, `VaultIndexEntry`, `VaultWriteNoteInput`, `VaultWriteNoteResult` | Returned by `vault:*` channels; the descriptor lives in `VaultContext` |
-| Crashpad | `CrashpadDocument`, `CrashpadSummary`, `CrashpadCardEntry`, `CrashpadDeletedCardSnapshot`, `CrashpadDeletePreferences` | Main persists; renderer authors and restores |
-| Weaver requests, plans and results | `WeaveKind`, `WeaveStrength`, `GuidedInsertPermissions`, `WeavePlanRequest`, `WeavePlan`, `WeaveReActStep`, `WeavePlanResult`, `WeaveProviderHealth`, `WeaveModelInfo`, `WeaveApplyResult`, `WeaverSettings`, `WeaverKeyStatus` | Renderer submits a request and reviews a plan; main runs and applies it |
-| Weave operation kinds and payloads | `WeavePlanOperationKind`, the `*Payload` interfaces and the matching `*Operation` aliases, the `WeavePlanOperation` union | Both sides: a `WeavePlanOperation[]` is posted to `weave:apply-plan` |
+| Group                                | Representative exports                                                                                                                                                                                                          | Who uses it                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Crash Card payload and review state  | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `ReviewMetadata`                                                                                                                         | Main persists it; renderer renders it                                   |
+| UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`, `CardParseDiagnosticCode`                                                                                                                                     | Main produces Diagnostics; renderer displays them                       |
+| Vault                                | `VaultDescriptor`, `VaultNoteSummary`, `VaultNoteDocument`, `VaultIndex`, `VaultIndexEntry`, `VaultWriteNoteInput`, `VaultWriteNoteResult`                                                                                      | Returned by `vault:*` channels; the descriptor lives in `VaultContext`  |
+| Crashpad                             | `CrashpadDocument`, `CrashpadSummary`, `CrashpadCardEntry`, `CrashpadDeletedCardSnapshot`, `CrashpadDeletePreferences`                                                                                                          | Main persists; renderer authors and restores                            |
+| Weaver requests, plans and results   | `WeaveKind`, `WeaveStrength`, `GuidedInsertPermissions`, `WeavePlanRequest`, `WeavePlan`, `WeaveReActStep`, `WeavePlanResult`, `WeaveProviderHealth`, `WeaveModelInfo`, `WeaveApplyResult`, `WeaverSettings`, `WeaverKeyStatus` | Renderer submits a request and reviews a plan; main runs and applies it |
+| Weave operation kinds and payloads   | `WeavePlanOperationKind`, the `*Payload` interfaces and the matching `*Operation` aliases, the `WeavePlanOperation` union                                                                                                       | Both sides: a `WeavePlanOperation[]` is posted to `weave:apply-plan`    |
 
 Ownership follows the shapes. Main owns the behaviour behind them: it reads and writes the
 Vault, validates paths, persists the Card store and settings, and calls the provider. Preload
@@ -89,12 +89,12 @@ calls at module scope in `electron/main.ts`, so they exist before `app.whenReady
 Each handler returns a value or a promise of one, which becomes the resolved value of the
 matching `ipcRenderer.invoke` in the renderer; a thrown error rejects that promise.
 
-| Area | Examples | Backed by |
-| --- | --- | --- |
-| `vault:` | `vault:select-folder`, `vault:open`, `vault:read-note`, `vault:write-note`, `vault:update-index`, `vault:list-internal-directories`, `vault:select-image-directories`, `vault:set-image-directories` | `vaultService`, `dialog` |
-| `card-store:` | `card-store:select-folder`, `card-store:get-config`, `card-store:list-cards`, `card-store:create-card`, `card-store:save-card`, `card-store:rename-card`, `card-store:delete-card`, `card-store:restore-card`, `card-store:set-path` | `vaultService`, `settingsService` |
-| `crashpad:` | `crashpad:list`, `crashpad:open`, `crashpad:create`, `crashpad:save`, `crashpad:get-delete-preferences`, `crashpad:set-delete-preferences` | `vaultService`, `settingsService` |
-| `weave:` | `weave:generate-plan`, `weave:health-check`, `weave:list-models`, `weave:apply-plan`, `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` | `weaveService`, `weaveApplyService`, `settingsService` |
+| Area          | Examples                                                                                                                                                                                                                             | Backed by                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `vault:`      | `vault:select-folder`, `vault:open`, `vault:read-note`, `vault:write-note`, `vault:update-index`, `vault:list-internal-directories`, `vault:select-image-directories`, `vault:set-image-directories`                                 | `vaultService`, `dialog`                               |
+| `card-store:` | `card-store:select-folder`, `card-store:get-config`, `card-store:list-cards`, `card-store:create-card`, `card-store:save-card`, `card-store:rename-card`, `card-store:delete-card`, `card-store:restore-card`, `card-store:set-path` | `vaultService`, `settingsService`                      |
+| `crashpad:`   | `crashpad:list`, `crashpad:open`, `crashpad:create`, `crashpad:save`, `crashpad:get-delete-preferences`, `crashpad:set-delete-preferences`                                                                                           | `vaultService`, `settingsService`                      |
+| `weave:`      | `weave:generate-plan`, `weave:health-check`, `weave:list-models`, `weave:apply-plan`, `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions`                                                      | `weaveService`, `weaveApplyService`, `settingsService` |
 
 The picker channels (`vault:select-folder`, `card-store:select-folder`,
 `vault:select-image-directories`) are the only ones that open native dialogs; they return `null`
@@ -105,10 +105,10 @@ before returning, so the watcher reflects the current root and Card store path.
 
 ### Push channels
 
-| Channel | Sent from | Trigger |
-| --- | --- | --- |
-| `weave:plan-progress` | the `weave:generate-plan` handler, via `event.sender.send` | The callback that handler passes into `generateWeavePlan(request, onProgress)` |
-| `vault:external-change` | `flushWatcherNotifications()`, via `win.webContents.send` to every window | A debounced batch of externally changed Note paths from the watcher |
+| Channel                 | Sent from                                                                 | Trigger                                                                        |
+| ----------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `weave:plan-progress`   | the `weave:generate-plan` handler, via `event.sender.send`                | The callback that handler passes into `generateWeavePlan(request, onProgress)` |
+| `vault:external-change` | `flushWatcherNotifications()`, via `win.webContents.send` to every window | A debounced batch of externally changed Note paths from the watcher            |
 
 ### Typing across the boundary
 
@@ -147,12 +147,12 @@ external-change subscription lives.
 `EditorStateProvider`, `WeaverStateProvider`, `UIStateProvider`. `src/state/index.ts` re-exports
 the providers, hooks and types.
 
-| Context | File | State it owns | Hook |
-| --- | --- | --- | --- |
-| Vault | `src/state/VaultContext.tsx` | `vaultPath`, the `vault` descriptor, `vaultAlias`, `allCards`, `internalDirectories`, `crashpadSummaries`, `activeCrashpad`, `crashpadDeletePreferences` | `useVaultState`, plus `useVaultStateValues` for values-only memos |
-| Editor | `src/state/EditorContext.tsx` | `activeEditorKind` (`markdown`, `crashpad`, `card`), active card and Note paths, `draftPath`/`draftContent`/`savedContent`, `activeNote`, `viewMode`, `cardScope`, loading flags, `statusMessage`, `errorMessage`, `editorFontSize` | `useEditorState`, plus `clearEditorState` for a Vault close |
-| Weaver | `src/state/WeaverContext.tsx` | `weaveKind`, `weaveStrength`, guided-insert permissions, `weaveIntent`, `weaveModel`, `weavePlanResult`, `weaveProviderHealth`, `weaverSettings`, `weaveSessions`, `weaveApplyResult`, apply errors and in-flight flags | `useWeaverState` |
-| UI | `src/state/UIContext.tsx` | `expandedFolders`, `activeSidebarTab`, sidebar and Inspector visibility, `isSettingsOpen`, `openFirstNoteOnVaultOpen`, `showHiddenEntries`, `focusedCardUid`, `focusedWindow`, `activeWidgetTool`, the Crashpad undo and redo stacks | `useUIState`, plus `pushCrashpadHistory` |
+| Context | File                          | State it owns                                                                                                                                                                                                                        | Hook                                                              |
+| ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Vault   | `src/state/VaultContext.tsx`  | `vaultPath`, the `vault` descriptor, `vaultAlias`, `allCards`, `internalDirectories`, `crashpadSummaries`, `activeCrashpad`, `crashpadDeletePreferences`                                                                             | `useVaultState`, plus `useVaultStateValues` for values-only memos |
+| Editor  | `src/state/EditorContext.tsx` | `activeEditorKind` (`markdown`, `crashpad`, `card`), active card and Note paths, `draftPath`/`draftContent`/`savedContent`, `activeNote`, `viewMode`, `cardScope`, loading flags, `statusMessage`, `errorMessage`, `editorFontSize`  | `useEditorState`, plus `clearEditorState` for a Vault close       |
+| Weaver  | `src/state/WeaverContext.tsx` | `weaveKind`, `weaveStrength`, guided-insert permissions, `weaveIntent`, `weaveModel`, `weavePlanResult`, `weaveProviderHealth`, `weaverSettings`, `weaveSessions`, `weaveApplyResult`, apply errors and in-flight flags              | `useWeaverState`                                                  |
+| UI      | `src/state/UIContext.tsx`     | `expandedFolders`, `activeSidebarTab`, sidebar and Inspector visibility, `isSettingsOpen`, `openFirstNoteOnVaultOpen`, `showHiddenEntries`, `focusedCardUid`, `focusedWindow`, `activeWidgetTool`, the Crashpad undo and redo stacks | `useUIState`, plus `pushCrashpadHistory`                          |
 
 All four are in-memory only; durable state lives in the Vault or in the main-process settings
 document.
@@ -201,13 +201,13 @@ and store the message in the editor context's `errorMessage` via `getErrorMessag
 `crashweaver-settings.json` in `app.getPath('userData')`, shaped by the internal
 `PersistedSettings` interface with `version: 1`.
 
-| Persisted key | Scope | Written by | Read back by |
-| --- | --- | --- | --- |
-| `cardStoreByVault` | Per Vault, keyed by `path.resolve(rootPath)`; the default is `.crashweaver/cards` inside the Vault, from `getDefaultCardStorePath` | `setCardStorePath` | `getCardStoreConfig` |
-| `imageDirectoriesByVault` | Per Vault, same keying | `setImageDirectories` | `getImageDirectories` |
-| `crashpadDeletePreferences` | Global | `setCrashpadDeletePreferences` | `getCrashpadDeletePreferences` |
-| `openrouterApiKeyEncrypted` | Global | `setOpenRouterApiKey`, `clearOpenRouterApiKey` | `getOpenRouterApiKeyDecrypted` |
-| `weaverPreferredModel`, `weaverRequestLogsDirectory`, `weaverDisableBudgetRestrictions` and the budget fields | Global | `setWeaverPreferredModel`, `setWeaverRequestLogsDirectory`, `updateWeaverSettings` | `getWeaverSettings`, `getWeaverRequestLogsDirectory` |
+| Persisted key                                                                                                 | Scope                                                                                                                              | Written by                                                                         | Read back by                                         |
+| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `cardStoreByVault`                                                                                            | Per Vault, keyed by `path.resolve(rootPath)`; the default is `.crashweaver/cards` inside the Vault, from `getDefaultCardStorePath` | `setCardStorePath`                                                                 | `getCardStoreConfig`                                 |
+| `imageDirectoriesByVault`                                                                                     | Per Vault, same keying                                                                                                             | `setImageDirectories`                                                              | `getImageDirectories`                                |
+| `crashpadDeletePreferences`                                                                                   | Global                                                                                                                             | `setCrashpadDeletePreferences`                                                     | `getCrashpadDeletePreferences`                       |
+| `openrouterApiKeyEncrypted`                                                                                   | Global                                                                                                                             | `setOpenRouterApiKey`, `clearOpenRouterApiKey`                                     | `getOpenRouterApiKeyDecrypted`                       |
+| `weaverPreferredModel`, `weaverRequestLogsDirectory`, `weaverDisableBudgetRestrictions` and the budget fields | Global                                                                                                                             | `setWeaverPreferredModel`, `setWeaverRequestLogsDirectory`, `updateWeaverSettings` | `getWeaverSettings`, `getWeaverRequestLogsDirectory` |
 
 `readSettings()` re-validates every field as it parses: wrong-typed values become `undefined`,
 string arrays are filtered by `toStringArray`, the preferred-model string is trimmed by
@@ -255,12 +255,12 @@ geometry is fixed at creation and not remembered across launches.
 
 ## Build and module resolution
 
-| Project | Covers | Module and resolution | Emits |
-| --- | --- | --- | --- |
-| `tsconfig.json` | Solution only: `"files": []` with references to the app and node projects | — | Nothing |
-| `tsconfig.app.json` | `src` | `module: ESNext`, `moduleResolution: bundler`, `jsx: react-jsx`, `noEmit` | Vite bundles to `dist/` |
-| `tsconfig.node.json` | `vite.config.ts` | `module: ESNext`, `moduleResolution: bundler`, `noEmit` | Nothing |
-| `tsconfig.electron.json` | `electron/**/*.ts` | `module: CommonJS`, `moduleResolution: Node`, `rootDir: electron` | `dist-electron/` |
+| Project                  | Covers                                                                    | Module and resolution                                                     | Emits                   |
+| ------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------- |
+| `tsconfig.json`          | Solution only: `"files": []` with references to the app and node projects | —                                                                         | Nothing                 |
+| `tsconfig.app.json`      | `src`                                                                     | `module: ESNext`, `moduleResolution: bundler`, `jsx: react-jsx`, `noEmit` | Vite bundles to `dist/` |
+| `tsconfig.node.json`     | `vite.config.ts`                                                          | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                   | Nothing                 |
+| `tsconfig.electron.json` | `electron/**/*.ts`                                                        | `module: CommonJS`, `moduleResolution: Node`, `rootDir: electron`         | `dist-electron/`        |
 
 `tsconfig.electron.json` sits deliberately outside the solution file, because that project emits
 a CommonJS build while the app and node projects are `noEmit`. `npm run typecheck` runs `tsc -b`
@@ -303,15 +303,15 @@ and empties the pending path set; it runs on `window-all-closed` and before any 
 
 ## Boundaries at a glance
 
-| Boundary | Direction | Files | Mechanism |
-| --- | --- | --- | --- |
-| Renderer to preload | Renderer calls `window.crashWeaver.*` | declared in `src/vite-env.d.ts`, implemented in `electron/preload.ts` | `contextBridge.exposeInMainWorld` |
-| Preload to main, request/response | Renderer method call to handler | `electron/preload.ts` to `electron/main.ts` | `ipcRenderer.invoke` and `ipcMain.handle` on `<area>:<verb>` channels |
-| Main to renderer, push | Progress and external-change events | `electron/main.ts` to `electron/preload.ts` to `App.tsx` and `WeaverProposalPanel` | `webContents.send` / `event.sender.send`, `ipcRenderer.on`, unsubscribe closures |
-| Shared types | Both directions | `electron/vault-contract.ts` | Type-only imports on both sides |
-| Renderer composition | Within the renderer | `src/main.tsx` to `src/App.tsx` to `src/state/`, `src/hooks/`, `src/components/`, `src/lib/` | React contexts, hooks, `ErrorBoundary` |
-| Settings | Main only, surfaced over channels | `electron/settingsService.ts` | `crashweaver-settings.json` in `app.getPath('userData')`, written atomically through `electron/utils/jsonFile.ts` |
-| Watcher | Main to Card store and renderer | `electron/main.ts` | chokidar on the Vault root, debounced `vault:external-change` |
+| Boundary                          | Direction                             | Files                                                                                        | Mechanism                                                                                                         |
+| --------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Renderer to preload               | Renderer calls `window.crashWeaver.*` | declared in `src/vite-env.d.ts`, implemented in `electron/preload.ts`                        | `contextBridge.exposeInMainWorld`                                                                                 |
+| Preload to main, request/response | Renderer method call to handler       | `electron/preload.ts` to `electron/main.ts`                                                  | `ipcRenderer.invoke` and `ipcMain.handle` on `<area>:<verb>` channels                                             |
+| Main to renderer, push            | Progress and external-change events   | `electron/main.ts` to `electron/preload.ts` to `App.tsx` and `WeaverProposalPanel`           | `webContents.send` / `event.sender.send`, `ipcRenderer.on`, unsubscribe closures                                  |
+| Shared types                      | Both directions                       | `electron/vault-contract.ts`                                                                 | Type-only imports on both sides                                                                                   |
+| Renderer composition              | Within the renderer                   | `src/main.tsx` to `src/App.tsx` to `src/state/`, `src/hooks/`, `src/components/`, `src/lib/` | React contexts, hooks, `ErrorBoundary`                                                                            |
+| Settings                          | Main only, surfaced over channels     | `electron/settingsService.ts`                                                                | `crashweaver-settings.json` in `app.getPath('userData')`, written atomically through `electron/utils/jsonFile.ts` |
+| Watcher                           | Main to Card store and renderer       | `electron/main.ts`                                                                           | chokidar on the Vault root, debounced `vault:external-change`                                                     |
 
 See [the data model](./data-model.md) for the Vault's on-disk layout,
 [the weave pipeline](./weave-pipeline.md) for what happens between `weave:generate-plan` and

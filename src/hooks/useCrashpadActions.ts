@@ -25,10 +25,14 @@ type UseCrashpadActionsOptions = {
   focusedCardUidByTab: Record<string, string | null>;
   updateCrashpadTabViewState: (
     filePath: string,
-    nextState: Partial<CrashpadTabViewState> | ((currentState: CrashpadTabViewState) => CrashpadTabViewState),
+    nextState:
+      | Partial<CrashpadTabViewState>
+      | ((currentState: CrashpadTabViewState) => CrashpadTabViewState),
   ) => void;
   rememberOpenTab: (filePath: string) => void;
-  refreshInternalDirectories: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
+  refreshInternalDirectories: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
   setCrashpadSummaries: Dispatch<SetStateAction<CrashpadSummary[]>>;
   setCrashpadDeletePreferences: Dispatch<SetStateAction<CrashpadDeletePreferences>>;
   setActiveCrashpad: Dispatch<SetStateAction<CrashpadDocument | null>>;
@@ -208,7 +212,10 @@ export function useCrashpadActions({
         return;
       }
 
-      const saved = await window.crashWeaver.setCrashpadDeletePreferences(vaultPath, nextPreferences);
+      const saved = await window.crashWeaver.setCrashpadDeletePreferences(
+        vaultPath,
+        nextPreferences,
+      );
       setCrashpadDeletePreferences(saved);
       setStatusMessage('Crashpad delete preferences updated.');
       setErrorMessage(null);

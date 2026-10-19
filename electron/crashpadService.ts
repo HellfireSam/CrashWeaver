@@ -61,7 +61,11 @@ function coerceDeletedSnapshot(value: unknown): CrashpadDeletedCardSnapshot | nu
 
   const snapshot = value as Partial<CrashpadDeletedCardSnapshot>;
 
-  if (!snapshot.card || typeof snapshot.card !== 'object' || typeof snapshot.card.uid !== 'string') {
+  if (
+    !snapshot.card ||
+    typeof snapshot.card !== 'object' ||
+    typeof snapshot.card.uid !== 'string'
+  ) {
     return null;
   }
 
@@ -83,7 +87,10 @@ function coerceDeletedSnapshot(value: unknown): CrashpadDeletedCardSnapshot | nu
 function coerceCrashpadDocument(filePath: string, value: unknown): CrashpadDocument {
   const data = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const fileName = path.basename(filePath, '.crashpad.json');
-  const id = typeof data.id === 'string' && data.id.trim() ? normalizeCrashpadId(data.id) : normalizeCrashpadId(fileName);
+  const id =
+    typeof data.id === 'string' && data.id.trim()
+      ? normalizeCrashpadId(data.id)
+      : normalizeCrashpadId(fileName);
   const createdAt = typeof data.createdAt === 'string' ? data.createdAt : nowIso();
   const cards = Array.isArray(data.cards)
     ? data.cards
@@ -169,7 +176,10 @@ export async function listCrashpads(rootPath: string): Promise<CrashpadSummary[]
   }
 }
 
-export async function readCrashpad(rootPath: string, crashpadId: string): Promise<CrashpadDocument | null> {
+export async function readCrashpad(
+  rootPath: string,
+  crashpadId: string,
+): Promise<CrashpadDocument | null> {
   try {
     const filePath = getCrashpadFilePath(rootPath, crashpadId);
     const raw = await fs.readFile(filePath, 'utf8');
@@ -214,7 +224,10 @@ export async function createCrashpad(rootPath: string, name: string): Promise<Cr
   }
 }
 
-export async function writeCrashpad(rootPath: string, document: CrashpadDocument): Promise<CrashpadDocument> {
+export async function writeCrashpad(
+  rootPath: string,
+  document: CrashpadDocument,
+): Promise<CrashpadDocument> {
   const filePath = getCrashpadFilePath(rootPath, document.id);
   const nextDocument: CrashpadDocument = {
     ...document,

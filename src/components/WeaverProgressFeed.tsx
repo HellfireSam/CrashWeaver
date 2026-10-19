@@ -37,27 +37,45 @@ interface WeaverProgressFeedProps {
 
 function formatToolName(toolName: string): string {
   switch (toolName) {
-    case 'read_note_excerpt': return 'Read excerpt';
-    case 'read_note_full': return 'Read full note';
-    case 'read_note_span': return 'Read note span';
-    case 'search_notes': return 'Search notes';
-    case 'list_candidate_notes': return 'List candidates';
-    case 'list_directory_summary': return 'List directories';
-    case 'refresh_candidates': return 'Refresh candidates';
-    default: return toolName;
+    case 'read_note_excerpt':
+      return 'Read excerpt';
+    case 'read_note_full':
+      return 'Read full note';
+    case 'read_note_span':
+      return 'Read note span';
+    case 'search_notes':
+      return 'Search notes';
+    case 'list_candidate_notes':
+      return 'List candidates';
+    case 'list_directory_summary':
+      return 'List directories';
+    case 'refresh_candidates':
+      return 'Refresh candidates';
+    default:
+      return toolName;
   }
 }
 
 function getEntryIcon(entry: WeaverLiveEntry): string {
   if (entry.status === 'running') {
     switch (entry.phase) {
-      case 'call-model-start': case 'call-model-end': return '🤔';
-      case 'execute-tool-start': case 'execute-tool-end': return '🔍';
-      case 'repair': return '🔧';
-      case 'finalize-start': return '📋';
-      case 'validate-start': case 'validate-end': return '✅';
-      case 'graph-start': return '🚀';
-      default: return '•';
+      case 'call-model-start':
+      case 'call-model-end':
+        return '🤔';
+      case 'execute-tool-start':
+      case 'execute-tool-end':
+        return '🔍';
+      case 'repair':
+        return '🔧';
+      case 'finalize-start':
+        return '📋';
+      case 'validate-start':
+      case 'validate-end':
+        return '✅';
+      case 'graph-start':
+        return '🚀';
+      default:
+        return '•';
     }
   }
   if (entry.status === 'error') {
@@ -68,11 +86,16 @@ function getEntryIcon(entry: WeaverLiveEntry): string {
   }
   // status === 'ok' or 'info'
   switch (entry.phase) {
-    case 'graph-complete': return '✨';
-    case 'graph-fail': return '❌';
-    case 'execute-tool-end': return '🔍';
-    case 'validate-end': return '✅';
-    default: return '✓';
+    case 'graph-complete':
+      return '✨';
+    case 'graph-fail':
+      return '❌';
+    case 'execute-tool-end':
+      return '🔍';
+    case 'validate-end':
+      return '✅';
+    default:
+      return '✓';
   }
 }
 
@@ -84,12 +107,18 @@ function getEntryLabel(entry: WeaverLiveEntry): string {
       return entry.toolName ? formatToolName(entry.toolName) : 'Tool done';
     case 'repair':
       return `Repair: ${entry.repairType ?? 'unknown'} (attempt ${entry.repairAttempt ?? '?'})`;
-    case 'finalize-start': return 'Finalizing plan…';
-    case 'validate-start': return 'Validating…';
-    case 'validate-end': return entry.status !== 'error' ? 'Plan validated' : 'Validation failed';
-    case 'graph-complete': return `Done — ${entry.operations ?? '?'} ops · ${entry.latencyMs ?? '?'}ms`;
-    case 'graph-fail': return entry.errorMessage ?? 'Generation failed';
-    default: return entry.phase;
+    case 'finalize-start':
+      return 'Finalizing plan…';
+    case 'validate-start':
+      return 'Validating…';
+    case 'validate-end':
+      return entry.status !== 'error' ? 'Plan validated' : 'Validation failed';
+    case 'graph-complete':
+      return `Done — ${entry.operations ?? '?'} ops · ${entry.latencyMs ?? '?'}ms`;
+    case 'graph-fail':
+      return entry.errorMessage ?? 'Generation failed';
+    default:
+      return entry.phase;
   }
 }
 
@@ -190,7 +219,9 @@ export function WeaverProgressFeed({
     return (
       <div className="weaverProgressFeed collapsed" onClick={onToggleCollapse}>
         <span className="weaverFeedCollapsedLabel">{collapsedLabel}</span>
-        <button type="button" className="weaverFeedExpandBtn" title="Expand progress feed">＋</button>
+        <button type="button" className="weaverFeedExpandBtn" title="Expand progress feed">
+          ＋
+        </button>
       </div>
     );
   }
@@ -203,7 +234,14 @@ export function WeaverProgressFeed({
         {toolBudget !== undefined ? (
           <span className="weaverFeedBudget">{toolBudget} tool calls</span>
         ) : null}
-        <button type="button" className="weaverFeedCollapseBtn" onClick={onToggleCollapse} title="Collapse">−</button>
+        <button
+          type="button"
+          className="weaverFeedCollapseBtn"
+          onClick={onToggleCollapse}
+          title="Collapse"
+        >
+          −
+        </button>
       </div>
       <div className="weaverFeedBody">
         <div className="weaverStepTimeline">
@@ -220,14 +258,17 @@ export function WeaverProgressFeed({
                     <span className="weaverStepTarget">{entry.toolTarget}</span>
                   ) : null}
                 </div>
-                {entry.thought ? (
-                  <div className="weaverStepThought">{entry.thought}</div>
-                ) : null}
+                {entry.thought ? <div className="weaverStepThought">{entry.thought}</div> : null}
                 {getEntryMeta(entry) ? (
                   <div className="weaverStepMeta">{getEntryMeta(entry)}</div>
                 ) : null}
                 {entry.errorMessage && entry.phase !== 'graph-fail' ? (
-                  <div className="weaverStepMeta" style={{ color: 'var(--weaver-feed-error, #f5b9b4)' }}>✗ {entry.errorMessage}</div>
+                  <div
+                    className="weaverStepMeta"
+                    style={{ color: 'var(--weaver-feed-error, #f5b9b4)' }}
+                  >
+                    ✗ {entry.errorMessage}
+                  </div>
                 ) : null}
                 {entry.toolArguments && entry.phase === 'execute-tool-end' ? (
                   <details className="weaverStepToolArgs">

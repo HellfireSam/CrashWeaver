@@ -124,10 +124,10 @@ function verifyBoundaryIntegrity(content: string, label: string): void {
 
   const errors = parsed.diagnostics.filter((d) => d.severity === 'error');
   if (errors.length > 0) {
-    const messages = errors.map((d) => `[${d.code}] ${d.message}${d.uid ? ` (uid: ${d.uid})` : ''}`);
-    throw new Error(
-      `Boundary integrity check failed for ${label}: ${messages.join('; ')}`,
+    const messages = errors.map(
+      (d) => `[${d.code}] ${d.message}${d.uid ? ` (uid: ${d.uid})` : ''}`,
     );
+    throw new Error(`Boundary integrity check failed for ${label}: ${messages.join('; ')}`);
   }
 }
 
@@ -176,14 +176,22 @@ async function applyInsertBoundaryPair(
     }
     case 'after-heading': {
       const headingText = payload.headingText ?? '';
-      const headingRegex = new RegExp(`^#{1,6}\\s+${headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+      const headingRegex = new RegExp(
+        `^#{1,6}\\s+${headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+        'i',
+      );
       const headingIndex = lines.findIndex((line) => headingRegex.test(line));
       if (headingIndex === -1) {
         // Fallback: append to end if heading not found
         return {
           ok: true,
           warning: buildOperationWarning(
-            { kind: 'insert-boundary-pair', targetPath, payload, rationale: '' } as WeavePlanOperation,
+            {
+              kind: 'insert-boundary-pair',
+              targetPath,
+              payload,
+              rationale: '',
+            } as WeavePlanOperation,
             `Heading "${headingText}" not found; appended to end of note.`,
           ),
           affectedPaths: [targetPath],
@@ -198,13 +206,21 @@ async function applyInsertBoundaryPair(
     }
     case 'before-heading': {
       const headingText = payload.headingText ?? '';
-      const headingRegex = new RegExp(`^#{1,6}\\s+${headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+      const headingRegex = new RegExp(
+        `^#{1,6}\\s+${headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+        'i',
+      );
       const headingIndex = lines.findIndex((line) => headingRegex.test(line));
       if (headingIndex === -1) {
         return {
           ok: true,
           warning: buildOperationWarning(
-            { kind: 'insert-boundary-pair', targetPath, payload, rationale: '' } as WeavePlanOperation,
+            {
+              kind: 'insert-boundary-pair',
+              targetPath,
+              payload,
+              rationale: '',
+            } as WeavePlanOperation,
             `Heading "${headingText}" not found; prepended to note.`,
           ),
           affectedPaths: [targetPath],
@@ -239,7 +255,12 @@ async function applyInsertBoundaryPair(
         return {
           ok: true,
           warning: buildOperationWarning(
-            { kind: 'insert-boundary-pair', targetPath, payload, rationale: '' } as WeavePlanOperation,
+            {
+              kind: 'insert-boundary-pair',
+              targetPath,
+              payload,
+              rationale: '',
+            } as WeavePlanOperation,
             'Selected text not found in note; appended to end.',
           ),
           affectedPaths: [targetPath],
@@ -346,11 +367,7 @@ async function applyCreateNote(
   // Build note content — no forced boundary injection.
   // The LLM may choose to include boundary markers in payload.content,
   // but they are never appended by the system.
-  const noteLines = [
-    `# ${payload.title}`,
-    '',
-    payload.content,
-  ];
+  const noteLines = [`# ${payload.title}`, '', payload.content];
   const noteContent = noteLines.join('\n');
 
   // Create parent directories
@@ -514,12 +531,13 @@ async function applyDeleteNote(
   // Delete the note file
   await fs.rm(absolutePath, { force: true });
 
-  const warning = orphanedCardUids.length > 0
-    ? buildOperationWarning(
-        { kind: 'delete-note', targetPath, payload, rationale: '' } as WeavePlanOperation,
-        `Card(s) ${orphanedCardUids.join(', ')} no longer referenced in any note. Card JSON file(s) preserved in card store — delete manually if no longer needed.`,
-      )
-    : undefined;
+  const warning =
+    orphanedCardUids.length > 0
+      ? buildOperationWarning(
+          { kind: 'delete-note', targetPath, payload, rationale: '' } as WeavePlanOperation,
+          `Card(s) ${orphanedCardUids.join(', ')} no longer referenced in any note. Card JSON file(s) preserved in card store — delete manually if no longer needed.`,
+        )
+      : undefined;
 
   return { ok: true, warning, affectedPaths: [targetPath] };
 }
@@ -630,12 +648,13 @@ async function applyDeleteDirectory(
 
   // Check if directory is non-empty and warn
   const entries = await fs.readdir(absolutePath);
-  const warning = entries.length > 0
-    ? buildOperationWarning(
-        { kind: 'delete-directory', targetPath, payload, rationale: '' } as WeavePlanOperation,
-        `Directory contains ${entries.length} item(s); they will be permanently deleted.`,
-      )
-    : undefined;
+  const warning =
+    entries.length > 0
+      ? buildOperationWarning(
+          { kind: 'delete-directory', targetPath, payload, rationale: '' } as WeavePlanOperation,
+          `Directory contains ${entries.length} item(s); they will be permanently deleted.`,
+        )
+      : undefined;
 
   await fs.rm(absolutePath, { recursive: true, force: true });
 
@@ -664,62 +683,92 @@ export async function applyWeaveOperations(
       switch (operation.kind) {
         case 'insert-boundary-pair':
           result = await applyInsertBoundaryPair(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as InsertBoundaryPairPayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as InsertBoundaryPairPayload,
+            dryRun,
           );
           break;
         case 'edit-note-content':
           result = await applyEditNoteContent(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as EditNoteContentPayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as EditNoteContentPayload,
+            dryRun,
           );
           break;
         case 'create-note':
           result = await applyCreateNote(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as CreateNotePayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as CreateNotePayload,
+            dryRun,
           );
           break;
         case 'rename-note':
           result = await applyRenameNote(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as RenameNotePayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as RenameNotePayload,
+            dryRun,
           );
           break;
         case 'move-note':
           result = await applyMoveNote(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as MoveNotePayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as MoveNotePayload,
+            dryRun,
           );
           break;
         case 'delete-note':
           result = await applyDeleteNote(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as DeleteNotePayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as DeleteNotePayload,
+            dryRun,
           );
           break;
         case 'create-directory':
           result = await applyCreateDirectory(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as CreateDirectoryPayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as CreateDirectoryPayload,
+            dryRun,
           );
           break;
         case 'rename-directory':
           result = await applyRenameDirectory(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as RenameDirectoryPayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as RenameDirectoryPayload,
+            dryRun,
           );
           break;
         case 'move-directory':
           result = await applyMoveDirectory(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as MoveDirectoryPayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as MoveDirectoryPayload,
+            dryRun,
           );
           break;
         case 'delete-directory':
           result = await applyDeleteDirectory(
-            resolvedRoot, cardStorePath, targetPath,
-            operation.payload as DeleteDirectoryPayload, dryRun,
+            resolvedRoot,
+            cardStorePath,
+            targetPath,
+            operation.payload as DeleteDirectoryPayload,
+            dryRun,
           );
           break;
         default:

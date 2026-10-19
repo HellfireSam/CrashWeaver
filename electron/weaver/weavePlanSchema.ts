@@ -71,9 +71,13 @@ export function resolveDefaultMaxOperations(
     case 'light':
       return settings?.intelligentLightMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH.light;
     case 'standard':
-      return settings?.intelligentStandardMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH.standard;
+      return (
+        settings?.intelligentStandardMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH.standard
+      );
     case 'go-ham':
-      return settings?.intelligentGoHamMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH['go-ham'];
+      return (
+        settings?.intelligentGoHamMaxOperations ?? DEFAULT_MAX_OPERATIONS_BY_STRENGTH['go-ham']
+      );
     default:
       return DEFAULT_MAX_OPERATIONS_GUIDED;
   }
@@ -127,7 +131,9 @@ function normalizeGuidedInsertPermissions(value: unknown): GuidedInsertPermissio
   }
 
   if (typeof value.editContent !== 'boolean' || typeof value.createNote !== 'boolean') {
-    throw new Error('Guided insert permissions must include boolean editContent and createNote flags.');
+    throw new Error(
+      'Guided insert permissions must include boolean editContent and createNote flags.',
+    );
   }
 
   return {
@@ -154,7 +160,9 @@ function assertCreateNoteHasSubstantiveContent(content: string, _cardUid: string
   // enough prose to be meaningful (at least 20 chars of non-whitespace).
   const stripped = content.trim();
   if (stripped.length < 20) {
-    throw new Error('Create-note content must include substantive markdown prose (at least 20 chars).');
+    throw new Error(
+      'Create-note content must include substantive markdown prose (at least 20 chars).',
+    );
   }
 }
 
@@ -183,7 +191,9 @@ export function normalizeVaultRelativePath(
   }
 
   if (directoryOnly && path.extname(normalizedPath).toLowerCase() === '.md') {
-    throw new Error('Weaver directory operations must target vault directories, not markdown notes.');
+    throw new Error(
+      'Weaver directory operations must target vault directories, not markdown notes.',
+    );
   }
 
   return normalizedPath;
@@ -224,24 +234,38 @@ function validateInsertBoundaryPairOperation(
     throw new Error('Insert-boundary-pair payload.cardUid must match the focused request card.');
   }
 
-  if (typeof payload.placement !== 'string' || !VALID_INSERT_PLACEMENTS.has(payload.placement as WeaveInsertPlacement)) {
+  if (
+    typeof payload.placement !== 'string' ||
+    !VALID_INSERT_PLACEMENTS.has(payload.placement as WeaveInsertPlacement)
+  ) {
     throw new Error('Insert-boundary-pair payload.placement is invalid.');
   }
 
   const placement = payload.placement as WeaveInsertPlacement;
-  const boundaryBlock = normalizeNonEmptyString(payload.boundaryBlock, 'Insert-boundary-pair payload.boundaryBlock');
+  const boundaryBlock = normalizeNonEmptyString(
+    payload.boundaryBlock,
+    'Insert-boundary-pair payload.boundaryBlock',
+  );
   const headingText = normalizeOptionalString(payload.headingText);
   const selectedText = normalizeOptionalString(payload.selectedText);
 
   if ((placement === 'after-heading' || placement === 'before-heading') && !headingText) {
-    throw new Error('Heading-based insert-boundary-pair operations must include payload.headingText.');
+    throw new Error(
+      'Heading-based insert-boundary-pair operations must include payload.headingText.',
+    );
   }
 
   if (placement === 'after-selection' && !selectedText) {
-    throw new Error('after-selection insert-boundary-pair operations must include payload.selectedText.');
+    throw new Error(
+      'after-selection insert-boundary-pair operations must include payload.selectedText.',
+    );
   }
 
-  assertBoundaryBlockIncludesCard(boundaryBlock, cardUid, 'Insert-boundary-pair payload.boundaryBlock');
+  assertBoundaryBlockIncludesCard(
+    boundaryBlock,
+    cardUid,
+    'Insert-boundary-pair payload.boundaryBlock',
+  );
 
   return {
     kind: 'insert-boundary-pair',
@@ -267,7 +291,10 @@ function validateEditNoteContentOperation(
     throw new Error('Edit-note-content payload must be an object.');
   }
 
-  if (typeof payload.action !== 'string' || !VALID_NOTE_EDIT_ACTIONS.has(payload.action as WeaveNoteEditAction)) {
+  if (
+    typeof payload.action !== 'string' ||
+    !VALID_NOTE_EDIT_ACTIONS.has(payload.action as WeaveNoteEditAction)
+  ) {
     throw new Error('Edit-note-content payload.action is invalid.');
   }
 
@@ -276,7 +303,10 @@ function validateEditNoteContentOperation(
     targetPath: normalizeVaultRelativePath(rootPath, targetPath, { noteOnly: true }),
     payload: {
       action: payload.action as WeaveNoteEditAction,
-      targetText: normalizeNonEmptyString(payload.targetText, 'Edit-note-content payload.targetText'),
+      targetText: normalizeNonEmptyString(
+        payload.targetText,
+        'Edit-note-content payload.targetText',
+      ),
       replacementMarkdown: normalizeNonEmptyString(
         payload.replacementMarkdown,
         'Edit-note-content payload.replacementMarkdown',
@@ -351,7 +381,10 @@ function validateRenameNoteOperation(
     payload: {
       fromPath,
       toPath,
-      renameReason: normalizeNonEmptyString(payload.renameReason, 'Rename-note payload.renameReason'),
+      renameReason: normalizeNonEmptyString(
+        payload.renameReason,
+        'Rename-note payload.renameReason',
+      ),
     },
     rationale,
   };
@@ -409,7 +442,10 @@ function validateDeleteNoteOperation(
     kind: 'delete-note',
     targetPath: normalizeVaultRelativePath(rootPath, targetPath, { noteOnly: true }),
     payload: {
-      deleteReason: normalizeNonEmptyString(payload.deleteReason, 'Delete-note payload.deleteReason'),
+      deleteReason: normalizeNonEmptyString(
+        payload.deleteReason,
+        'Delete-note payload.deleteReason',
+      ),
     },
     rationale,
   };
@@ -455,7 +491,9 @@ function validateRenameDirectoryOperation(
     normalizeNonEmptyString(payload.toPath, 'Rename-directory payload.toPath'),
     { directoryOnly: true },
   );
-  const normalizedTargetPath = normalizeVaultRelativePath(rootPath, targetPath, { directoryOnly: true });
+  const normalizedTargetPath = normalizeVaultRelativePath(rootPath, targetPath, {
+    directoryOnly: true,
+  });
 
   if (normalizedTargetPath !== toPath) {
     throw new Error('Rename-directory targetPath must match payload.toPath.');
@@ -467,7 +505,10 @@ function validateRenameDirectoryOperation(
     payload: {
       fromPath,
       toPath,
-      renameReason: normalizeNonEmptyString(payload.renameReason, 'Rename-directory payload.renameReason'),
+      renameReason: normalizeNonEmptyString(
+        payload.renameReason,
+        'Rename-directory payload.renameReason',
+      ),
     },
     rationale,
   };
@@ -493,7 +534,9 @@ function validateMoveDirectoryOperation(
     normalizeNonEmptyString(payload.toPath, 'Move-directory payload.toPath'),
     { directoryOnly: true },
   );
-  const normalizedTargetPath = normalizeVaultRelativePath(rootPath, targetPath, { directoryOnly: true });
+  const normalizedTargetPath = normalizeVaultRelativePath(rootPath, targetPath, {
+    directoryOnly: true,
+  });
 
   if (normalizedTargetPath !== toPath) {
     throw new Error('Move-directory targetPath must match payload.toPath.');
@@ -525,7 +568,10 @@ function validateDeleteDirectoryOperation(
     kind: 'delete-directory',
     targetPath: normalizeVaultRelativePath(rootPath, targetPath, { directoryOnly: true }),
     payload: {
-      deleteReason: normalizeNonEmptyString(payload.deleteReason, 'Delete-directory payload.deleteReason'),
+      deleteReason: normalizeNonEmptyString(
+        payload.deleteReason,
+        'Delete-directory payload.deleteReason',
+      ),
     },
     rationale,
   };
@@ -536,27 +582,50 @@ function validateOperation(operation: unknown, request: WeavePlanRequest): Weave
     throw new Error('Weaver operations must be objects.');
   }
 
-  const kind = normalizeNonEmptyString(operation.kind, 'Weaver operation kind') as WeavePlanOperationKind;
+  const kind = normalizeNonEmptyString(
+    operation.kind,
+    'Weaver operation kind',
+  ) as WeavePlanOperationKind;
 
   if (!VALID_OPERATION_KINDS.has(kind)) {
     throw new Error('Weaver returned an unknown operation kind.');
   }
 
   if (!getAllowedOperationKinds(request).has(kind)) {
-    throw new Error(`Weaver ${request.kind} plans cannot include ${kind} operations for this request.`);
+    throw new Error(
+      `Weaver ${request.kind} plans cannot include ${kind} operations for this request.`,
+    );
   }
 
-  const rationale = normalizeNonEmptyString(operation.rationale, `Weaver operation ${kind} rationale`);
-  const targetPath = normalizeNonEmptyString(operation.targetPath, `Weaver operation ${kind} targetPath`);
+  const rationale = normalizeNonEmptyString(
+    operation.rationale,
+    `Weaver operation ${kind} rationale`,
+  );
+  const targetPath = normalizeNonEmptyString(
+    operation.targetPath,
+    `Weaver operation ${kind} targetPath`,
+  );
   const payload = operation.payload;
 
   switch (kind) {
     case 'insert-boundary-pair':
-      return validateInsertBoundaryPairOperation(payload, request.rootPath, targetPath, request.cardUid, rationale);
+      return validateInsertBoundaryPairOperation(
+        payload,
+        request.rootPath,
+        targetPath,
+        request.cardUid,
+        rationale,
+      );
     case 'edit-note-content':
       return validateEditNoteContentOperation(payload, request.rootPath, targetPath, rationale);
     case 'create-note':
-      return validateCreateNoteOperation(payload, request.rootPath, targetPath, request.cardUid, rationale);
+      return validateCreateNoteOperation(
+        payload,
+        request.rootPath,
+        targetPath,
+        request.cardUid,
+        rationale,
+      );
     case 'rename-note':
       return validateRenameNoteOperation(payload, request.rootPath, targetPath, rationale);
     case 'move-note':
@@ -574,7 +643,11 @@ function validateOperation(operation: unknown, request: WeavePlanRequest): Weave
   }
 }
 
-function validatePlan(plan: unknown, request: WeavePlanRequest, settings?: WeaverSettings | null): WeavePlan {
+function validatePlan(
+  plan: unknown,
+  request: WeavePlanRequest,
+  settings?: WeaverSettings | null,
+): WeavePlan {
   if (!isRecord(plan)) {
     throw new Error('Weaver plan must be an object.');
   }
@@ -589,19 +662,27 @@ function validatePlan(plan: unknown, request: WeavePlanRequest, settings?: Weave
     throw new Error('Weaver plans must include at least one operation.');
   }
 
-  if (plan.operations.length > (request.maxOperations ?? resolveDefaultMaxOperations(request, settings))) {
+  if (
+    plan.operations.length >
+    (request.maxOperations ?? resolveDefaultMaxOperations(request, settings))
+  ) {
     throw new Error('Weaver plan exceeded the maximum operation count.');
   }
 
   const warnings = normalizeStringArray(plan.warnings ?? [], 'Weaver warnings');
-  const referencedCards = normalizeStringArray(plan.referencedCards ?? [], 'Weaver referenced cards');
+  const referencedCards = normalizeStringArray(
+    plan.referencedCards ?? [],
+    'Weaver referenced cards',
+  );
 
   if (!referencedCards.includes(request.cardUid)) {
     throw new Error('Weaver referencedCards must include the focused request card.');
   }
 
   if (request.kind === 'guided-insert') {
-    const permissions = normalizeGuidedInsertPermissions((plan as { permissions?: unknown }).permissions);
+    const permissions = normalizeGuidedInsertPermissions(
+      (plan as { permissions?: unknown }).permissions,
+    );
 
     if (
       permissions.editContent !== request.permissions.editContent ||
@@ -652,8 +733,13 @@ export function validateWeavePlanRequest(
 
   const cardUid = normalizeCardUid(request.cardUid, 'Weaver cardUid');
   const effectiveMax = resolveDefaultMaxOperations(request, settings);
-  const absoluteCap = settings?.disableBudgetRestrictions ? UNRESTRICTED_MAX_OPERATIONS : MAX_ALLOWED_OPERATIONS;
-  const maxOperations = Math.min(absoluteCap, Math.max(1, Math.trunc(request.maxOperations ?? effectiveMax)));
+  const absoluteCap = settings?.disableBudgetRestrictions
+    ? UNRESTRICTED_MAX_OPERATIONS
+    : MAX_ALLOWED_OPERATIONS;
+  const maxOperations = Math.min(
+    absoluteCap,
+    Math.max(1, Math.trunc(request.maxOperations ?? effectiveMax)),
+  );
   const preferredModel = normalizeOptionalString(request.preferredModel);
   const activeNotePath = request.activeNotePath
     ? normalizeVaultRelativePath(rootPath, request.activeNotePath, { noteOnly: true })
@@ -665,7 +751,9 @@ export function validateWeavePlanRequest(
   const selectedText = normalizeOptionalString(request.selectedText);
 
   if (!activeCrashpadId || !activeCrashpadPath) {
-    throw new Error('Weaver currently launches from an active crashpad, but plans must target vault notes and directories.');
+    throw new Error(
+      'Weaver currently launches from an active crashpad, but plans must target vault notes and directories.',
+    );
   }
 
   const baseRequest = {
@@ -685,7 +773,9 @@ export function validateWeavePlanRequest(
     return {
       ...baseRequest,
       kind: 'guided-insert',
-      permissions: normalizeGuidedInsertPermissions((request as { permissions?: unknown }).permissions),
+      permissions: normalizeGuidedInsertPermissions(
+        (request as { permissions?: unknown }).permissions,
+      ),
     };
   }
 
@@ -719,7 +809,11 @@ export function validateWeavePlanResult(
     throw new Error('Weaver result provider is invalid.');
   }
 
-  if (typeof result.latencyMs !== 'number' || Number.isNaN(result.latencyMs) || result.latencyMs < 0) {
+  if (
+    typeof result.latencyMs !== 'number' ||
+    Number.isNaN(result.latencyMs) ||
+    result.latencyMs < 0
+  ) {
     throw new Error('Weaver result latency must be a non-negative number.');
   }
 

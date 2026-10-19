@@ -23,7 +23,11 @@ function createDiagnostic(
   };
 }
 
-function buildCard(lines: string[], startBoundary: ActiveBoundary, endLine: number): ParsedCrashCard {
+function buildCard(
+  lines: string[],
+  startBoundary: ActiveBoundary,
+  endLine: number,
+): ParsedCrashCard {
   return {
     uid: startBoundary.uid,
     startLine: startBoundary.line,

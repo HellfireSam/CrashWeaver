@@ -293,7 +293,8 @@ function getPathProximityScore(filePath: string, anchorPaths: string[]) {
       continue;
     }
 
-    const directoryMatchBoost = getDirectoryPath(filePath) === getDirectoryPath(anchorPath) ? 18 : 0;
+    const directoryMatchBoost =
+      getDirectoryPath(filePath) === getDirectoryPath(anchorPath) ? 18 : 0;
     bestScore = Math.max(bestScore, commonSegments * 10 + directoryMatchBoost);
   }
 
@@ -321,7 +322,9 @@ function buildFallbackNoteSummary(filePath: string): WeaveStoredNoteSummary {
 }
 
 function getReferenceMap(card: CardDocument) {
-  return new Map(card.referenced_in.map((reference) => [toPosixPath(reference.note_path), reference]));
+  return new Map(
+    card.referenced_in.map((reference) => [toPosixPath(reference.note_path), reference]),
+  );
 }
 
 function getCandidateReasonFragments(
@@ -352,15 +355,21 @@ function getCandidateReasonFragments(
   }
 
   if (titleMatches > 0) {
-    reasons.push(`Title overlaps ${titleMatches} card or intent keyword${titleMatches === 1 ? '' : 's'}.`);
+    reasons.push(
+      `Title overlaps ${titleMatches} card or intent keyword${titleMatches === 1 ? '' : 's'}.`,
+    );
   }
 
   if (tagMatches > 0) {
-    reasons.push(`Tags overlap ${tagMatches} card or intent keyword${tagMatches === 1 ? '' : 's'}.`);
+    reasons.push(
+      `Tags overlap ${tagMatches} card or intent keyword${tagMatches === 1 ? '' : 's'}.`,
+    );
   }
 
   if (pathMatches > 0) {
-    reasons.push(`Path overlaps ${pathMatches} card or intent keyword${pathMatches === 1 ? '' : 's'}.`);
+    reasons.push(
+      `Path overlaps ${pathMatches} card or intent keyword${pathMatches === 1 ? '' : 's'}.`,
+    );
   }
 
   return reasons;
@@ -404,7 +413,10 @@ function scoreCandidateNote(
   return score;
 }
 
-function resolveRetrievalBudget(request: WeavePlanRequest, settings?: import('../vault-contract').WeaverSettings | null): WeaveRetrievalBudget {
+function resolveRetrievalBudget(
+  request: WeavePlanRequest,
+  settings?: import('../vault-contract').WeaverSettings | null,
+): WeaveRetrievalBudget {
   // When budget restrictions are disabled, return generous unlimited-like values
   if (settings?.disableBudgetRestrictions) {
     return {
@@ -484,7 +496,14 @@ function buildCandidateNotes(
         tags: [...summary.tags],
         updatedAt: summary.updatedAt,
         directoryPath: getDirectoryPath(summary.filePath),
-        score: scoreCandidateNote(summary, tokens, request, referenceMap, anchorPaths, similarityMap),
+        score: scoreCandidateNote(
+          summary,
+          tokens,
+          request,
+          referenceMap,
+          anchorPaths,
+          similarityMap,
+        ),
         embeddingScore: similarity,
         reasons: getCandidateReasonFragments(summary, tokens, request, referenceMap, similarityMap),
       };
@@ -501,14 +520,19 @@ function buildDirectorySummaries(
   card: CardDocument,
   budget: WeaveRetrievalBudget,
 ) {
-  const directoryStats = new Map<string, {
-    noteCount: number;
-    candidateCount: number;
-    sampleNotes: string[];
-    score: number;
-    reasons: Set<string>;
-  }>();
-  const referencedDirectories = new Set(card.referenced_in.map((reference) => getDirectoryPath(reference.note_path)));
+  const directoryStats = new Map<
+    string,
+    {
+      noteCount: number;
+      candidateCount: number;
+      sampleNotes: string[];
+      score: number;
+      reasons: Set<string>;
+    }
+  >();
+  const referencedDirectories = new Set(
+    card.referenced_in.map((reference) => getDirectoryPath(reference.note_path)),
+  );
   const activeDirectory = request.activeNotePath ? getDirectoryPath(request.activeNotePath) : null;
 
   for (const note of notes) {
@@ -566,7 +590,10 @@ function buildDirectorySummaries(
       score: stat.score,
       reasons: [...stat.reasons],
     }))
-    .sort((left, right) => right.score - left.score || left.directoryPath.localeCompare(right.directoryPath))
+    .sort(
+      (left, right) =>
+        right.score - left.score || left.directoryPath.localeCompare(right.directoryPath),
+    )
     .slice(0, budget.maxDirectorySummaries);
 }
 
@@ -686,7 +713,10 @@ export async function buildWeaveContextSnapshot(
     throw new Error(`Focused card ${request.cardUid} was not found in the card store.`);
   }
 
-  const storedIndex = await readVaultIndex(getIndexFilePath(request.rootPath), getLegacyIndexFilePath(request.rootPath));
+  const storedIndex = await readVaultIndex(
+    getIndexFilePath(request.rootPath),
+    getLegacyIndexFilePath(request.rootPath),
+  );
   const noteCatalog = buildInitialNoteCatalog(request, storedIndex?.entries ?? [], card, warnings);
 
   // ── Embedding-based semantic scoring (optional) ────────────────────────────
@@ -710,7 +740,7 @@ export async function buildWeaveContextSnapshot(
 
       if (queryEmbedding) {
         // Load cached note embeddings and ensure they're fresh
-        const cache = await loadEmbeddingCache(request.rootPath) ?? {
+        const cache = (await loadEmbeddingCache(request.rootPath)) ?? {
           version: 1 as const,
           model: 'openai/text-embedding-3-small',
           entries: {},
@@ -756,14 +786,29 @@ export async function buildWeaveContextSnapshot(
         }
       }
     } catch (error) {
-      console.warn('CrashWeaver Weaver: embedding enrichment failed, falling back to keyword-only ranking —', error);
+      console.warn(
+        'CrashWeaver Weaver: embedding enrichment failed, falling back to keyword-only ranking —',
+        error,
+      );
       warnings.push('Semantic ranking unavailable; using keyword-based note discovery.');
     }
   }
 
   // ── Build candidates (now with optional embedding boost) ────────────────────
-  const candidateNotes = buildCandidateNotes(noteCatalog, card, request, retrievalBudget, similarityMap);
-  const directorySummaries = buildDirectorySummaries(noteCatalog, candidateNotes, request, card, retrievalBudget);
+  const candidateNotes = buildCandidateNotes(
+    noteCatalog,
+    card,
+    request,
+    retrievalBudget,
+    similarityMap,
+  );
+  const directorySummaries = buildDirectorySummaries(
+    noteCatalog,
+    candidateNotes,
+    request,
+    card,
+    retrievalBudget,
+  );
 
   // Pre-compute refresh parameters for the tool runtime
   const searchTokens = extractNoteSearchTokens(card, request.intent ?? '');
@@ -773,7 +818,9 @@ export async function buildWeaveContextSnapshot(
   ];
 
   if (candidateNotes.length === 0) {
-    warnings.push('No candidate notes ranked above zero. Intelligent mode should stay conservative unless the active note is enough.');
+    warnings.push(
+      'No candidate notes ranked above zero. Intelligent mode should stay conservative unless the active note is enough.',
+    );
   }
 
   return {
@@ -805,7 +852,10 @@ export class WeaveContextToolRuntime {
   private readonly maxRefreshes = 1;
 
   /** Registry of all read-only tool handlers keyed by tool name. */
-  private readonly toolHandlers: Record<string, (args: Record<string, unknown>) => Promise<WeaveToolResult>>;
+  private readonly toolHandlers: Record<
+    string,
+    (args: Record<string, unknown>) => Promise<WeaveToolResult>
+  >;
 
   constructor(
     private readonly snapshot: WeaveContextSnapshot,
@@ -820,11 +870,16 @@ export class WeaveContextToolRuntime {
     },
   ) {
     this.candidateLookup = new Map(snapshot.candidateNotes.map((note) => [note.filePath, note]));
-    this.referenceLookup = new Map(snapshot.card.referencedIn.map((reference) => [reference.notePath, {
-      note_path: reference.notePath,
-      start_line: reference.startLine,
-      end_line: reference.endLine,
-    }]));
+    this.referenceLookup = new Map(
+      snapshot.card.referencedIn.map((reference) => [
+        reference.notePath,
+        {
+          note_path: reference.notePath,
+          start_line: reference.startLine,
+          end_line: reference.endLine,
+        },
+      ]),
+    );
     this.retrievalBudget = {
       ...snapshot.retrievalBudget,
       ...budgetOverrides,
@@ -857,7 +912,9 @@ export class WeaveContextToolRuntime {
     const remainingChars = this.retrievalBudget.maxRetrievedChars - this.retrievedChars;
 
     if (remainingChars <= 0) {
-      throw new Error('Weaver retrieval character budget is exhausted. Finalize with the context already retrieved.');
+      throw new Error(
+        'Weaver retrieval character budget is exhausted. Finalize with the context already retrieved.',
+      );
     }
 
     return Math.min(cappedRequest, remainingChars);
@@ -865,7 +922,9 @@ export class WeaveContextToolRuntime {
 
   private assertNoteReadBudget() {
     if (this.noteReads >= this.retrievalBudget.maxNoteReads) {
-      throw new Error('Weaver retrieval note-read budget is exhausted. Finalize with the current evidence.');
+      throw new Error(
+        'Weaver retrieval note-read budget is exhausted. Finalize with the current evidence.',
+      );
     }
   }
 
@@ -878,7 +937,9 @@ export class WeaveContextToolRuntime {
     const endSearchStart = startIndex + startAnchor.length;
     const endIndex = content.indexOf(endAnchor, endSearchStart);
     if (endIndex < 0) {
-      throw new Error('read_note_span endAnchor was not found after startAnchor in the note content.');
+      throw new Error(
+        'read_note_span endAnchor was not found after startAnchor in the note content.',
+      );
     }
 
     const spanStart = startIndex;
@@ -903,7 +964,10 @@ export class WeaveContextToolRuntime {
 
     this.assertNoteReadBudget();
 
-    const maxChars = mode === 'excerpt' ? this.retrievalBudget.maxExcerptChars : this.retrievalBudget.maxFullNoteChars;
+    const maxChars =
+      mode === 'excerpt'
+        ? this.retrievalBudget.maxExcerptChars
+        : this.retrievalBudget.maxFullNoteChars;
     const allowedChars = this.resolveRequestedChars(requestedChars, maxChars);
     const note = await readNote(this.snapshot.rootPath, normalizedPath);
     const selectedText = this.snapshot.selectedText?.trim();
@@ -924,7 +988,10 @@ export class WeaveContextToolRuntime {
         if (selectionIndex >= 0) {
           const halfWindow = Math.max(120, Math.trunc(allowedChars / 2));
           const sliceStart = Math.max(0, selectionIndex - halfWindow);
-          const sliceEnd = Math.min(note.content.length, selectionIndex + selectedText.length + halfWindow);
+          const sliceEnd = Math.min(
+            note.content.length,
+            selectionIndex + selectedText.length + halfWindow,
+          );
           excerpt = note.content.slice(sliceStart, sliceEnd);
         }
       }
@@ -953,7 +1020,11 @@ export class WeaveContextToolRuntime {
   // ── Individual tool handlers ────────────────────────────────────────────────
 
   private async toolListCandidateNotes(args: Record<string, unknown>): Promise<WeaveToolResult> {
-    const limit = normalizeLimit(args.limit, this.retrievalBudget.maxCandidateNotes, this.retrievalBudget.maxCandidateNotes);
+    const limit = normalizeLimit(
+      args.limit,
+      this.retrievalBudget.maxCandidateNotes,
+      this.retrievalBudget.maxCandidateNotes,
+    );
     const directoryPath = normalizeOptionalPath(args.directoryPath);
     const notes = this.snapshot.candidateNotes
       .filter((note) => !directoryPath || note.directoryPath === directoryPath)
@@ -968,7 +1039,11 @@ export class WeaveContextToolRuntime {
   }
 
   private async toolListDirectorySummary(args: Record<string, unknown>): Promise<WeaveToolResult> {
-    const limit = normalizeLimit(args.limit, this.retrievalBudget.maxDirectorySummaries, this.retrievalBudget.maxDirectorySummaries);
+    const limit = normalizeLimit(
+      args.limit,
+      this.retrievalBudget.maxDirectorySummaries,
+      this.retrievalBudget.maxDirectorySummaries,
+    );
     return {
       ok: true,
       toolName: 'list_directory_summary',
@@ -981,7 +1056,11 @@ export class WeaveContextToolRuntime {
     const query = typeof args.query === 'string' ? args.query.trim().toLowerCase() : '';
     if (!query) throw new Error('search_notes requires a non-empty query.');
 
-    const limit = normalizeLimit(args.limit, this.retrievalBudget.maxCandidateNotes, this.retrievalBudget.maxCandidateNotes);
+    const limit = normalizeLimit(
+      args.limit,
+      this.retrievalBudget.maxCandidateNotes,
+      this.retrievalBudget.maxCandidateNotes,
+    );
     const directoryPath = normalizeOptionalPath(args.directoryPath);
 
     const notes = this.snapshot.candidateNotes
@@ -1018,8 +1097,10 @@ export class WeaveContextToolRuntime {
     const endAnchor = args.endAnchor;
 
     if (!filePath) throw new Error('read_note_span requires a candidate filePath.');
-    if (typeof startAnchor !== 'string' || !startAnchor.trim()) throw new Error('read_note_span requires a non-empty startAnchor.');
-    if (typeof endAnchor !== 'string' || !endAnchor.trim()) throw new Error('read_note_span requires a non-empty endAnchor.');
+    if (typeof startAnchor !== 'string' || !startAnchor.trim())
+      throw new Error('read_note_span requires a non-empty startAnchor.');
+    if (typeof endAnchor !== 'string' || !endAnchor.trim())
+      throw new Error('read_note_span requires a non-empty endAnchor.');
 
     const normalizedPath = toPosixPath(filePath);
     if (!this.candidateLookup.has(normalizedPath)) {
@@ -1027,7 +1108,10 @@ export class WeaveContextToolRuntime {
     }
 
     this.assertNoteReadBudget();
-    const allowedChars = this.resolveRequestedChars(args.maxChars, this.retrievalBudget.maxFullNoteChars);
+    const allowedChars = this.resolveRequestedChars(
+      args.maxChars,
+      this.retrievalBudget.maxFullNoteChars,
+    );
 
     const note = await readNote(this.snapshot.rootPath, normalizedPath);
     const span = this.findNoteSpan(note.content, startAnchor.trim(), endAnchor.trim());
@@ -1076,18 +1160,18 @@ export class WeaveContextToolRuntime {
 
     const existingPaths = new Set(this.snapshot.candidateNotes.map((n) => n.filePath));
     const referenceMap = new Map(
-      this.snapshot.card.referencedIn.map((r) => [r.notePath, {
-        note_path: r.notePath,
-        start_line: r.startLine,
-        end_line: r.endLine,
-      }]),
+      this.snapshot.card.referencedIn.map((r) => [
+        r.notePath,
+        {
+          note_path: r.notePath,
+          start_line: r.startLine,
+          end_line: r.endLine,
+        },
+      ]),
     );
 
     // Re-score ALL notes and pick those not already in the initial candidate set
-    const expandedLimit = Math.min(
-      this.retrievalBudget.maxCandidateNotes * 2,
-      allNotes.length,
-    );
+    const expandedLimit = Math.min(this.retrievalBudget.maxCandidateNotes * 2, allNotes.length);
 
     const freshCandidates = allNotes
       .filter((note) => !existingPaths.has(toPosixPath(note.filePath)))
@@ -1149,7 +1233,7 @@ export class WeaveContextToolRuntime {
   async execute(toolName: string, args: unknown): Promise<WeaveToolResult> {
     const toolArgs: Record<string, unknown> =
       args && typeof args === 'object' && !Array.isArray(args)
-        ? args as Record<string, unknown>
+        ? (args as Record<string, unknown>)
         : {};
 
     const handler = this.toolHandlers[toolName];

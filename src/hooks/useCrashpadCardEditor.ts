@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type {
-  CardDocument,
-  CardQaPair,
-} from '../../electron/vault-contract';
+import type { CardDocument, CardQaPair } from '../../electron/vault-contract';
 import type { CardViewRecord } from '../lib/cards';
 
 export type AddCardMode = 'attach' | 'create';

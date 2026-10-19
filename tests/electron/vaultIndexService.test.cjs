@@ -40,13 +40,30 @@ test('writeVaultIndex preserves existing ids/review and sorts by filePath', asyn
   await fs.writeFile(indexPath, `${JSON.stringify(seeded, null, 2)}\n`, 'utf8');
 
   const notes = [
-    { filePath: 'b.md', title: 'B changed', size: 1, modifiedAt: '2026-05-23T00:00:00.000Z', tags: [], content: 'b' },
-    { filePath: 'a.md', title: 'A', size: 1, modifiedAt: '2026-05-22T00:00:00.000Z', tags: ['tag'], content: 'a' },
+    {
+      filePath: 'b.md',
+      title: 'B changed',
+      size: 1,
+      modifiedAt: '2026-05-23T00:00:00.000Z',
+      tags: [],
+      content: 'b',
+    },
+    {
+      filePath: 'a.md',
+      title: 'A',
+      size: 1,
+      modifiedAt: '2026-05-22T00:00:00.000Z',
+      tags: ['tag'],
+      content: 'a',
+    },
   ];
 
   const index = await writeVaultIndex(indexPath, legacyPath, notes);
 
-  assert.deepEqual(index.entries.map((entry) => entry.filePath), ['a.md', 'b.md']);
+  assert.deepEqual(
+    index.entries.map((entry) => entry.filePath),
+    ['a.md', 'b.md'],
+  );
   const bEntry = index.entries.find((entry) => entry.filePath === 'b.md');
   assert.ok(bEntry);
   assert.equal(bEntry.id, 'seed-b');

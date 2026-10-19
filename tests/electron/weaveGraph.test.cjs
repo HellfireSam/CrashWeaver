@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { runWeaveGraph, resolveWeaveEffectiveBudget } = require('../../dist-electron/weaver/weaveGraph.js');
+const {
+  runWeaveGraph,
+  resolveWeaveEffectiveBudget,
+} = require('../../dist-electron/weaver/weaveGraph.js');
 
 function makeContextSnapshot(rootPath) {
   return {
@@ -132,7 +135,8 @@ test('runWeaveGraph accumulates trace across semantic-repair, tool, and validate
                 payload: {
                   cardUid: 'CW-001',
                   placement: 'append-to-note',
-                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nA concise concept summary.\n%%CW_CARD_END uid:CW-001%%',
+                  boundaryBlock:
+                    '%%CW_CARD_START uid:CW-001%%\nA concise concept summary.\n%%CW_CARD_END uid:CW-001%%',
                 },
                 rationale: 'Append the focused card to the overview note.',
               },
@@ -170,7 +174,10 @@ test('runWeaveGraph accumulates trace across semantic-repair, tool, and validate
 
   assert.ok(result.trace);
   // semantic-repair trace + execute-tool trace + final validate trace
-  assert.ok(result.trace.length >= 3, `Expected at least 3 trace items, got ${result.trace.length}`);
+  assert.ok(
+    result.trace.length >= 3,
+    `Expected at least 3 trace items, got ${result.trace.length}`,
+  );
   assert.match(result.trace[0].observation || '', /Semantic repair triggered/i);
 });
 
@@ -230,7 +237,8 @@ test('runWeaveGraph records repair-exhaustion trace when model requests tools af
                 payload: {
                   cardUid: 'CW-001',
                   placement: 'append-to-note',
-                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nExhaustion-safe proposal content.\n%%CW_CARD_END uid:CW-001%%',
+                  boundaryBlock:
+                    '%%CW_CARD_START uid:CW-001%%\nExhaustion-safe proposal content.\n%%CW_CARD_END uid:CW-001%%',
                 },
                 rationale: 'Use gathered evidence to provide a conservative insertion plan.',
               },
@@ -320,7 +328,8 @@ test('runWeaveGraph transitions through schema-repair and succeeds on corrected 
                 payload: {
                   cardUid: 'CW-001',
                   placement: 'append-to-note',
-                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nSchema-repaired plan content.\n%%CW_CARD_END uid:CW-001%%',
+                  boundaryBlock:
+                    '%%CW_CARD_START uid:CW-001%%\nSchema-repaired plan content.\n%%CW_CARD_END uid:CW-001%%',
                 },
                 rationale: 'Add a valid insertion operation after schema repair.',
               },
@@ -438,7 +447,8 @@ test('runWeaveGraph preserves tool diagnostics on trace entries', async () => {
                 payload: {
                   cardUid: 'CW-001',
                   placement: 'append-to-note',
-                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nBudget-limited insertion content.\n%%CW_CARD_END uid:CW-001%%',
+                  boundaryBlock:
+                    '%%CW_CARD_START uid:CW-001%%\nBudget-limited insertion content.\n%%CW_CARD_END uid:CW-001%%',
                 },
                 rationale: 'Finalize with conservative insertion when retrieval is capped.',
               },
@@ -479,7 +489,9 @@ test('runWeaveGraph preserves tool diagnostics on trace entries', async () => {
   );
 
   assert.ok(result.trace);
-  const diagnosticTrace = result.trace.find((step) => step.diagnostics?.code === 'budget-chars-exhausted');
+  const diagnosticTrace = result.trace.find(
+    (step) => step.diagnostics?.code === 'budget-chars-exhausted',
+  );
   assert.ok(diagnosticTrace, 'Expected trace to include structured tool diagnostics code.');
 });
 
@@ -508,7 +520,8 @@ test('runWeaveGraph routes directly to finalize when model returns type=final on
                 payload: {
                   cardUid: 'CW-001',
                   placement: 'append-to-note',
-                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nDirect plan content.\n%%CW_CARD_END uid:CW-001%%',
+                  boundaryBlock:
+                    '%%CW_CARD_START uid:CW-001%%\nDirect plan content.\n%%CW_CARD_END uid:CW-001%%',
                 },
                 rationale: 'Direct insertion from pre-loaded context.',
               },
@@ -530,8 +543,13 @@ test('runWeaveGraph routes directly to finalize when model returns type=final on
   };
 
   const result = await runWeaveGraph(
-    request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
-    httpClient, toolRuntime, undefined,
+    request,
+    contextSnapshot,
+    modelProfile,
+    'openai/gpt-4o-mini',
+    httpClient,
+    toolRuntime,
+    undefined,
   );
 
   assert.equal(result.plan.operations.length, 1);
@@ -561,13 +579,20 @@ test('runWeaveGraph enforces repair budget or step cap by failing after repeated
   };
 
   const toolRuntime = {
-    async execute() { throw new Error('Should not be called'); },
+    async execute() {
+      throw new Error('Should not be called');
+    },
   };
 
   await assert.rejects(
     runWeaveGraph(
-      request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
-      httpClient, toolRuntime, undefined,
+      request,
+      contextSnapshot,
+      modelProfile,
+      'openai/gpt-4o-mini',
+      httpClient,
+      toolRuntime,
+      undefined,
     ),
     (err) => {
       // Should fail with either schema-error (repair budget exhausted) or
@@ -600,7 +625,8 @@ test('runWeaveGraph produces trace entries on successful direct-to-final plan', 
                 payload: {
                   cardUid: 'CW-001',
                   placement: 'append-to-note',
-                  boundaryBlock: '%%CW_CARD_START uid:CW-001%%\nStep count test.\n%%CW_CARD_END uid:CW-001%%',
+                  boundaryBlock:
+                    '%%CW_CARD_START uid:CW-001%%\nStep count test.\n%%CW_CARD_END uid:CW-001%%',
                 },
                 rationale: 'Test trace entries on direct path.',
               },
@@ -616,19 +642,29 @@ test('runWeaveGraph produces trace entries on successful direct-to-final plan', 
   };
 
   const toolRuntime = {
-    async execute() { throw new Error('Should not be called'); },
+    async execute() {
+      throw new Error('Should not be called');
+    },
   };
 
   const result = await runWeaveGraph(
-    request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
-    httpClient, toolRuntime, undefined,
+    request,
+    contextSnapshot,
+    modelProfile,
+    'openai/gpt-4o-mini',
+    httpClient,
+    toolRuntime,
+    undefined,
   );
 
   assert.ok(result.trace);
   // Direct final path: validate node adds the success trace entry (1 entry).
   // At minimum 1 trace entry for the validate step.
   assert.ok(result.trace.length >= 1, `Expected >=1 trace items, got ${result.trace.length}`);
-  assert.match(result.trace[result.trace.length - 1].observation || '', /successfully validated|ready to apply/i);
+  assert.match(
+    result.trace[result.trace.length - 1].observation || '',
+    /successfully validated|ready to apply/i,
+  );
 });
 
 test('runWeaveGraph fails on provider error from HTTP client', async () => {
@@ -646,13 +682,20 @@ test('runWeaveGraph fails on provider error from HTTP client', async () => {
   };
 
   const toolRuntime = {
-    async execute() { throw new Error('Should not be called'); },
+    async execute() {
+      throw new Error('Should not be called');
+    },
   };
 
   await assert.rejects(
     runWeaveGraph(
-      request, contextSnapshot, modelProfile, 'openai/gpt-4o-mini',
-      httpClient, toolRuntime, undefined,
+      request,
+      contextSnapshot,
+      modelProfile,
+      'openai/gpt-4o-mini',
+      httpClient,
+      toolRuntime,
+      undefined,
     ),
     (err) => {
       return err.errorCategory === 'provider-error' && err.message.includes('Network failure');
@@ -677,7 +720,7 @@ test('resolveWeaveEffectiveBudget caps promptToolCalls at iterationLimit', () =>
     retrievalBudget: {
       maxCandidateNotes: 8,
       maxDirectorySummaries: 6,
-      maxNoteReads: 6,        // more than iterationLimit
+      maxNoteReads: 6, // more than iterationLimit
       maxExcerptChars: 1200,
       maxFullNoteChars: 3200,
       maxRetrievedChars: 5000,
@@ -707,7 +750,7 @@ test('resolveWeaveEffectiveBudget floors promptToolCalls at 1 even with zero not
     retrievalBudget: {
       maxCandidateNotes: 8,
       maxDirectorySummaries: 6,
-      maxNoteReads: 0,        // zero note reads allowed
+      maxNoteReads: 0, // zero note reads allowed
       maxExcerptChars: 1200,
       maxFullNoteChars: 3200,
       maxRetrievedChars: 5000,

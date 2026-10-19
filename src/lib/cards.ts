@@ -10,7 +10,14 @@ import type {
 } from '../../electron/vault-contract';
 
 export type CardScope = 'current-note' | 'current-vault';
-export type FocusWindow = 'explorer' | 'source-editor' | 'preview' | 'cards-list' | 'card-detail' | 'assistant-panel' | 'settings';
+export type FocusWindow =
+  | 'explorer'
+  | 'source-editor'
+  | 'preview'
+  | 'cards-list'
+  | 'card-detail'
+  | 'assistant-panel'
+  | 'settings';
 export type CardDetailTab = 'content' | 'memory-technique' | 'qna' | 'metadata';
 
 export type CardViewRecord = {
@@ -62,7 +69,11 @@ export function getPreferredReference(card: CardDocument, preferredNotePath: str
     return card.referenced_in[0] ?? null;
   }
 
-  return card.referenced_in.find((reference) => reference.note_path === preferredNotePath) ?? card.referenced_in[0] ?? null;
+  return (
+    card.referenced_in.find((reference) => reference.note_path === preferredNotePath) ??
+    card.referenced_in[0] ??
+    null
+  );
 }
 
 export function getFileName(filePath: string) {
@@ -70,7 +81,10 @@ export function getFileName(filePath: string) {
   const parts = normalized.split('/').filter(Boolean);
   const fileName = parts[parts.length - 1] ?? filePath;
 
-  return fileName.replace(/\.crashpad\.json$/i, '').replace(/\.md$/i, '').replace(/\.json$/i, '');
+  return fileName
+    .replace(/\.crashpad\.json$/i, '')
+    .replace(/\.md$/i, '')
+    .replace(/\.json$/i, '');
 }
 
 export function formatFocusWindow(windowName: FocusWindow) {
@@ -119,9 +133,14 @@ export function createFallbackCard(parsedCard: ParsedCrashCard, notePath: string
   };
 }
 
-export function toCardViewRecordFromParsedCard(parsedCard: ParsedCrashCard, notePath: string): CardViewRecord {
+export function toCardViewRecordFromParsedCard(
+  parsedCard: ParsedCrashCard,
+  notePath: string,
+): CardViewRecord {
   const linkedCard = parsedCard.linkedCard ?? createFallbackCard(parsedCard, notePath);
-  const currentReference = linkedCard.referenced_in.find((reference) => reference.note_path === notePath) ?? {
+  const currentReference = linkedCard.referenced_in.find(
+    (reference) => reference.note_path === notePath,
+  ) ?? {
     note_path: notePath,
     start_line: parsedCard.startLine,
     end_line: parsedCard.endLine,
@@ -158,7 +177,9 @@ export function toCardViewRecordFromCard(
     memoryTricks: card.memory_tricks,
     references: card.referenced_in,
     currentReference,
-    cardFilePath: cardStorePath ? `${cardStorePath.replace(/\\/g, '/')}/${card.uid}.json` : undefined,
+    cardFilePath: cardStorePath
+      ? `${cardStorePath.replace(/\\/g, '/')}/${card.uid}.json`
+      : undefined,
     cardExists: true,
     source,
     origin,

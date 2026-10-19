@@ -13,14 +13,14 @@ system is in [overview.md](./overview.md).
 
 ## Where the data lives
 
-| Artefact | Location | Owner |
-| --- | --- | --- |
-| Notes | Markdown files anywhere under the vault root, excluding `.crashweaver/` | `vaultService` |
-| Note index | `.crashweaver/index.json`; a legacy `index.json` at the vault root is read as a fallback only | `services/vaultIndexService` |
-| Cards (card store) | One `<uid>.json` per card, default `.crashweaver/cards/` | `cardStoreService` |
-| Crashpads | `.crashweaver/crashpads/<id>.crashpad.json` | `crashpadService` |
-| Weaver embedding cache | `.crashweaver/embeddings.json` | `weaver/weaverEmbeddingService` |
-| Per-vault settings | `crashweaver-settings.json` in Electron `userData` | `settingsService` |
+| Artefact               | Location                                                                                      | Owner                           |
+| ---------------------- | --------------------------------------------------------------------------------------------- | ------------------------------- |
+| Notes                  | Markdown files anywhere under the vault root, excluding `.crashweaver/`                       | `vaultService`                  |
+| Note index             | `.crashweaver/index.json`; a legacy `index.json` at the vault root is read as a fallback only | `services/vaultIndexService`    |
+| Cards (card store)     | One `<uid>.json` per card, default `.crashweaver/cards/`                                      | `cardStoreService`              |
+| Crashpads              | `.crashweaver/crashpads/<id>.crashpad.json`                                                   | `crashpadService`               |
+| Weaver embedding cache | `.crashweaver/embeddings.json`                                                                | `weaver/weaverEmbeddingService` |
+| Per-vault settings     | `crashweaver-settings.json` in Electron `userData`                                            | `settingsService`               |
 
 Note paths crossing to the renderer are vault-relative POSIX (`toPosixPath` in
 `electron/utils/paths.ts`), so a note is `web/http.md`, never an absolute path.
@@ -47,13 +47,13 @@ Indexing is note-level, not card-level. `collectMarkdownFiles` recurses from the
 skips the `.crashweaver` directory by name, keeps files whose extension is `.md`
 (case-insensitively) and returns them sorted. Each note becomes a `VaultIndexEntry`:
 
-| Field | Source |
-| --- | --- |
-| `id` | `createEntryId` — first 16 hex characters of the SHA-1 of the note's vault-relative path |
-| `filePath`, `title` | the vault-relative POSIX path; the basename with `.md` removed |
-| `tags` | `extractTags` — `#tag` tokens matched by `/(^|\s)#([A-Za-z0-9/_-]+)/gm`, lower-cased and sorted |
-| `updatedAt` | the file's `mtime` as ISO 8601 |
-| `review` | `ReviewMetadata`, preserved from a previous entry with the same path or defaulted by `createDefaultReviewMetadata` |
+| Field               | Source                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `id`                | `createEntryId` — first 16 hex characters of the SHA-1 of the note's vault-relative path                           |
+| `filePath`, `title` | the vault-relative POSIX path; the basename with `.md` removed                                                     |
+| `tags`              | `extractTags` — `#tag` tokens matched by `/(^                                                                      | \s)#([A-Za-z0-9/_-]+)/gm`, lower-cased and sorted |
+| `updatedAt`         | the file's `mtime` as ISO 8601                                                                                     |
+| `review`            | `ReviewMetadata`, preserved from a previous entry with the same path or defaulted by `createDefaultReviewMetadata` |
 
 `VaultIndex.version` is the literal `1`. `readVaultIndex` reads the internal file first
 and falls back to the legacy root file; writes always target `.crashweaver/index.json`.
@@ -63,11 +63,11 @@ and falls back to the legacy root file; writes always target `.crashweaver/index
 Three guards enforce the rule that the app reads and writes only inside the vault, each
 at the point where a relative path enters filesystem code:
 
-| Guard | Module | Behaviour |
-| --- | --- | --- |
-| `resolveNotePath` with `isOutsideRoot` | `electron/vaultService.ts` | Resolves the normalised note path against the root and throws `Note paths must stay inside the selected vault.` when it escapes |
-| `resolveReferenceNotePath` | `electron/services/noteReferenceMutationService.ts` | Returns `null` instead of throwing; callers treat `null` as "skip this reference" |
-| `assertWithinVault` | `electron/weaver/weaveApplyService.ts` | Resolves root and target through symlinks (`fs.realpath`), walking up to the nearest existing ancestor when the target does not exist yet, and throws `Path escapes vault root: …` |
+| Guard                                  | Module                                              | Behaviour                                                                                                                                                                          |
+| -------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveNotePath` with `isOutsideRoot` | `electron/vaultService.ts`                          | Resolves the normalised note path against the root and throws `Note paths must stay inside the selected vault.` when it escapes                                                    |
+| `resolveReferenceNotePath`             | `electron/services/noteReferenceMutationService.ts` | Returns `null` instead of throwing; callers treat `null` as "skip this reference"                                                                                                  |
+| `assertWithinVault`                    | `electron/weaver/weaveApplyService.ts`              | Resolves root and target through symlinks (`fs.realpath`), walking up to the nearest existing ancestor when the target does not exist yet, and throws `Path escapes vault root: …` |
 
 Each guard compares `path.relative(root, target)` against a leading `..` or an absolute
 remainder. `electron/utils/paths.ts` exports only `toPosixPath`, a separator normaliser and
@@ -169,12 +169,12 @@ lines. The stored `note_path` is the vault-relative POSIX path, matching the not
 
 ### What triggers a sync
 
-| Trigger | Path through the code |
-| --- | --- |
-| Vault open and index refresh | `vault:open` → `openVault`, and `vault:update-index` → `updateIndex`; both run `rebuildCardStoreFromNotes`, which syncs every note and then drops references pointing at note paths that no longer exist |
-| Note save | `vault:write-note` → `writeNote` → `syncNoteToCardStore` for that note, before the index is rewritten |
-| External change | `watchVault` in `electron/main.ts` runs a chokidar watcher on the vault root; `add`/`change`/`unlink` events go to `handleWatcherEvent`, which syncs the file or, on `ENOENT`, calls `removeNoteReferencesFromCardStore` |
-| card rename, delete or restore | `renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences` and `reinsertCardBoundariesForReferences` each rewrite boundaries in the affected notes and re-sync every note they rewrote |
+| Trigger                        | Path through the code                                                                                                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vault open and index refresh   | `vault:open` → `openVault`, and `vault:update-index` → `updateIndex`; both run `rebuildCardStoreFromNotes`, which syncs every note and then drops references pointing at note paths that no longer exist                 |
+| Note save                      | `vault:write-note` → `writeNote` → `syncNoteToCardStore` for that note, before the index is rewritten                                                                                                                    |
+| External change                | `watchVault` in `electron/main.ts` runs a chokidar watcher on the vault root; `add`/`change`/`unlink` events go to `handleWatcherEvent`, which syncs the file or, on `ENOENT`, calls `removeNoteReferencesFromCardStore` |
+| card rename, delete or restore | `renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences` and `reinsertCardBoundariesForReferences` each rewrite boundaries in the affected notes and re-sync every note they rewrote               |
 
 The watcher ignores dotfiles and dot-directories, everything under `**/.crashweaver/**` and
 the card store path itself, so the app's own metadata and card-store writes do not feed back into
@@ -283,31 +283,31 @@ re-parses content before a weave write and throws if any error-severity diagnost
 it returns the `code` property of an `Error` when present and `undefined` otherwise. Every
 service branches on that string rather than on message text.
 
-| Situation | Behaviour |
-| --- | --- |
-| Vault root missing or not a directory | `assertVaultRoot` throws a descriptive `Error`; every exported `vaultService` entry point calls it |
-| Path escapes the vault | `resolveNotePath` and `assertWithinVault` throw; `resolveReferenceNotePath` returns `null` and the caller skips that reference |
-| Note missing on read | `readNoteDocument` does not catch, so `ENOENT` propagates through `readNote` and the IPC channel to the renderer |
-| Referenced note missing | `readReferenceNoteContent` returns `null` so boundary rewrites skip it; `reinsertCardBoundariesForReferences` records the path in `skippedNotePaths`; `isMissingReferenceNoteError` is the shared `ENOENT` check |
-| Watcher event for a deleted file | `handleWatcherEvent` treats `ENOENT` as deletion, calls `removeNoteReferencesFromCardStore`, then notifies the renderer so the file tree updates |
-| card file missing | `readCardDocument` returns `null`; the parsed card reports `cardExists: false`, and `src/lib/cards.ts` supplies `createFallbackCard` so the UID is editable before the file exists |
-| card or crashpad file unreadable | `listCardDocuments` and `listCrashpads` skip it with a warning and load the rest |
-| Index or settings file missing or unparsable | `readStoredIndexFile` logs and treats it as absent so the next write builds a fresh index; `readSettings` falls back to `createDefaultSettings`, and mutations are serialised through `settingsMutationQueue` |
-| Card store directory missing | `ensureCardStoreDirectory` creates it before any card write; readers treat `ENOENT` as empty |
+| Situation                                    | Behaviour                                                                                                                                                                                                        |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vault root missing or not a directory        | `assertVaultRoot` throws a descriptive `Error`; every exported `vaultService` entry point calls it                                                                                                               |
+| Path escapes the vault                       | `resolveNotePath` and `assertWithinVault` throw; `resolveReferenceNotePath` returns `null` and the caller skips that reference                                                                                   |
+| Note missing on read                         | `readNoteDocument` does not catch, so `ENOENT` propagates through `readNote` and the IPC channel to the renderer                                                                                                 |
+| Referenced note missing                      | `readReferenceNoteContent` returns `null` so boundary rewrites skip it; `reinsertCardBoundariesForReferences` records the path in `skippedNotePaths`; `isMissingReferenceNoteError` is the shared `ENOENT` check |
+| Watcher event for a deleted file             | `handleWatcherEvent` treats `ENOENT` as deletion, calls `removeNoteReferencesFromCardStore`, then notifies the renderer so the file tree updates                                                                 |
+| card file missing                            | `readCardDocument` returns `null`; the parsed card reports `cardExists: false`, and `src/lib/cards.ts` supplies `createFallbackCard` so the UID is editable before the file exists                               |
+| card or crashpad file unreadable             | `listCardDocuments` and `listCrashpads` skip it with a warning and load the rest                                                                                                                                 |
+| Index or settings file missing or unparsable | `readStoredIndexFile` logs and treats it as absent so the next write builds a fresh index; `readSettings` falls back to `createDefaultSettings`, and mutations are serialised through `settingsMutationQueue`    |
+| Card store directory missing                 | `ensureCardStoreDirectory` creates it before any card write; readers treat `ENOENT` as empty                                                                                                                     |
 
 ## Invariants and where they are enforced
 
-| Invariant | Enforced by |
-| --- | --- |
-| A UID names at most one card file | `getCardFilePath` maps a UID to one `<uid>.json`; `vaultService.createCard` and `renameCard` refuse an existing UID; `listCardDocuments` takes each UID from its filename |
-| A UID is filesystem-safe | `assertValidCardUid` applies `^[A-Za-z0-9_-]+$` before any path is built from it |
-| A card holds at most one reference per note | `upsertCardReference` replaces the entry with the same `note_path` instead of appending |
-| One reference per UID per note | `dedupeParsedCards` keeps the first occurrence of a duplicated UID and emits a diagnostic |
-| Boundaries are paired | `parseCrashCardsFromNote` reports unbalanced or mismatched pairs; `verifyBoundaryIntegrity` refuses to apply a weave operation while error-severity diagnostics exist; `hasBlockingDiagnostics` blocks reference pruning from a malformed note |
-| A note's span never overwrites an existing card payload | `upsertCardReference` assigns `raw_content` from the parsed block only when the card's `raw_content` is blank |
-| card JSON is only ever written whole | `writeJsonAtomically` plus the temp-file rename in `writeTextAtomically` |
-| Reference pruning never deletes card files | `removeCardReference`, `syncParsedCrashCards` and `rebuildCardStoreFromNotes` mutate only `referenced_in` |
-| The index schema version is fixed | `VaultIndex.version` is the literal `1` in `coerceStoredIndex` and `buildIndex` |
+| Invariant                                               | Enforced by                                                                                                                                                                                                                                    |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A UID names at most one card file                       | `getCardFilePath` maps a UID to one `<uid>.json`; `vaultService.createCard` and `renameCard` refuse an existing UID; `listCardDocuments` takes each UID from its filename                                                                      |
+| A UID is filesystem-safe                                | `assertValidCardUid` applies `^[A-Za-z0-9_-]+$` before any path is built from it                                                                                                                                                               |
+| A card holds at most one reference per note             | `upsertCardReference` replaces the entry with the same `note_path` instead of appending                                                                                                                                                        |
+| One reference per UID per note                          | `dedupeParsedCards` keeps the first occurrence of a duplicated UID and emits a diagnostic                                                                                                                                                      |
+| Boundaries are paired                                   | `parseCrashCardsFromNote` reports unbalanced or mismatched pairs; `verifyBoundaryIntegrity` refuses to apply a weave operation while error-severity diagnostics exist; `hasBlockingDiagnostics` blocks reference pruning from a malformed note |
+| A note's span never overwrites an existing card payload | `upsertCardReference` assigns `raw_content` from the parsed block only when the card's `raw_content` is blank                                                                                                                                  |
+| card JSON is only ever written whole                    | `writeJsonAtomically` plus the temp-file rename in `writeTextAtomically`                                                                                                                                                                       |
+| Reference pruning never deletes card files              | `removeCardReference`, `syncParsedCrashCards` and `rebuildCardStoreFromNotes` mutate only `referenced_in`                                                                                                                                      |
+| The index schema version is fixed                       | `VaultIndex.version` is the literal `1` in `coerceStoredIndex` and `buildIndex`                                                                                                                                                                |
 
 Scheduling state exists in two places, and only one is in use. `CardMetadata` (`familiarity`,
 `next_review`) inside each card file is the copy the UI reads and edits

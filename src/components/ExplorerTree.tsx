@@ -133,10 +133,7 @@ export function ExplorerTree({
     [rows, expandedFolders, onToggleFolder, onSelectFile, selectedFilePath, isReading],
   );
 
-  const itemKey = useCallback(
-    (index: number) => rows[index]?.node.path ?? `row-${index}`,
-    [rows],
-  );
+  const itemKey = useCallback((index: number) => rows[index]?.node.path ?? `row-${index}`, [rows]);
 
   if (rows.length === 0) {
     return (

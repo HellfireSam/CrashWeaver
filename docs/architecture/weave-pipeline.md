@@ -32,13 +32,13 @@ drives `after-selection` / `replace-selection` placements and the excerpt window
 
 **IPC path.**
 
-| Step | Location | Symbol |
-| --- | --- | --- |
-| Renderer call | `src/App.tsx` | `handleGenerateWeavePlan` → `window.crashWeaver.generateWeavePlan` |
-| Preload bridge | `electron/preload.ts` | `generateWeavePlan` → `invoke('weave:generate-plan', request)` |
-| Main handler | `electron/main.ts` | `ipcMain.handle('weave:generate-plan')` → `generateWeavePlan(request, onProgress)` |
-| Progress push | `electron/main.ts` → preload | `event.sender.send('weave:plan-progress', …)` → `onWeavePlanProgress` |
-| Apply call | `src/App.tsx` | `handleApplyWeaveOperations` → `applyWeavePlan` |
+| Step           | Location                     | Symbol                                                                             |
+| -------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| Renderer call  | `src/App.tsx`                | `handleGenerateWeavePlan` → `window.crashWeaver.generateWeavePlan`                 |
+| Preload bridge | `electron/preload.ts`        | `generateWeavePlan` → `invoke('weave:generate-plan', request)`                     |
+| Main handler   | `electron/main.ts`           | `ipcMain.handle('weave:generate-plan')` → `generateWeavePlan(request, onProgress)` |
+| Progress push  | `electron/main.ts` → preload | `event.sender.send('weave:plan-progress', …)` → `onWeavePlanProgress`              |
+| Apply call     | `src/App.tsx`                | `handleApplyWeaveOperations` → `applyWeavePlan`                                    |
 
 `weaveService.generateWeavePlan` is the service layer: read settings, `validateWeavePlanRequest`, `assertVaultRoot`, resolve the request-log directory, attach embedding options when an OpenRouter
 key exists, `buildWeaveContextSnapshot`, delegate to the active provider's `generatePlan`, then validate the result. Provider selection happens once in `initializeWeaveProvider`:
@@ -58,13 +58,13 @@ thin-context weave is told to plan conservatively.
 **Candidate scoring (keyword + embedding hybrid).** `extractNoteSearchTokens` collects at most 24 lowercase tokens of length ≥3 from intent, card type, card content, memory technique, and Q&A
 pairs, dropping `STOP_WORDS`. `scoreCandidateNote` then scores each catalog note:
 
-| Signal | Points |
-| --- | --- |
-| Card already references the note | +220 |
-| Note is the active note | +150 |
-| Title / tag / path keyword match | +20 / +15 / +8 each |
-| Path proximity | 10 per shared leading directory segment, +18 when the parent directory matches exactly |
-| Embedding cosine similarity × `EMBEDDING_SIMILARITY_BOOST` (180) | up to +180 |
+| Signal                                                           | Points                                                                                 |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Card already references the note                                 | +220                                                                                   |
+| Note is the active note                                          | +150                                                                                   |
+| Title / tag / path keyword match                                 | +20 / +15 / +8 each                                                                    |
+| Path proximity                                                   | 10 per shared leading directory segment, +18 when the parent directory matches exactly |
+| Embedding cosine similarity × `EMBEDDING_SIMILARITY_BOOST` (180) | up to +180                                                                             |
 
 `getCandidateReasonFragments` produces the reason strings shown in the prompt and live feed: existing reference, active note, semantic match at ≥0.3, keyword overlaps. Zero-score notes are
 dropped; the rest sort by score with a path tiebreak and slice to `maxCandidateNotes`. `buildDirectorySummaries` aggregates the candidate set per directory (note count, candidate count, summed
@@ -78,15 +78,15 @@ guided insert without optional permission `8 / 6 / 1 / 1200 / 3200 / 3600`; guid
 **Read-only tool runtime and registry.** `createWeaveContextToolRuntime` builds a `WeaveContextToolRuntime` holding `candidateLookup`, `referenceLookup`, a merged `retrievalBudget`, and a
 `toolHandlers` registry mapping tool names to bound private methods:
 
-| Tool | Handler | Behaviour |
-| --- | --- | --- |
-| `list_candidate_notes` | `toolListCandidateNotes` | Ranked candidates, optional directory filter and limit |
-| `list_directory_summary` | `toolListDirectorySummary` | Directory summaries, capped by budget |
-| `search_notes` | `toolSearchNotes` | Substring search over path/title/tags; requires a query |
-| `read_note_excerpt` | `toolReadNoteExcerpt` → `readNoteSlice('excerpt')` | Reference window (±4 lines), else a window around the selection, else the note head |
-| `read_note_full` | `toolReadNoteFull` → `readNoteSlice('full')` | Whole note, capped by `maxFullNoteChars` |
-| `read_note_span` | `toolReadNoteSpan` | Anchor-to-anchor span via `findNoteSpan`, with line numbers |
-| `refresh_candidates` | `toolRefreshCandidates` | Registered only with refresh params; expands the candidate set once |
+| Tool                     | Handler                                            | Behaviour                                                                           |
+| ------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `list_candidate_notes`   | `toolListCandidateNotes`                           | Ranked candidates, optional directory filter and limit                              |
+| `list_directory_summary` | `toolListDirectorySummary`                         | Directory summaries, capped by budget                                               |
+| `search_notes`           | `toolSearchNotes`                                  | Substring search over path/title/tags; requires a query                             |
+| `read_note_excerpt`      | `toolReadNoteExcerpt` → `readNoteSlice('excerpt')` | Reference window (±4 lines), else a window around the selection, else the note head |
+| `read_note_full`         | `toolReadNoteFull` → `readNoteSlice('full')`       | Whole note, capped by `maxFullNoteChars`                                            |
+| `read_note_span`         | `toolReadNoteSpan`                                 | Anchor-to-anchor span via `findNoteSpan`, with line numbers                         |
+| `refresh_candidates`     | `toolRefreshCandidates`                            | Registered only with refresh params; expands the candidate set once                 |
 
 `execute(toolName, args)` is the dispatcher: unknown names return an `unsupported-tool` error, and `classifyToolError` converts every thrown validation error into a structured
 `WeaveToolErrorResult` carrying one of the diagnostic codes declared on `WeaveReActStep['diagnostics']` (`budget-note-reads-exhausted`, `budget-chars-exhausted`, `note-outside-candidates`,
@@ -113,14 +113,14 @@ gets `fences_and_braces`; `resolveResponseFormatParams` turns `json_mode` into `
 for `anthropic`, a bare-JSON instruction for JSON-mode providers, and a conservative fallback; `buildModelOverlayLayer` appends it as prompt layer 6. `resolveRepairStrategy` returns `conservative`
 for Anthropic and `aggressive` otherwise. `resolveFullModelProfile(modelId, request, settings)` combines all of it with `resolveBudget`.
 
-| Request | Max tokens | Timeout | Temperature | Iteration limit |
-| --- | --- | --- | --- | --- |
-| Guided insert, base | 1400 | 30 s | 0.1 | 3 |
-| Guided insert, expanded | 2200 | 45 s | 0.2 | 4 |
-| Intelligent light | 1500 | 30 s | 0.18 | 2 |
-| Intelligent standard | 3000 | 60 s | 0.3 | 4 |
-| Intelligent go-ham | 6000 | 120 s | 0.5 | 6 |
-| Budget restrictions disabled | 32000 | 600 s | 0.15–0.5 by kind/strength | 200 |
+| Request                      | Max tokens | Timeout | Temperature               | Iteration limit |
+| ---------------------------- | ---------- | ------- | ------------------------- | --------------- |
+| Guided insert, base          | 1400       | 30 s    | 0.1                       | 3               |
+| Guided insert, expanded      | 2200       | 45 s    | 0.2                       | 4               |
+| Intelligent light            | 1500       | 30 s    | 0.18                      | 2               |
+| Intelligent standard         | 3000       | 60 s    | 0.3                       | 4               |
+| Intelligent go-ham           | 6000       | 120 s   | 0.5                       | 6               |
+| Budget restrictions disabled | 32000      | 600 s   | 0.15–0.5 by kind/strength | 200             |
 
 `BUDGET_VALIDATION_BOUNDS` fixes the accepted ranges (tokens 100–32000, timeouts 5–600 s, iterations 1–20) and `validateAndClampBudgetValue` clamps out-of-range settings with a warning rather than
 failing the weave; `settingsService.ts` re-bounds the same fields through `WEAVER_BUDGET_FIELD_REGISTRY`.
@@ -151,19 +151,19 @@ helpers, `WeaveProgressEvent` / `WeaveProgressCallback`, `MIN_REMAINING_TIME_MS`
 
 **Transition table.** `resolveNextStep(current, state)` in `weaveGraph.ts` is a pure, exhaustive function over the current step and `state.pendingRoute`:
 
-| From | Condition | To |
-| --- | --- | --- |
-| `callModel` | `execute-tool` | `executeTool` |
-| `callModel` | `finalize` | `finalize` |
-| `callModel` | `repair-syntactic` / `repair-semantic` / `repair-exhaustion` | `repair` |
-| `callModel` | any other route | `fail` |
-| `executeTool` | always | `callModel` |
-| `repair` | always | `callModel` |
-| `finalize` | always | `validate` |
-| `validate` | result set, no route, no error | `done` |
-| `validate` | `repair-schema` | `repair` |
-| `validate` | anything else | `fail` |
-| `fail` | terminal | `done` |
+| From          | Condition                                                    | To            |
+| ------------- | ------------------------------------------------------------ | ------------- |
+| `callModel`   | `execute-tool`                                               | `executeTool` |
+| `callModel`   | `finalize`                                                   | `finalize`    |
+| `callModel`   | `repair-syntactic` / `repair-semantic` / `repair-exhaustion` | `repair`      |
+| `callModel`   | any other route                                              | `fail`        |
+| `executeTool` | always                                                       | `callModel`   |
+| `repair`      | always                                                       | `callModel`   |
+| `finalize`    | always                                                       | `validate`    |
+| `validate`    | result set, no route, no error                               | `done`        |
+| `validate`    | `repair-schema`                                              | `repair`      |
+| `validate`    | anything else                                                | `fail`        |
+| `fail`        | terminal                                                     | `done`        |
 
 `runWeaveGraph` seeds messages with `systemMsg(buildSystemPrompt(...))` and `userMsg(buildInitialUserTurn(...))`, instantiates the six node factories with injected dependencies, logs and emits
 `graph-start`, and runs the switch until `done`.
@@ -179,18 +179,18 @@ value when a node reports no usage.
 **Node behaviour.** `weaveGraphNodes.ts` exports one factory per step.
 
 - `makeCallModelNode` — checks request/profile and time, then calls `httpClient.chatCompletion`. `extractJsonFromText` parses bare, fenced, or brace-delimited JSON, and `parseActionFromJson`
-recognises `{ type: 'tool', toolName, arguments }` or `{ type: 'final', plan }`. Outcomes are `execute-tool`, `finalize`, `repair-syntactic` (unparseable but braces present), `repair-semantic`
-(valid JSON, wrong envelope), `repair-exhaustion` (over-budget tool request), or `fail` with `schema-error` / `provider-error`; it records usage and appends a trace entry when routing into a
-repair.
+  recognises `{ type: 'tool', toolName, arguments }` or `{ type: 'final', plan }`. Outcomes are `execute-tool`, `finalize`, `repair-syntactic` (unparseable but braces present), `repair-semantic`
+  (valid JSON, wrong envelope), `repair-exhaustion` (over-budget tool request), or `fail` with `schema-error` / `provider-error`; it records usage and appends a trace entry when routing into a
+  repair.
 - `makeExecuteToolNode` — dispatches through `toolRuntime.execute`, builds the observation with `buildObservationMessage`, increments `toolCallCount`, clears pending tool fields, and
-appends a trace entry whose observation is truncated at 800 characters.
+  appends a trace entry whose observation is truncated at 800 characters.
 - `makeRepairNode` — selects `buildSyntacticRepairMessage`, `buildSemanticRepairMessage`,
-`buildSchemaRepairMessage(errorMessage)`, or `buildExhaustionRepairMessage` by route, appends it as a user message, increments `repairAttemptCount`, and clears route and error.
+  `buildSchemaRepairMessage(errorMessage)`, or `buildExhaustionRepairMessage` by route, appends it as a user message, increments `repairAttemptCount`, and clears route and error.
 - `makeFinalizeNode` — wraps `pendingPlanData` in a `WeavePlanResult` shell with model, `provider: 'openrouter'`, accumulated usage, and elapsed latency; the plan is deliberately not validated here.
 - `makeValidateNode` — runs `validateWeavePlanResult`; on success it logs `node-validate-success` and `plan-final` (the full plan session history later reads), appends the closing trace step, and
-clears the route; on failure it routes to `repair-schema` when a repair and time remain, else fails with `schema-error`.
+  clears the route; on failure it routes to `repair-schema` when a repair and time remain, else fails with `schema-error`.
 - `makeFailNode` — emits `graph-fail`, logs `node-fail`, and seals
-`errorMessage` / `errorCategory` for the runner to throw.
+  `errorMessage` / `errorCategory` for the runner to throw.
 
 **Repair passes and trace.** `maxRepairs` is 1 for `conservative` and 2 for `aggressive`, and a repair requires `repairAttemptCount < maxRepairs` plus enough remaining time. Syntactic and semantic
 repairs are decided in `callModel`, schema repairs in `validate`, exhaustion repairs in `callModel`; all funnel through the single `repair` step. The trace accumulates in `state.trace`: one entry
@@ -205,18 +205,18 @@ pipeline raises it, because path safety is enforced by ordinary throws from `nor
 static and dynamic layers; `buildInitialUserTurn` joins the request specification with the context snapshot. The table below mirrors the named layer exports of that module — and, for layer 3, the
 `WeavePlanOperationKind` union in `electron/vault-contract.ts` — which remain authoritative.
 
-| Layer | Export | Contribution |
-| --- | --- | --- |
-| 1 Task contract | `TASK_CONTRACT_LAYER` | Weaver's role: propose a reviewable, non-destructive plan, never execute; cards versus boundary markers |
-| 2 Safety policy | `SAFETY_POLICY_LAYER` | Absolute constraints: proposal only, Crashpad never mutated, vault-relative paths, exact focused UID, permission-limited operations, minimal deletes, raw JSON only |
-| 3 Operation schema | `OPERATION_SCHEMA_LAYER` / `GUIDED_INSERT_OPERATION_SCHEMA_LAYER` | Ten operation kinds with payload shapes, or the three guided-insert kinds; invariants (`targetPath` equals `toPath` for renames and moves, boundary rules) and canonical examples |
-| 4 Output format | `OUTPUT_FORMAT_LAYER` | The exact plan JSON: kind, permissions or strength, summary, operations, warnings, referencedCards |
-| 5 Tool loop protocol | `buildToolLoopLayer` | ReAct envelope, tool catalogue, read-only rules, numeric tool/read/character budgets, finalisation guidance; a separate no-limits variant for unrestricted budgets |
-| 6 Model overlay | `buildModelOverlayLayer` | Provider-family instructions from the profile, omitted when empty |
-| 7 Request spec | `buildRequestSpecification` | Kind, focused UID, operation cap, permissions or strength description, intent, Crashpad path as source-only, active note, trimmed selection |
-| 8 Context snapshot | `buildContextLayer` | Focused card, retrieval budget, ranked candidates with scores and reasons, directory summaries, retrieval warnings |
-| 9 Observation | `buildObservationMessage` | Per tool result: status, structured result or error, remaining calls, or an explicit finalise instruction |
-| 10 Repair messages | `buildSyntacticRepairMessage`, `buildSemanticRepairMessage`, `buildSchemaRepairMessage`, `buildExhaustionRepairMessage` | One targeted correction per failure mode |
+| Layer                | Export                                                                                                                  | Contribution                                                                                                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Task contract      | `TASK_CONTRACT_LAYER`                                                                                                   | Weaver's role: propose a reviewable, non-destructive plan, never execute; cards versus boundary markers                                                                           |
+| 2 Safety policy      | `SAFETY_POLICY_LAYER`                                                                                                   | Absolute constraints: proposal only, Crashpad never mutated, vault-relative paths, exact focused UID, permission-limited operations, minimal deletes, raw JSON only               |
+| 3 Operation schema   | `OPERATION_SCHEMA_LAYER` / `GUIDED_INSERT_OPERATION_SCHEMA_LAYER`                                                       | Ten operation kinds with payload shapes, or the three guided-insert kinds; invariants (`targetPath` equals `toPath` for renames and moves, boundary rules) and canonical examples |
+| 4 Output format      | `OUTPUT_FORMAT_LAYER`                                                                                                   | The exact plan JSON: kind, permissions or strength, summary, operations, warnings, referencedCards                                                                                |
+| 5 Tool loop protocol | `buildToolLoopLayer`                                                                                                    | ReAct envelope, tool catalogue, read-only rules, numeric tool/read/character budgets, finalisation guidance; a separate no-limits variant for unrestricted budgets                |
+| 6 Model overlay      | `buildModelOverlayLayer`                                                                                                | Provider-family instructions from the profile, omitted when empty                                                                                                                 |
+| 7 Request spec       | `buildRequestSpecification`                                                                                             | Kind, focused UID, operation cap, permissions or strength description, intent, Crashpad path as source-only, active note, trimmed selection                                       |
+| 8 Context snapshot   | `buildContextLayer`                                                                                                     | Focused card, retrieval budget, ranked candidates with scores and reasons, directory summaries, retrieval warnings                                                                |
+| 9 Observation        | `buildObservationMessage`                                                                                               | Per tool result: status, structured result or error, remaining calls, or an explicit finalise instruction                                                                         |
+| 10 Repair messages   | `buildSyntacticRepairMessage`, `buildSemanticRepairMessage`, `buildSchemaRepairMessage`, `buildExhaustionRepairMessage` | One targeted correction per failure mode                                                                                                                                          |
 
 The static layers are the shared contract; the dynamic layers are the only place request-specific facts enter the prompt, and the budget numbers printed there come from the same
 `WeaveEffectiveBudget` the runtime enforces. The guided-insert variant of layer 3 keeps the model from seeing kinds validation would reject.
@@ -311,18 +311,18 @@ dryRun: false, stopOnError: true }`, so production always writes and always stop
 
 **The ten operation kinds.** `applyWeaveOperations` dispatches on `operation.kind`; the table mirrors the `WeavePlanOperationKind` union in `electron/vault-contract.ts`, which is authoritative:
 
-| Kind | Handler | High-level behaviour |
-| --- | --- | --- |
-| `insert-boundary-pair` | `applyInsertBoundaryPair` | Reads the note, uses `payload.boundaryBlock` as-is (synthesising bare markers only when empty), computes an insert index from the placement, splices the block in, checks boundary integrity, writes atomically, syncs to the card store |
-| `edit-note-content` | `applyEditNoteContent` | Requires `targetText` to be present (with a CRLF-normalised retry), replaces every occurrence with `replacementMarkdown`, checks boundary integrity, writes, syncs |
-| `create-note` | `applyCreateNote` | Refuses an existing path, builds `# title` + blank line + content, creates parents, writes, syncs, and writes a default card JSON plus reference when the focused card is missing |
-| `rename-note` | `applyRenameNote` | Requires source present and destination free, creates the destination parent, parses boundary UIDs before the move, renames, then rewrites `referenced_in` paths on the cards whose UIDs appeared as boundaries in the renamed note and that still reference the old path |
-| `move-note` | `applyMoveNote` | Delegates to the rename implementation with the move reason |
-| `delete-note` | `applyDeleteNote` | Parses the note, removes this note's reference from every referenced card, warns about orphaned cards whose JSON is preserved, removes the note file |
-| `create-directory` | `applyCreateDirectory` | Creates the directory recursively |
-| `rename-directory` | `applyRenameDirectory` | Requires the source directory present and the destination free, creates the destination parent, renames |
-| `move-directory` | `applyMoveDirectory` | Delegates to the directory rename implementation |
-| `delete-directory` | `applyDeleteDirectory` | Requires the directory, refuses the vault root, warns when non-empty, removes recursively |
+| Kind                   | Handler                   | High-level behaviour                                                                                                                                                                                                                                                      |
+| ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `insert-boundary-pair` | `applyInsertBoundaryPair` | Reads the note, uses `payload.boundaryBlock` as-is (synthesising bare markers only when empty), computes an insert index from the placement, splices the block in, checks boundary integrity, writes atomically, syncs to the card store                                  |
+| `edit-note-content`    | `applyEditNoteContent`    | Requires `targetText` to be present (with a CRLF-normalised retry), replaces every occurrence with `replacementMarkdown`, checks boundary integrity, writes, syncs                                                                                                        |
+| `create-note`          | `applyCreateNote`         | Refuses an existing path, builds `# title` + blank line + content, creates parents, writes, syncs, and writes a default card JSON plus reference when the focused card is missing                                                                                         |
+| `rename-note`          | `applyRenameNote`         | Requires source present and destination free, creates the destination parent, parses boundary UIDs before the move, renames, then rewrites `referenced_in` paths on the cards whose UIDs appeared as boundaries in the renamed note and that still reference the old path |
+| `move-note`            | `applyMoveNote`           | Delegates to the rename implementation with the move reason                                                                                                                                                                                                               |
+| `delete-note`          | `applyDeleteNote`         | Parses the note, removes this note's reference from every referenced card, warns about orphaned cards whose JSON is preserved, removes the note file                                                                                                                      |
+| `create-directory`     | `applyCreateDirectory`    | Creates the directory recursively                                                                                                                                                                                                                                         |
+| `rename-directory`     | `applyRenameDirectory`    | Requires the source directory present and the destination free, creates the destination parent, renames                                                                                                                                                                   |
+| `move-directory`       | `applyMoveDirectory`      | Delegates to the directory rename implementation                                                                                                                                                                                                                          |
+| `delete-directory`     | `applyDeleteDirectory`    | Requires the directory, refuses the vault root, warns when non-empty, removes recursively                                                                                                                                                                                 |
 
 Two consequences are worth stating because the plan diff does not show them. A note rename or move rewrites card references but not the boundary markers' surrounding prose or notes linking to the
 moved note by path. A directory rename or move performs no reference rewriting at all — only the note handlers update references. Whether directory-level reference repair belongs in apply is not
@@ -330,14 +330,14 @@ answerable from the code.
 
 **Guards.**
 
-| Guard | Symbol | Enforces |
-| --- | --- | --- |
-| Vault boundary | `assertWithinVault` | Resolves root and target through symlinks and rejects targets whose real path leaves the root; for not-yet-existing paths it walks up to the nearest existing ancestor first, so a create cannot escape through a symlink. Returns the naive resolved path for the file operation. |
-| Note existence | `assertNoteExists` | Existing-note operations require a file, else "Note not found" |
-| Target text | inline in `applyEditNoteContent` | Replacement happens only when `targetText` is found, with a CRLF-normalised retry, so a note edited since planning fails rather than being clobbered |
-| Boundary integrity | `verifyBoundaryIntegrity` | Runs `parseCrashCardsFromNote` over the prospective content and fails on any `error`-severity diagnostic, so an edit cannot leave unbalanced `%%CW_CARD_START/END%%` pairs |
-| Target free | inline in `applyCreateNote`, `applyRenameNote`, `applyRenameDirectory` | Refuses to create or rename onto an existing path |
-| Vault root | inline in `applyDeleteDirectory` | Refuses to delete the resolved vault root |
+| Guard              | Symbol                                                                 | Enforces                                                                                                                                                                                                                                                                           |
+| ------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vault boundary     | `assertWithinVault`                                                    | Resolves root and target through symlinks and rejects targets whose real path leaves the root; for not-yet-existing paths it walks up to the nearest existing ancestor first, so a create cannot escape through a symlink. Returns the naive resolved path for the file operation. |
+| Note existence     | `assertNoteExists`                                                     | Existing-note operations require a file, else "Note not found"                                                                                                                                                                                                                     |
+| Target text        | inline in `applyEditNoteContent`                                       | Replacement happens only when `targetText` is found, with a CRLF-normalised retry, so a note edited since planning fails rather than being clobbered                                                                                                                               |
+| Boundary integrity | `verifyBoundaryIntegrity`                                              | Runs `parseCrashCardsFromNote` over the prospective content and fails on any `error`-severity diagnostic, so an edit cannot leave unbalanced `%%CW_CARD_START/END%%` pairs                                                                                                         |
+| Target free        | inline in `applyCreateNote`, `applyRenameNote`, `applyRenameDirectory` | Refuses to create or rename onto an existing path                                                                                                                                                                                                                                  |
+| Vault root         | inline in `applyDeleteDirectory`                                       | Refuses to delete the resolved vault root                                                                                                                                                                                                                                          |
 
 Boundary integrity runs after the prospective content is assembled but before `writeTextAtomically`, so a failing check means no write at all.
 
@@ -411,28 +411,28 @@ apply-result banner + vault re-index
 
 ## Stage map
 
-| Stage | Module | Key export |
-| --- | --- | --- |
-| Entry and orchestration | `electron/weaver/weaveService.ts` | `generateWeavePlan`, `initializeWeaveProvider` |
-| Entry IPC | `electron/main.ts`, `electron/preload.ts` | `ipcMain.handle('weave:generate-plan')`, `generateWeavePlan` bridge |
-| Context retrieval | `electron/weaver/weaveContextService.ts` | `buildWeaveContextSnapshot` |
-| Read-only tools | `electron/weaver/weaveContextService.ts` | `WeaveContextToolRuntime`, `createWeaveContextToolRuntime` |
-| Embeddings and cache | `electron/weaver/weaverEmbeddingService.ts` | `buildQueryEmbedding`, `getOrComputeNoteEmbedding`, `buildSimilarityMap` |
-| Model policy and budgets | `electron/weaver/weaveModelProfiles.ts` | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS` |
-| Provider (production) | `electron/weaver/openRouterClient.ts` | `OpenRouterWeaveProvider` |
-| Provider (offline) | `electron/weaver/stubWeaveProvider.ts` | `StubWeaveProvider` |
-| Transport | `electron/weaver/weaveHttpClient.ts` | `OpenRouterHttpClient` |
-| Planning loop | `electron/weaver/weaveGraph.ts` | `runWeaveGraph`, `resolveWeaveEffectiveBudget` |
-| Planning nodes | `electron/weaver/weaveGraphNodes.ts` | `makeCallModelNode`, `makeExecuteToolNode`, `makeRepairNode`, `makeFinalizeNode`, `makeValidateNode`, `makeFailNode` |
-| Loop state and events | `electron/weaver/weaveGraphState.ts` | `WeaveAgentState`, `WeaveProgressEvent`, `MAX_TOTAL_STEPS` |
-| Prompts | `electron/weaver/weavePlanPrompts.ts` | `buildSystemPrompt`, `buildInitialUserTurn` |
-| Validation | `electron/weaver/weavePlanSchema.ts` | `validateWeavePlanRequest`, `validateWeavePlanResult`, `normalizeVaultRelativePath` |
-| Request logging | `electron/weaver/weaveRequestLogger.ts` | `createWeaveRequestSessionLogger` |
-| Trace compaction | `electron/weaver/weaveTraceCompactor.ts` | `compactTraceItem`, `WeaveTraceAccumulator` |
-| Session history | `electron/weaver/weaverSessionHistory.ts` | `listWeaverSessions`, `getWeaverSession`, `deleteWeaverSession`, `clearWeaverSessions` |
-| Approval gate (panel) | `src/components/WeaverProposalPanel.tsx` | `WeaverProposalPanel` |
-| Approval gate (items, previews) | `src/components/WeaverOperationItem.tsx`, `src/components/WeaverDiffPreview.tsx` | `WeaverOperationItem`, `WEAVE_OPERATION_META`, `WeaverDiffPreview` |
-| Approval gate (unified diff) | `src/components/WeaverUnifiedDiffModal.tsx` | `WeaverUnifiedDiffModal` |
-| Approval gate (destructive confirmation) | `src/components/WeaverConfirmDialog.tsx` | `WeaverConfirmDialog`, `isDestructiveOperation` |
-| Apply | `electron/weaver/weaveApplyService.ts` | `applyWeaveOperations` |
-| Shared contract | `electron/vault-contract.ts` | `WeavePlanRequest`, `WeavePlan`, `WeavePlanOperation`, `WeavePlanResult`, `WeaveApplyResult`, `WeaveApplyOptions` |
+| Stage                                    | Module                                                                           | Key export                                                                                                           |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Entry and orchestration                  | `electron/weaver/weaveService.ts`                                                | `generateWeavePlan`, `initializeWeaveProvider`                                                                       |
+| Entry IPC                                | `electron/main.ts`, `electron/preload.ts`                                        | `ipcMain.handle('weave:generate-plan')`, `generateWeavePlan` bridge                                                  |
+| Context retrieval                        | `electron/weaver/weaveContextService.ts`                                         | `buildWeaveContextSnapshot`                                                                                          |
+| Read-only tools                          | `electron/weaver/weaveContextService.ts`                                         | `WeaveContextToolRuntime`, `createWeaveContextToolRuntime`                                                           |
+| Embeddings and cache                     | `electron/weaver/weaverEmbeddingService.ts`                                      | `buildQueryEmbedding`, `getOrComputeNoteEmbedding`, `buildSimilarityMap`                                             |
+| Model policy and budgets                 | `electron/weaver/weaveModelProfiles.ts`                                          | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS`                                                |
+| Provider (production)                    | `electron/weaver/openRouterClient.ts`                                            | `OpenRouterWeaveProvider`                                                                                            |
+| Provider (offline)                       | `electron/weaver/stubWeaveProvider.ts`                                           | `StubWeaveProvider`                                                                                                  |
+| Transport                                | `electron/weaver/weaveHttpClient.ts`                                             | `OpenRouterHttpClient`                                                                                               |
+| Planning loop                            | `electron/weaver/weaveGraph.ts`                                                  | `runWeaveGraph`, `resolveWeaveEffectiveBudget`                                                                       |
+| Planning nodes                           | `electron/weaver/weaveGraphNodes.ts`                                             | `makeCallModelNode`, `makeExecuteToolNode`, `makeRepairNode`, `makeFinalizeNode`, `makeValidateNode`, `makeFailNode` |
+| Loop state and events                    | `electron/weaver/weaveGraphState.ts`                                             | `WeaveAgentState`, `WeaveProgressEvent`, `MAX_TOTAL_STEPS`                                                           |
+| Prompts                                  | `electron/weaver/weavePlanPrompts.ts`                                            | `buildSystemPrompt`, `buildInitialUserTurn`                                                                          |
+| Validation                               | `electron/weaver/weavePlanSchema.ts`                                             | `validateWeavePlanRequest`, `validateWeavePlanResult`, `normalizeVaultRelativePath`                                  |
+| Request logging                          | `electron/weaver/weaveRequestLogger.ts`                                          | `createWeaveRequestSessionLogger`                                                                                    |
+| Trace compaction                         | `electron/weaver/weaveTraceCompactor.ts`                                         | `compactTraceItem`, `WeaveTraceAccumulator`                                                                          |
+| Session history                          | `electron/weaver/weaverSessionHistory.ts`                                        | `listWeaverSessions`, `getWeaverSession`, `deleteWeaverSession`, `clearWeaverSessions`                               |
+| Approval gate (panel)                    | `src/components/WeaverProposalPanel.tsx`                                         | `WeaverProposalPanel`                                                                                                |
+| Approval gate (items, previews)          | `src/components/WeaverOperationItem.tsx`, `src/components/WeaverDiffPreview.tsx` | `WeaverOperationItem`, `WEAVE_OPERATION_META`, `WeaverDiffPreview`                                                   |
+| Approval gate (unified diff)             | `src/components/WeaverUnifiedDiffModal.tsx`                                      | `WeaverUnifiedDiffModal`                                                                                             |
+| Approval gate (destructive confirmation) | `src/components/WeaverConfirmDialog.tsx`                                         | `WeaverConfirmDialog`, `isDestructiveOperation`                                                                      |
+| Apply                                    | `electron/weaver/weaveApplyService.ts`                                           | `applyWeaveOperations`                                                                                               |
+| Shared contract                          | `electron/vault-contract.ts`                                                     | `WeavePlanRequest`, `WeavePlan`, `WeavePlanOperation`, `WeavePlanResult`, `WeaveApplyResult`, `WeaveApplyOptions`    |

@@ -8,7 +8,10 @@ const {
   renameCardBoundariesAcrossReferences,
   removeCardBoundariesAcrossReferences,
 } = require('../../dist-electron/services/cardReferenceMutationService.js');
-const { formatCardStartBoundary, formatCardEndBoundary } = require('../../dist-electron/cardParser.js');
+const {
+  formatCardStartBoundary,
+  formatCardEndBoundary,
+} = require('../../dist-electron/cardParser.js');
 
 test('renameCardBoundariesAcrossReferences updates existing note and skips missing notes', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-ref-mutation-rename-'));

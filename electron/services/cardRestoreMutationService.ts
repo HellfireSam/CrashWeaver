@@ -2,7 +2,10 @@ import fs from 'node:fs/promises';
 import { syncNoteToCardStore } from '../cardSyncService';
 import { writeTextAtomically } from '../utils/jsonFile';
 import { restoreCardBoundaryLines } from './cardBoundaryService';
-import { isMissingReferenceNoteError, resolveReferenceNotePath } from './noteReferenceMutationService';
+import {
+  isMissingReferenceNoteError,
+  resolveReferenceNotePath,
+} from './noteReferenceMutationService';
 import type { CardNoteReference } from '../vault-contract';
 
 type ReinsertCardBoundariesOptions = {

@@ -12,13 +12,20 @@ export type WeaverConfirmDialogProps = {
  */
 function getOpLabel(kind: string): string {
   switch (kind) {
-    case 'delete-note': return 'Delete note';
-    case 'delete-directory': return 'Delete directory';
-    case 'rename-note': return 'Rename note';
-    case 'rename-directory': return 'Rename directory';
-    case 'move-note': return 'Move note';
-    case 'move-directory': return 'Move directory';
-    default: return kind;
+    case 'delete-note':
+      return 'Delete note';
+    case 'delete-directory':
+      return 'Delete directory';
+    case 'rename-note':
+      return 'Rename note';
+    case 'rename-directory':
+      return 'Rename directory';
+    case 'move-note':
+      return 'Move note';
+    case 'move-directory':
+      return 'Move directory';
+    default:
+      return kind;
   }
 }
 
@@ -26,10 +33,21 @@ function getOpLabel(kind: string): string {
  * Returns true if the operation kind is considered destructive.
  */
 export function isDestructiveOperation(kind: string): boolean {
-  return ['delete-note', 'delete-directory', 'rename-note', 'rename-directory', 'move-note', 'move-directory'].includes(kind);
+  return [
+    'delete-note',
+    'delete-directory',
+    'rename-note',
+    'rename-directory',
+    'move-note',
+    'move-directory',
+  ].includes(kind);
 }
 
-export function WeaverConfirmDialog({ destructiveOps, onConfirm, onCancel }: WeaverConfirmDialogProps) {
+export function WeaverConfirmDialog({
+  destructiveOps,
+  onConfirm,
+  onCancel,
+}: WeaverConfirmDialogProps) {
   const [acknowledged, setAcknowledged] = useState(false);
 
   const uniqueKinds = [...new Set(destructiveOps.map((op) => op.kind))];
@@ -45,7 +63,8 @@ export function WeaverConfirmDialog({ destructiveOps, onConfirm, onCancel }: Wea
 
         <div className="weaverConfirmBody">
           <p>
-            The following <strong>{destructiveOps.length}</strong> destructive operation{destructiveOps.length !== 1 ? 's' : ''} will be applied:
+            The following <strong>{destructiveOps.length}</strong> destructive operation
+            {destructiveOps.length !== 1 ? 's' : ''} will be applied:
           </p>
 
           <ul className="weaverConfirmOpList">
@@ -58,7 +77,8 @@ export function WeaverConfirmDialog({ destructiveOps, onConfirm, onCancel }: Wea
           </ul>
 
           <div className="weaverConfirmWarning">
-            <strong>These changes cannot be undone automatically.</strong> Files and directories will be permanently renamed, moved, or deleted from your vault.
+            <strong>These changes cannot be undone automatically.</strong> Files and directories
+            will be permanently renamed, moved, or deleted from your vault.
           </div>
 
           <label className="weaverConfirmCheckbox">
@@ -72,11 +92,7 @@ export function WeaverConfirmDialog({ destructiveOps, onConfirm, onCancel }: Wea
         </div>
 
         <div className="weaverConfirmActions">
-          <button
-            type="button"
-            className="weaverApplyButton secondary"
-            onClick={onCancel}
-          >
+          <button type="button" className="weaverApplyButton secondary" onClick={onCancel}>
             Cancel
           </button>
           <button

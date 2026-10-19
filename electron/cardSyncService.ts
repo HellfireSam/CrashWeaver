@@ -18,11 +18,7 @@ import {
   getCardFilePath,
 } from './cardStoreService';
 
-function createDiagnostic(
-  line: number,
-  uid: string,
-  message: string,
-): CardParseDiagnostic {
+function createDiagnostic(line: number, uid: string, message: string): CardParseDiagnostic {
   return {
     code: 'mismatched-boundary-uid',
     line,
@@ -32,7 +28,11 @@ function createDiagnostic(
   };
 }
 
-function createChange(uid: string, action: CardSyncChange['action'], detail: string): CardSyncChange {
+function createChange(
+  uid: string,
+  action: CardSyncChange['action'],
+  detail: string,
+): CardSyncChange {
   return {
     uid,
     action,
@@ -75,7 +75,10 @@ export function parseCrashCardsNote(notePath: string, content: string) {
   return parseCrashCardsFromNote(notePath, content);
 }
 
-export async function enrichParsedCardsWithStoreState(cardStorePath: string, cards: ParsedCrashCard[]) {
+export async function enrichParsedCardsWithStoreState(
+  cardStorePath: string,
+  cards: ParsedCrashCard[],
+) {
   return Promise.all(
     cards.map(async (card) => ({
       ...card,
@@ -122,7 +125,13 @@ export async function syncParsedCrashCards(
       const result = await removeCardReference(cardStorePath, card.uid, parsedNote.notePath);
 
       if (result.removed) {
-        changes.push(createChange(card.uid, 'removed-reference', `Removed ${parsedNote.notePath} from ${result.cardFilePath}.`));
+        changes.push(
+          createChange(
+            card.uid,
+            'removed-reference',
+            `Removed ${parsedNote.notePath} from ${result.cardFilePath}.`,
+          ),
+        );
       }
     }
   } else {
@@ -150,7 +159,11 @@ export async function syncParsedCrashCards(
   };
 }
 
-export async function syncNoteToCardStore(cardStorePath: string, notePath: string, content: string) {
+export async function syncNoteToCardStore(
+  cardStorePath: string,
+  notePath: string,
+  content: string,
+) {
   const parsedNote = parseCrashCardsNote(notePath, content);
   const summary = await syncParsedCrashCards(cardStorePath, parsedNote);
   const cards = await enrichParsedCardsWithStoreState(cardStorePath, parsedNote.cards);
@@ -164,7 +177,10 @@ export async function syncNoteToCardStore(cardStorePath: string, notePath: strin
   };
 }
 
-export async function removeNoteReferencesFromCardStore(cardStorePath: string, notePath: string): Promise<CardSyncSummary> {
+export async function removeNoteReferencesFromCardStore(
+  cardStorePath: string,
+  notePath: string,
+): Promise<CardSyncSummary> {
   await ensureCardStoreDirectory(cardStorePath);
   const existingCards = await listCardsReferencingNote(cardStorePath, notePath);
   const changes: CardSyncChange[] = [];
@@ -173,7 +189,13 @@ export async function removeNoteReferencesFromCardStore(cardStorePath: string, n
     const result = await removeCardReference(cardStorePath, card.uid, notePath);
 
     if (result.removed) {
-      changes.push(createChange(card.uid, 'removed-reference', `Removed ${notePath} from ${result.cardFilePath}.`));
+      changes.push(
+        createChange(
+          card.uid,
+          'removed-reference',
+          `Removed ${notePath} from ${result.cardFilePath}.`,
+        ),
+      );
     }
   }
 
@@ -202,8 +224,12 @@ export async function rebuildCardStoreFromNotes(
     const sync = await syncNoteToCardStore(cardStorePath, note.filePath, note.content);
     lastSync = sync.summary;
     diagnosticsCount += sync.summary.diagnostics.length;
-    changedCards += sync.summary.changes.filter((change) => change.action === 'created' || change.action === 'updated').length;
-    removedReferences += sync.summary.changes.filter((change) => change.action === 'removed-reference').length;
+    changedCards += sync.summary.changes.filter(
+      (change) => change.action === 'created' || change.action === 'updated',
+    ).length;
+    removedReferences += sync.summary.changes.filter(
+      (change) => change.action === 'removed-reference',
+    ).length;
   }
 
   const cards = await listCardDocuments(cardStorePath);

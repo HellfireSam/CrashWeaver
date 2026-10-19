@@ -15,7 +15,11 @@ export function useStoredScrollSync<T extends HTMLElement>(
   storedScrollTop: number,
   options: UseStoredScrollSyncOptions = {},
 ) {
-  const { enabled = true, releaseDelayMs = DEFAULT_RELEASE_DELAY_MS, syncThreshold = DEFAULT_SYNC_THRESHOLD } = options;
+  const {
+    enabled = true,
+    releaseDelayMs = DEFAULT_RELEASE_DELAY_MS,
+    syncThreshold = DEFAULT_SYNC_THRESHOLD,
+  } = options;
   const isLocallyScrollingRef = useRef(false);
   const scrollTimerRef = useRef<number | null>(null);
 

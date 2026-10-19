@@ -25,7 +25,8 @@ export interface WeaveMessage {
 
 // ── Graph step identifiers ────────────────────────────────────────────────────
 
-export type WeaveGraphStep = 'callModel' | 'executeTool' | 'repair' | 'finalize' | 'validate' | 'fail' | 'done';
+export type WeaveGraphStep =
+  'callModel' | 'executeTool' | 'repair' | 'finalize' | 'validate' | 'fail' | 'done';
 
 // ── Route identifiers ─────────────────────────────────────────────────────────
 
@@ -111,9 +112,27 @@ export function assistantMsg(content: string): WeaveMessage {
 export type WeaveProgressEvent =
   | { phase: 'graph-start'; model: string; toolBudget: number; sessionId?: string }
   | { phase: 'call-model-start'; turn: number }
-  | { phase: 'call-model-end'; turn: number; parsedAs: 'tool' | 'final' | 'unparseable' | 'invalid-shape'; thought?: string }
-  | { phase: 'execute-tool-start'; toolName: string; toolTarget?: string; toolArgs?: Record<string, unknown>; turn: number }
-  | { phase: 'execute-tool-end'; toolName: string; ok: boolean; callsRemaining: number; observationSummary?: string; toolArgs?: Record<string, unknown> }
+  | {
+      phase: 'call-model-end';
+      turn: number;
+      parsedAs: 'tool' | 'final' | 'unparseable' | 'invalid-shape';
+      thought?: string;
+    }
+  | {
+      phase: 'execute-tool-start';
+      toolName: string;
+      toolTarget?: string;
+      toolArgs?: Record<string, unknown>;
+      turn: number;
+    }
+  | {
+      phase: 'execute-tool-end';
+      toolName: string;
+      ok: boolean;
+      callsRemaining: number;
+      observationSummary?: string;
+      toolArgs?: Record<string, unknown>;
+    }
   | { phase: 'repair'; repairType: string; repairAttempt: number }
   | { phase: 'finalize-start' }
   | { phase: 'validate-start' }

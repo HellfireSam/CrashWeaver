@@ -154,15 +154,19 @@ test('resolveFullModelProfile returns undefined responseFormatParams for non-jso
 });
 
 test('resolveFullModelProfile respects disableBudgetRestrictions setting', () => {
-  const profile = resolveFullModelProfile('openai/gpt-4o', {
-    kind: 'intelligent',
-    strength: 'light',
-    cardUid: 'CW-001',
-    intent: 'test',
-    rootPath: '/vault',
-    activeCrashpadId: 'cp-1',
-    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
-  }, { configured: true, preferredModel: null, disableBudgetRestrictions: true });
+  const profile = resolveFullModelProfile(
+    'openai/gpt-4o',
+    {
+      kind: 'intelligent',
+      strength: 'light',
+      cardUid: 'CW-001',
+      intent: 'test',
+      rootPath: '/vault',
+      activeCrashpadId: 'cp-1',
+      activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    },
+    { configured: true, preferredModel: null, disableBudgetRestrictions: true },
+  );
 
   assert.equal(profile.maxTokens, BUDGET_VALIDATION_BOUNDS.maxTokens);
   assert.equal(profile.timeoutMs, BUDGET_VALIDATION_BOUNDS.maxTimeoutMs);
@@ -173,25 +177,43 @@ test('resolveFullModelProfile respects disableBudgetRestrictions setting', () =>
 
 test('resolveFullModelProfile intelligent budgets scale by strength', () => {
   const light = resolveFullModelProfile('openai/gpt-4o', {
-    kind: 'intelligent', strength: 'light',
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    kind: 'intelligent',
+    strength: 'light',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   const standard = resolveFullModelProfile('openai/gpt-4o', {
-    kind: 'intelligent', strength: 'standard',
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    kind: 'intelligent',
+    strength: 'standard',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   const goHam = resolveFullModelProfile('openai/gpt-4o', {
-    kind: 'intelligent', strength: 'go-ham',
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    kind: 'intelligent',
+    strength: 'go-ham',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
 
   assert.ok(light.maxTokens < standard.maxTokens, 'light tokens should be less than standard');
   assert.ok(standard.maxTokens < goHam.maxTokens, 'standard tokens should be less than go-ham');
-  assert.ok(light.iterationLimit < standard.iterationLimit, 'light iterations should be less than standard');
-  assert.ok(standard.iterationLimit < goHam.iterationLimit, 'standard iterations should be less than go-ham');
+  assert.ok(
+    light.iterationLimit < standard.iterationLimit,
+    'light iterations should be less than standard',
+  );
+  assert.ok(
+    standard.iterationLimit < goHam.iterationLimit,
+    'standard iterations should be less than go-ham',
+  );
 });
 
 // ── Provider-prefix model detection ─────────────────────────────────────────
@@ -200,8 +222,11 @@ test('resolveFullModelProfile uses json_mode for openai provider family', () => 
   const profile = resolveFullModelProfile('openai/gpt-4o', {
     kind: 'guided-insert',
     permissions: { editContent: false, createNote: false },
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.structuredOutputMode, 'json_mode');
 });
@@ -210,8 +235,11 @@ test('resolveFullModelProfile uses json_mode for google provider family', () => 
   const profile = resolveFullModelProfile('google/gemini-2.5-pro', {
     kind: 'guided-insert',
     permissions: { editContent: false, createNote: false },
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.structuredOutputMode, 'json_mode');
 });
@@ -220,35 +248,50 @@ test('resolveFullModelProfile uses json_mode for deepseek provider family', () =
   const profile = resolveFullModelProfile('deepseek/deepseek-v3', {
     kind: 'guided-insert',
     permissions: { editContent: false, createNote: false },
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.structuredOutputMode, 'json_mode');
 });
 
 test('resolveFullModelProfile uses fences_and_braces for anthropic/claude family', () => {
   const profile = resolveFullModelProfile('anthropic/claude-sonnet-4-5', {
-    kind: 'intelligent', strength: 'standard',
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    kind: 'intelligent',
+    strength: 'standard',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.structuredOutputMode, 'fences_and_braces');
 });
 
 test('resolveFullModelProfile uses conservative repair for Claude models', () => {
   const profile = resolveFullModelProfile('anthropic/claude-opus-4', {
-    kind: 'intelligent', strength: 'light',
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    kind: 'intelligent',
+    strength: 'light',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.repairStrategy, 'conservative');
 });
 
 test('resolveFullModelProfile uses aggressive repair for non-Claude models', () => {
   const profile = resolveFullModelProfile('meta-llama/llama-4-maverick', {
-    kind: 'intelligent', strength: 'light',
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    kind: 'intelligent',
+    strength: 'light',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.repairStrategy, 'aggressive');
 });
@@ -257,8 +300,11 @@ test('resolveFullModelProfile falls back to fences_and_braces for unknown provid
   const profile = resolveFullModelProfile('unknown-provider/some-model', {
     kind: 'guided-insert',
     permissions: { editContent: false, createNote: false },
-    cardUid: 'CW-001', intent: 'test', rootPath: '/vault',
-    activeCrashpadId: 'cp-1', activeCrashpadPath: '.crashweaver/cp.crashpad.json',
+    cardUid: 'CW-001',
+    intent: 'test',
+    rootPath: '/vault',
+    activeCrashpadId: 'cp-1',
+    activeCrashpadPath: '.crashweaver/cp.crashpad.json',
   });
   assert.equal(profile.structuredOutputMode, 'fences_and_braces');
   // Unknown providers default to aggressive repair

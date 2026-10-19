@@ -30,7 +30,12 @@ function makeFakeFetch(behaviour) {
         async text() {
           return JSON.stringify({
             model: 'openai/gpt-4o-mini',
-            choices: [{ message: { role: 'assistant', content: behaviour.responseContent }, finish_reason: 'stop' }],
+            choices: [
+              {
+                message: { role: 'assistant', content: behaviour.responseContent },
+                finish_reason: 'stop',
+              },
+            ],
             usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
           });
         },

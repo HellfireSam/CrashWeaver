@@ -49,8 +49,14 @@ gives the test that tells it apart from its neighbours; the memory trick carries
   "memory_tricks": {
     "memory_technique": "One plug, many sockets — the contract is the socket.",
     "qa_pairs": [
-      { "q": "What decides which implementation runs?", "a": "Runtime dispatch on the value, not the calling code." },
-      { "q": "How do you know a seam is polymorphic?", "a": "Adding an implementation leaves the caller untouched." }
+      {
+        "q": "What decides which implementation runs?",
+        "a": "Runtime dispatch on the value, not the calling code."
+      },
+      {
+        "q": "How do you know a seam is polymorphic?",
+        "a": "Adding an implementation leaves the caller untouched."
+      }
     ]
   },
   "referenced_in": []
@@ -71,8 +77,14 @@ put the stopping condition at the end, and let the mnemonic compress the step na
   "memory_tricks": {
     "memory_technique": "Fetch, rebase, resolve, push-with-lease.",
     "qa_pairs": [
-      { "q": "Why force-push with lease?", "a": "It refuses the push if someone else moved the branch first." },
-      { "q": "When do you stop and ask?", "a": "When resolving the conflict would rewrite a reviewed commit." }
+      {
+        "q": "Why force-push with lease?",
+        "a": "It refuses the push if someone else moved the branch first."
+      },
+      {
+        "q": "When do you stop and ask?",
+        "a": "When resolving the conflict would rewrite a reviewed commit."
+      }
     ]
   },
   "referenced_in": []
@@ -96,7 +108,10 @@ a short orientation block. Cards write `qa_pairs` directly.
     "qa_pairs": [
       { "q": "Which class means the request was malformed?", "a": "4xx." },
       { "q": "Should a client retry a 404 unchanged?", "a": "No — the URL has to change first." },
-      { "q": "When is retrying a 500 reasonable?", "a": "When the operation is idempotent and the server says retrying is safe." },
+      {
+        "q": "When is retrying a 500 reasonable?",
+        "a": "When the operation is idempotent and the server says retrying is safe."
+      },
       { "q": "What does 304 mean?", "a": "The cached copy is still fresh and no body is sent." }
     ]
   },
@@ -117,7 +132,10 @@ Use when two or more options must be told apart: put the alternatives in a table
   "memory_tricks": {
     "memory_technique": "Write-through pays on every write to never be stale.",
     "qa_pairs": [
-      { "q": "Which option is stale by default?", "a": "Cache-aside, unless invalidation is explicit." }
+      {
+        "q": "Which option is stale by default?",
+        "a": "Cache-aside, unless invalidation is explicit."
+      }
     ]
   },
   "referenced_in": []

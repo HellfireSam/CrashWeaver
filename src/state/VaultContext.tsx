@@ -69,9 +69,8 @@ export function VaultStateProvider({ children }: { children: ReactNode }) {
   const [internalDirectories, setInternalDirectories] = useState<string[]>([]);
   const [crashpadSummaries, setCrashpadSummaries] = useState<CrashpadSummary[]>([]);
   const [activeCrashpad, setActiveCrashpad] = useState<CrashpadDocument | null>(null);
-  const [crashpadDeletePreferences, setCrashpadDeletePreferences] = useState<CrashpadDeletePreferences>(
-    DEFAULT_CRASHPAD_DELETE_PREFERENCES,
-  );
+  const [crashpadDeletePreferences, setCrashpadDeletePreferences] =
+    useState<CrashpadDeletePreferences>(DEFAULT_CRASHPAD_DELETE_PREFERENCES);
 
   const value = useMemo<VaultContextValue>(
     () => ({
@@ -121,6 +120,16 @@ export function useVaultState(): VaultContextValue {
  * avoid subscribing to action references.
  */
 export function useVaultStateValues(): VaultState {
-  const { setVaultPath: _, setVault: __, setVaultAlias: ___, setAllCards: ____, setInternalDirectories: _____, setCrashpadSummaries: ______, setActiveCrashpad: _______, setCrashpadDeletePreferences: ________, ...state } = useVaultState();
+  const {
+    setVaultPath: _,
+    setVault: __,
+    setVaultAlias: ___,
+    setAllCards: ____,
+    setInternalDirectories: _____,
+    setCrashpadSummaries: ______,
+    setActiveCrashpad: _______,
+    setCrashpadDeletePreferences: ________,
+    ...state
+  } = useVaultState();
   return state;
 }

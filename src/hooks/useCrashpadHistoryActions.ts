@@ -1,6 +1,10 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { CardRenameResult, CrashpadDeletedCardSnapshot, CrashpadDocument } from '../../electron/vault-contract';
+import type {
+  CardRenameResult,
+  CrashpadDeletedCardSnapshot,
+  CrashpadDocument,
+} from '../../electron/vault-contract';
 import type { CrashpadHistoryEntry } from '../lib/crashpadHistory';
 import { getErrorMessage } from '../lib/errorUtils';
 
@@ -10,8 +14,13 @@ type UseCrashpadHistoryActionsOptions = {
   crashpadPast: CrashpadHistoryEntry[];
   crashpadFuture: CrashpadHistoryEntry[];
   persistCrashpad: (nextCrashpad: CrashpadDocument) => Promise<CrashpadDocument | null>;
-  refreshCardsCatalog: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
-  applyCardRenameResult: (rootPath: string, renameSummary: CardRenameResult) => Promise<Awaited<ReturnType<typeof window.crashWeaver.updateIndex>>>;
+  refreshCardsCatalog: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
+  applyCardRenameResult: (
+    rootPath: string,
+    renameSummary: CardRenameResult,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.updateIndex>>>;
   restoreCrashpadSnapshot: (
     snapshot: CrashpadDeletedCardSnapshot,
     mode: 'reinsert-note-boundaries' | 'forget-note-references',
@@ -60,7 +69,11 @@ export function useCrashpadHistoryActions({
         });
       } else if (entry.kind === 'update-card') {
         if (entry.before.uid !== entry.after.uid) {
-          const renameSummary = await window.crashWeaver.renameCard(vaultPath, entry.after.uid, entry.before);
+          const renameSummary = await window.crashWeaver.renameCard(
+            vaultPath,
+            entry.after.uid,
+            entry.before,
+          );
           await applyCardRenameResult(vaultPath, renameSummary);
         } else {
           await window.crashWeaver.saveCard(vaultPath, entry.before);
@@ -80,9 +93,16 @@ export function useCrashpadHistoryActions({
         await refreshCardsCatalog(vaultPath);
         await persistCrashpad({
           ...activeCrashpad,
-          cards: [...activeCrashpad.cards, { uid: entry.card.uid, origin: entry.origin, addedAt: new Date().toISOString() }],
+          cards: [
+            ...activeCrashpad.cards,
+            { uid: entry.card.uid, origin: entry.origin, addedAt: new Date().toISOString() },
+          ],
           deletedCards: activeCrashpad.deletedCards.filter(
-            (deletedSnapshot) => !(deletedSnapshot.uid === entry.card.uid && deletedSnapshot.deletedAt === entry.deletedAt),
+            (deletedSnapshot) =>
+              !(
+                deletedSnapshot.uid === entry.card.uid &&
+                deletedSnapshot.deletedAt === entry.deletedAt
+              ),
           ),
         });
       }
@@ -120,18 +140,28 @@ export function useCrashpadHistoryActions({
       if (entry.kind === 'attach-existing') {
         await persistCrashpad({
           ...activeCrashpad,
-          cards: [...activeCrashpad.cards, { uid: entry.uid, origin: 'existing', addedAt: new Date().toISOString() }],
+          cards: [
+            ...activeCrashpad.cards,
+            { uid: entry.uid, origin: 'existing', addedAt: new Date().toISOString() },
+          ],
         });
       } else if (entry.kind === 'create-new') {
         await window.crashWeaver.createCard(vaultPath, entry.uid);
         await refreshCardsCatalog(vaultPath);
         await persistCrashpad({
           ...activeCrashpad,
-          cards: [...activeCrashpad.cards, { uid: entry.uid, origin: 'new', addedAt: new Date().toISOString() }],
+          cards: [
+            ...activeCrashpad.cards,
+            { uid: entry.uid, origin: 'new', addedAt: new Date().toISOString() },
+          ],
         });
       } else if (entry.kind === 'update-card') {
         if (entry.before.uid !== entry.after.uid) {
-          const renameSummary = await window.crashWeaver.renameCard(vaultPath, entry.before.uid, entry.after);
+          const renameSummary = await window.crashWeaver.renameCard(
+            vaultPath,
+            entry.before.uid,
+            entry.after,
+          );
           await applyCardRenameResult(vaultPath, renameSummary);
         } else {
           await window.crashWeaver.saveCard(vaultPath, entry.after);

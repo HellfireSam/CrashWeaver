@@ -86,7 +86,10 @@ function ensureFolderChild(parent: ExplorerNode, name: string, path: string) {
   return next;
 }
 
-export function buildExplorerTree(entries: ExplorerEntry[], options: BuildExplorerTreeOptions = {}): ExplorerNode[] {
+export function buildExplorerTree(
+  entries: ExplorerEntry[],
+  options: BuildExplorerTreeOptions = {},
+): ExplorerNode[] {
   if (!entries.length) {
     return [];
   }
@@ -110,7 +113,9 @@ export function buildExplorerTree(entries: ExplorerEntry[], options: BuildExplor
       currentPath = currentPath ? `${currentPath}/${part}` : part;
 
       if (isFile) {
-        const existingFile = current.children.find((child) => child.kind === 'file' && child.path === currentPath);
+        const existingFile = current.children.find(
+          (child) => child.kind === 'file' && child.path === currentPath,
+        );
 
         if (!existingFile) {
           current.children.push(createFileNode(part, currentPath, entry.fileKind));

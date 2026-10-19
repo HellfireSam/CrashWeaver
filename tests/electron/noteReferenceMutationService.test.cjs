@@ -15,10 +15,7 @@ test('resolveReferenceNotePath resolves safe note paths inside root', () => {
   const result = resolveReferenceNotePath('/vault/root', 'notes/topic.md');
   assert.ok(result);
   assert.equal(result.relativePath, 'notes/topic.md');
-  assert.equal(
-    result.absolutePath,
-    path.resolve('/vault/root', 'notes/topic.md'),
-  );
+  assert.equal(result.absolutePath, path.resolve('/vault/root', 'notes/topic.md'));
 });
 
 test('resolveReferenceNotePath blocks outside-root traversal', () => {

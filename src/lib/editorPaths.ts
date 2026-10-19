@@ -2,7 +2,10 @@ export function normalizeRelativePath(rootPath: string | null, filePath: string)
   const normalizedPath = filePath.replace(/\\/g, '/');
   const normalizedRoot = rootPath?.replace(/\\/g, '/').replace(/\/+$/, '') ?? '';
 
-  if (normalizedRoot && normalizedPath.toLowerCase().startsWith(`${normalizedRoot.toLowerCase()}/`)) {
+  if (
+    normalizedRoot &&
+    normalizedPath.toLowerCase().startsWith(`${normalizedRoot.toLowerCase()}/`)
+  ) {
     return normalizedPath.slice(normalizedRoot.length + 1);
   }
 
@@ -30,5 +33,7 @@ export function getCardUidFromPath(filePath: string) {
 }
 
 export function isPathInsideVault(relativePath: string) {
-  return !/^[A-Za-z]:\//i.test(relativePath) && !relativePath.startsWith('../') && relativePath !== '..';
+  return (
+    !/^[A-Za-z]:\//i.test(relativePath) && !relativePath.startsWith('../') && relativePath !== '..'
+  );
 }

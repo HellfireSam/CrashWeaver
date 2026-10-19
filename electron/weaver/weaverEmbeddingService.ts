@@ -232,7 +232,11 @@ export async function getOrComputeNoteEmbedding(
   const existing = cache.entries[filePath];
 
   // Cache hit with matching content hash — no change detected
-  if (existing && existing.contentHash === contentHash && existing.embedding.length === EMBEDDING_DIMENSIONS) {
+  if (
+    existing &&
+    existing.contentHash === contentHash &&
+    existing.embedding.length === EMBEDDING_DIMENSIONS
+  ) {
     return existing.embedding;
   }
 

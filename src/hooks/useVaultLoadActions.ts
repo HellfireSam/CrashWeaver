@@ -10,9 +10,16 @@ type UseVaultLoadActionsOptions = {
   defaultDraftPath: string;
   defaultDraftContent: string;
   defaultMarkdownTabViewState: MarkdownTabViewState;
-  refreshCardsCatalog: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
-  refreshInternalDirectories: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
-  refreshCrashpadCatalog: (rootPath: string, preferredCrashpadId?: string | null) => Promise<CrashpadDocument | null>;
+  refreshCardsCatalog: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
+  refreshInternalDirectories: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
+  refreshCrashpadCatalog: (
+    rootPath: string,
+    preferredCrashpadId?: string | null,
+  ) => Promise<CrashpadDocument | null>;
   openNoteInEditor: (
     rootPath: string,
     filePath: string,
@@ -27,7 +34,9 @@ type UseVaultLoadActionsOptions = {
   setCrashpadPast: Dispatch<SetStateAction<CrashpadHistoryEntry[]>>;
   setCrashpadFuture: Dispatch<SetStateAction<CrashpadHistoryEntry[]>>;
   setActiveEditorKind: Dispatch<SetStateAction<'markdown' | 'crashpad' | 'card'>>;
-  setActiveNote: Dispatch<SetStateAction<Awaited<ReturnType<typeof window.crashWeaver.readNote>> | null>>;
+  setActiveNote: Dispatch<
+    SetStateAction<Awaited<ReturnType<typeof window.crashWeaver.readNote>> | null>
+  >;
   setActiveCrashpad: Dispatch<SetStateAction<CrashpadDocument | null>>;
   setActiveCardFilePath: Dispatch<SetStateAction<string>>;
   setActiveCardFileUid: Dispatch<SetStateAction<string | null>>;
@@ -75,7 +84,9 @@ export function useVaultLoadActions({
   const loadVault = useCallback(
     async (rootPath: string, preferredNotePath?: string) => {
       const openedVault = await window.crashWeaver.openVault(rootPath);
-      const noteToOpen = preferredNotePath ?? (openFirstNoteOnVaultOpen ? openedVault.notes[0]?.filePath : undefined);
+      const noteToOpen =
+        preferredNotePath ??
+        (openFirstNoteOnVaultOpen ? openedVault.notes[0]?.filePath : undefined);
 
       setVaultPath(rootPath);
       setVault(openedVault);

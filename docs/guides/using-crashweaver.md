@@ -7,6 +7,7 @@ approve before anything is written. The vocabulary is defined in [CONTEXT.md](..
 see the [documentation index](../README.md), the [data model](../architecture/data-model.md) and
 the [weave pipeline](../architecture/weave-pipeline.md) for what happens behind the UI, and
 [development setup](./development-setup.md) for building from source.
+
 ## 1. Open a vault
 
 1. Click the gear button (⚙, tooltip "Open settings") in the top-right utility strip.
@@ -25,16 +26,17 @@ the index, card catalogs and tree are refreshed, and deleting a note removes its
 `.crashweaver/` and the card store folder are ignored, and an open draft is never overwritten.
 Re-scan on demand with **Settings → Refresh Index**; **Choose Card Store**, **Choose Image
 Directories** and **Use Vault Root Only** configure where cards and images live.
+
 ## 2. The shell
 
 The window is a widget rail, a left sidebar, the editor surface and the right panel.
 
-| Region | What it shows | Collapse / resize |
-| --- | --- | --- |
-| Widget rail (far left) | `☰` "Toggle explorer pane", `CP` "Open daily Crashpad", `+` "Extensions placeholder" | `☰` toggles the sidebar; `CP` is disabled until a vault is open; `+` only posts a status message |
-| Sidebar | Tabs **Explorer** and **Vault** | `☰`, or drag the splitter whose accessible name is `Resize explorer pane` |
-| Editor pane | Tab strip, view-mode tabs, active surface | Drag either splitter |
-| Right Panel | **Info** and **LLM** toggle buttons, context sub-panel above the Weaver panel, and the top-right strip's `≣` "Toggle right panel" / `⚙` "Open settings" | `≣`, or the `×` on a sub-panel; settings closes on **Close**, Escape, or a click outside |
+| Region                 | What it shows                                                                                                                                           | Collapse / resize                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Widget rail (far left) | `☰` "Toggle explorer pane", `CP` "Open daily Crashpad", `+` "Extensions placeholder"                                                                   | `☰` toggles the sidebar; `CP` is disabled until a vault is open; `+` only posts a status message |
+| Sidebar                | Tabs **Explorer** and **Vault**                                                                                                                         | `☰`, or drag the splitter whose accessible name is `Resize explorer pane`                        |
+| Editor pane            | Tab strip, view-mode tabs, active surface                                                                                                               | Drag either splitter                                                                              |
+| Right Panel            | **Info** and **LLM** toggle buttons, context sub-panel above the Weaver panel, and the top-right strip's `≣` "Toggle right panel" / `⚙` "Open settings" | `≣`, or the `×` on a sub-panel; settings closes on **Close**, Escape, or a click outside          |
 
 The **Explorer** tab (`Files`, `ExplorerTree`) is a virtualized tree: folders expand with `▸`/`▾`, files open with a
 click, and the selected row is highlighted. Notes are listed without `.md`, crashpads without
@@ -46,6 +48,7 @@ summarizes **Path**, **Card store**, **Markdown files**, **Crashpads**, **Indexe
 Weaver half with the splitter whose accessible name is `Resize right panel sections`; the Context
 sub-panel's `×` is disabled while it is the last one open, while the Weaver panel's close control
 has no disabled state and quietly does nothing.
+
 ## 3. Notes: open, edit, save, preview
 
 1. Click a note in the Explorer tree; the status bar reports `Loaded <path>.`
@@ -54,7 +57,7 @@ has no disabled state and quietly does nothing.
    save the draft elsewhere — a path that does not exist yet is created on save.
 3. Save with the `⤓` button (tooltip "Save (Ctrl+S)") or **Ctrl+S** / **Cmd+S**; the status bar
    reports `Saved <path> and refreshed .crashweaver/index.json. Card sync: x created, y updated,
-   z removed.` **Reset** (tooltip "Discard changes") drops the draft and restores the last saved
+z removed.` **Reset** (tooltip "Discard changes") drops the draft and restores the last saved
    content.
 
 Tabs accumulate as you open files: a dirty tab shows `*`, `×` closes it (tooltip `Close <name>`),
@@ -75,11 +78,13 @@ card in the store), and the rail and detail panel read each card through **Conte
 Technique**, **QnA** (**Reveal answer** / **Hide answer**) and **Meta data**, with a **Parser
 Diagnostics** panel in note scope. The vault-wide list is still a placeholder hinting at a **Future
 vault card picker** with search and filters.
+
 ## 4. Crashpads and cards
 
 A **crashpad** (`CrashpadWorkspace`) is the authoring surface where cards are composed before being woven into notes. Its
 active card list stores only card UIDs and how each card got there, so live payloads stay in the
 card store; a deleted card's snapshot embeds the full card in the crashpad file instead.
+
 ### Open or create a crashpad
 
 1. Open a crashpad file from the Explorer tree, or click `CP` in the widget rail (tooltip "Open
@@ -108,6 +113,7 @@ The header shows the crashpad's name, path, **Created**/**Updated** timestamps, 
    listing the card: `Renamed card <old> to <new>. Updated N notes and M crashpads.`
 3. **Preview** reads the card back through the **Content**, **Memory Technique**, **QnA** and
    **Metadata** tabs, where the toolbar says `Switch back to Edit to save or copy this card embed.`
+
 ### Delete, undo and restore
 
 1. Press **Delete card** (it becomes **Cancel**), then **Confirm delete** — with **Require
@@ -123,6 +129,7 @@ The header shows the crashpad's name, path, **Created**/**Updated** timestamps, 
    `Crashpad redo applied.`; undoing a creation deletes the card file again, undoing a deletion
    restores the card and reinserts its boundaries where the snapshot still matches. The stack
    clears when a vault is opened or a crashpad created.
+
 ## 5. Place a card into a note by hand
 
 A card sits in a note as a pair of boundary comments around the text that belongs to it; those
@@ -140,6 +147,7 @@ for block shapes, and [card schema](../reference/card-schema.md) for the card fi
 4. Save the note: the boundaries are parsed, the card is linked to that span, its references and
    `.crashweaver/index.json` are updated, and the status bar confirms the card sync. Editing the card
    later and pressing **Save** updates the stored payload, not the text inside the boundaries.
+
 ## 6. Ask the Weaver for a plan
 
 The Weaver lives in the right panel's **LLM** sub-panel. It needs an open crashpad with at least one
@@ -162,9 +170,9 @@ chip shows the last eight characters of the UID.
      ("Balanced restructuring."), **Go Ham** ("Aggressive vault reorganization.") — which changes
      autonomy only, never the model.
 4. Describe the goal in the intent box (`Describe where this card should land in the vault or what
-   restructuring Weaver should plan. (Ctrl+Enter to generate)`), then press **Ctrl+Enter** or click
+restructuring Weaver should plan. (Ctrl+Enter to generate)`), then press **Ctrl+Enter** or click
    **Generate** (later `Regenerate`). Without a crashpad the panel reads `Open a crashpad to start a
-   Weaver session in the right panel.`
+Weaver session in the right panel.`
 
 While it runs, **Live Progress** (`WeaverProgressFeed`) streams the run: `Thinking`, tool steps such as `Read full note` or
 `Search notes` with their target, `Repair: <type> (attempt n)`, `Validating…`, and finally
@@ -182,6 +190,7 @@ open one for its status, latency, **Thinking Steps (N)**, **Plan Summary**, **Op
 (`Re-loaded settings from session. Press Generate to re-run.`). The `🗑` on a row deletes that session
 and **Clear All Sessions** deletes them all, while `+` ("New session — clears current proposal")
 starts fresh (`Started a new Weaver session.`).
+
 ### Budgets
 
 **Settings → Weaver → Budgets & Restrictions** limits what a run may spend. **Disable All LLM Token
@@ -195,6 +204,7 @@ plan per workflow and strength.
 
 The same screen holds the OpenRouter key (**Save Key** / **Remove Key**, placeholder `sk-or-…`) and
 the warning that cloud mode sends selected vault context to OpenRouter.
+
 ## 7. Review and apply a plan
 
 Nothing is written until you approve it. Each staged operation is a row with its label — **Embed into
@@ -215,13 +225,14 @@ note**, **Edit note content**, **Create vault note**, **Rename note**, **Move no
    destructive changes** (`WeaverConfirmDialog`) first: it lists the operations, warns that "These
    changes cannot be undone automatically." and that files and directories will be permanently
    renamed, moved or deleted, and requires `I understand these changes will modify my vault files
-   (<kinds>)` before **Apply N changes** becomes clickable. **Cancel** abandons the apply.
+(<kinds>)` before **Apply N changes** becomes clickable. **Cancel** abandons the apply.
 5. Read the result banner: `N applied, M failed` with `✓` or `⚠`, plus each failure's operation kind,
    target path and error message, and any warnings. A fully successful apply reports
    `Applied N Weaver operation(s) successfully.` and refreshes the vault, card catalog and crashpad
    catalog. Apply stops at the first failure: later operations come back as `Skipped due to previous
-   failure.` and the status bar reads `Applied X/Y operation(s). Z failed. Check the results for
-   details.`
+failure.` and the status bar reads `Applied X/Y operation(s). Z failed. Check the results for
+details.`
+
 ## 8. Card metadata: familiarity and next review
 
 **Familiarity** and **Next review** belong to the card, not to the note. They are edited in the
@@ -241,30 +252,31 @@ UI updates them from a review yet.
 
 The status bar below the editor carries status and error messages; the crashpad editor repeats them inline.
 
-| Situation | What you see |
-| --- | --- |
-| No vault open | Explorer reads `Select a vault to load markdown notes and crashpad files.`; `CP` is disabled; saving, refreshing and card-store actions report `Select a vault before ...` / `Open a vault before ...`; the Weaver panel says `Open a crashpad to start a Weaver session in the right panel.` |
-| No crashpad or no card for a weave | `Open an active crashpad before using Weaver.` or `Attach or focus a crashpad card before generating a Weaver proposal.` |
-| Missing target note during apply | That operation fails with `Note not found: <path>`, later operations are skipped, and the failure is listed in the apply result |
-| Target text moved since the plan was generated | `Target text not found in note "<path>". The note may have been modified since the plan was generated.` |
-| An operation would escape the vault | `Path escapes vault root: <path>` |
-| An edit would break the boundary pairs | The write is refused and the operation fails with `Boundary integrity check failed for <path>: [<code>] <message>` |
-| A heading named in an operation no longer exists | Not fatal: the insert falls back to the start or end of the note, and the apply result carries a warning such as `Heading "<h>" not found; appended to end of note.` |
-| Malformed boundaries in a note | The note still opens. In the **Cards** view a **Parser Diagnostics** panel lists each problem as `Line N` plus a message — for example `Card start boundary must follow the format %%CW_CARD_START uid:<UID>%%.`, `Card end boundary for X does not match the active start boundary Y.` or `Card start boundary for X does not have a matching end boundary.` — and the note's pill shows the diagnostic count. With no readable pairs it instead reads ``This note does not currently contain any `CW_CARD_START` and `CW_CARD_END` boundary pairs.`` |
-| A card UID that is taken, empty, or has illegal characters | `Card <uid> is already in this crashpad.` when attaching an existing card or `Card <uid> is already present in this crashpad.` when creating a new one, `Card title / ID is required.` or `Card title / ID must use only letters, numbers, underscores, or dashes.` |
-| An unexpected render error | `AppErrorFallback` replaces the window with `Something went wrong in CrashWeaver`, **Reload** and **Copy details**, and a note that your vault files have not been modified |
+| Situation                                                  | What you see                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| No vault open                                              | Explorer reads `Select a vault to load markdown notes and crashpad files.`; `CP` is disabled; saving, refreshing and card-store actions report `Select a vault before ...` / `Open a vault before ...`; the Weaver panel says `Open a crashpad to start a Weaver session in the right panel.`                                                                                                                                                                                                                                                          |
+| No crashpad or no card for a weave                         | `Open an active crashpad before using Weaver.` or `Attach or focus a crashpad card before generating a Weaver proposal.`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Missing target note during apply                           | That operation fails with `Note not found: <path>`, later operations are skipped, and the failure is listed in the apply result                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Target text moved since the plan was generated             | `Target text not found in note "<path>". The note may have been modified since the plan was generated.`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| An operation would escape the vault                        | `Path escapes vault root: <path>`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| An edit would break the boundary pairs                     | The write is refused and the operation fails with `Boundary integrity check failed for <path>: [<code>] <message>`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| A heading named in an operation no longer exists           | Not fatal: the insert falls back to the start or end of the note, and the apply result carries a warning such as `Heading "<h>" not found; appended to end of note.`                                                                                                                                                                                                                                                                                                                                                                                   |
+| Malformed boundaries in a note                             | The note still opens. In the **Cards** view a **Parser Diagnostics** panel lists each problem as `Line N` plus a message — for example `Card start boundary must follow the format %%CW_CARD_START uid:<UID>%%.`, `Card end boundary for X does not match the active start boundary Y.` or `Card start boundary for X does not have a matching end boundary.` — and the note's pill shows the diagnostic count. With no readable pairs it instead reads ``This note does not currently contain any `CW_CARD_START` and `CW_CARD_END` boundary pairs.`` |
+| A card UID that is taken, empty, or has illegal characters | `Card <uid> is already in this crashpad.` when attaching an existing card or `Card <uid> is already present in this crashpad.` when creating a new one, `Card title / ID is required.` or `Card title / ID must use only letters, numbers, underscores, or dashes.`                                                                                                                                                                                                                                                                                    |
+| An unexpected render error                                 | `AppErrorFallback` replaces the window with `Something went wrong in CrashWeaver`, **Reload** and **Copy details**, and a note that your vault files have not been modified                                                                                                                                                                                                                                                                                                                                                                            |
+
 ## 10. Limits, and where CrashWeaver writes
 
 Three places say so out loud: the `+` widget button only posts `Widget extensions will be added here
 in a later stage.`, the card list carries a **Future vault card picker** hint, and the Info panel
 notes the crashpad stays source-only. There is also no UI for naming a crashpad, and no review loop.
 
-| Path | Contents |
-| --- | --- |
-| `.crashweaver/index.json` | The vault index, rebuilt on open, on save and on refresh |
-| `.crashweaver/cards/<UID>.json` | The default card store: one file per card (configurable in Settings) |
+| Path                                        | Contents                                                             |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| `.crashweaver/index.json`                   | The vault index, rebuilt on open, on save and on refresh             |
+| `.crashweaver/cards/<UID>.json`             | The default card store: one file per card (configurable in Settings) |
 | `.crashweaver/crashpads/<id>.crashpad.json` | A crashpad: card UIDs with their origin, plus deleted-card snapshots |
-| `.crashweaver/weaver-request-logs/*.jsonl` | Weaver session history |
+| `.crashweaver/weaver-request-logs/*.jsonl`  | Weaver session history                                               |
 
 Notes, their boundaries and card files stay in the paths you configure; the app's own settings
 file (`crashweaver-settings.json`, under Electron's `userData`) lives outside the vault.

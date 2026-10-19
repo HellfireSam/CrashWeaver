@@ -6,7 +6,10 @@ const path = require('node:path');
 
 const vaultService = require('../../dist-electron/vaultService.js');
 const settingsService = require('../../dist-electron/settingsService.js');
-const { formatCardEndBoundary, formatCardStartBoundary } = require('../../dist-electron/cardParser.js');
+const {
+  formatCardEndBoundary,
+  formatCardStartBoundary,
+} = require('../../dist-electron/cardParser.js');
 
 function cloneCardWithReferences(card, references) {
   return {
@@ -43,8 +46,14 @@ test('renameCard ignores missing referenced notes and still renames the card', a
     assert.equal(renamed.updatedCrashpads, 0);
 
     const cards = await vaultService.listCards(rootPath);
-    assert.equal(cards.some((card) => card.uid === 'alpha'), false);
-    assert.equal(cards.some((card) => card.uid === 'beta'), true);
+    assert.equal(
+      cards.some((card) => card.uid === 'alpha'),
+      false,
+    );
+    assert.equal(
+      cards.some((card) => card.uid === 'beta'),
+      true,
+    );
   } finally {
     settingsService.__setSettingsFilePathForTests(null);
     settingsService.__resetSettingsMutationQueueForTests();
@@ -78,7 +87,10 @@ test('deleteCard ignores missing referenced notes when removing boundaries', asy
     assert.equal(result.removedBoundaryLines, 0);
 
     const cards = await vaultService.listCards(rootPath);
-    assert.equal(cards.some((card) => card.uid === 'gamma'), false);
+    assert.equal(
+      cards.some((card) => card.uid === 'gamma'),
+      false,
+    );
   } finally {
     settingsService.__setSettingsFilePathForTests(null);
     settingsService.__resetSettingsMutationQueueForTests();
@@ -122,9 +134,18 @@ test('renameCard propagates uid updates into active and deleted crashpad entries
 
     const updatedCrashpad = await vaultService.openCrashpad(rootPath, crashpad.id);
     assert.ok(updatedCrashpad);
-    assert.equal(updatedCrashpad.cards.some((entry) => entry.uid === 'rename-dst'), true);
-    assert.equal(updatedCrashpad.deletedCards.some((entry) => entry.uid === 'rename-dst'), true);
-    assert.equal(updatedCrashpad.deletedCards.some((entry) => entry.card.uid === 'rename-dst'), true);
+    assert.equal(
+      updatedCrashpad.cards.some((entry) => entry.uid === 'rename-dst'),
+      true,
+    );
+    assert.equal(
+      updatedCrashpad.deletedCards.some((entry) => entry.uid === 'rename-dst'),
+      true,
+    );
+    assert.equal(
+      updatedCrashpad.deletedCards.some((entry) => entry.card.uid === 'rename-dst'),
+      true,
+    );
   } finally {
     settingsService.__setSettingsFilePathForTests(null);
     settingsService.__resetSettingsMutationQueueForTests();
@@ -193,7 +214,11 @@ test('restoreDeletedCard reinsert mode restores boundaries into matching note co
   const notePath = path.join(rootPath, 'notes', 'topic.md');
 
   await fs.mkdir(path.dirname(notePath), { recursive: true });
-  await fs.writeFile(notePath, ['top', 'Question line', 'Answer line', 'bottom'].join('\n'), 'utf8');
+  await fs.writeFile(
+    notePath,
+    ['top', 'Question line', 'Answer line', 'bottom'].join('\n'),
+    'utf8',
+  );
 
   settingsService.__resetSettingsMutationQueueForTests();
   settingsService.__setSettingsFilePathForTests(settingsPath);
@@ -216,9 +241,7 @@ test('restoreDeletedCard reinsert mode restores boundaries into matching note co
           memory_technique: '',
           qa_pairs: [],
         },
-        referenced_in: [
-          { note_path: 'notes/topic.md', start_line: 2, end_line: 5 },
-        ],
+        referenced_in: [{ note_path: 'notes/topic.md', start_line: 2, end_line: 5 }],
       },
     };
 
@@ -233,8 +256,14 @@ test('restoreDeletedCard reinsert mode restores boundaries into matching note co
     assert.deepEqual(result.skippedNotePaths, []);
 
     const restoredNote = await fs.readFile(notePath, 'utf8');
-    assert.match(restoredNote, new RegExp(formatCardStartBoundary('reinsert-uid').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-    assert.match(restoredNote, new RegExp(formatCardEndBoundary('reinsert-uid').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(
+      restoredNote,
+      new RegExp(formatCardStartBoundary('reinsert-uid').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    );
+    assert.match(
+      restoredNote,
+      new RegExp(formatCardEndBoundary('reinsert-uid').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    );
   } finally {
     settingsService.__setSettingsFilePathForTests(null);
     settingsService.__resetSettingsMutationQueueForTests();
@@ -271,9 +300,7 @@ test('restoreDeletedCard reinsert mode reports skipped note when content cannot 
           memory_technique: '',
           qa_pairs: [],
         },
-        referenced_in: [
-          { note_path: 'notes/topic.md', start_line: 2, end_line: 2 },
-        ],
+        referenced_in: [{ note_path: 'notes/topic.md', start_line: 2, end_line: 2 }],
       },
     };
 

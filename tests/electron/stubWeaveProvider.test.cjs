@@ -43,7 +43,10 @@ test('guided insert stub emits insertion only when no extra permissions are enab
   const result = await provider.generatePlan(createGuidedRequest());
 
   assert.equal(result.plan.kind, 'guided-insert');
-  assert.deepEqual(result.plan.operations.map((operation) => operation.kind), ['insert-boundary-pair']);
+  assert.deepEqual(
+    result.plan.operations.map((operation) => operation.kind),
+    ['insert-boundary-pair'],
+  );
 });
 
 test('guided insert stub adds note edits and create-note when permissions allow them', async () => {
@@ -57,7 +60,9 @@ test('guided insert stub adds note edits and create-note when permissions allow 
     }),
   );
   const kinds = result.plan.operations.map((operation) => operation.kind);
-  const createNoteOperation = result.plan.operations.find((operation) => operation.kind === 'create-note');
+  const createNoteOperation = result.plan.operations.find(
+    (operation) => operation.kind === 'create-note',
+  );
 
   assert.deepEqual(kinds, ['insert-boundary-pair', 'edit-note-content', 'create-note']);
   assert.ok(createNoteOperation);

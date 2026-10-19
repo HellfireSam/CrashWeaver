@@ -8,8 +8,5 @@
   // not composite, and `tsc -b` tolerates that only while the solution itself
   // has no inputs of its own.
   "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

@@ -66,10 +66,10 @@ npm test
 `npm test` runs `test:electron` and then `test:renderer`. The two suites use different
 runners today:
 
-| Suite | Runner | Target | Notes |
-| --- | --- | --- | --- |
+| Suite                   | Runner                      | Target                                                                                     | Notes                                                                               |
+| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | `npm run test:electron` | Node's built-in `node:test` | checked-in `tests/electron/**/*.test.cjs`, which load the compiled `dist-electron/` output | runs `npm run build:main` first, so the suites always exercise current build output |
-| `npm run test:renderer` | Vitest | explicit `src/lib/*.test.ts` files | the three files are listed in the script rather than globbed |
+| `npm run test:renderer` | Vitest                      | explicit `src/lib/*.test.ts` files                                                         | the three files are listed in the script rather than globbed                        |
 
 Two consequences worth knowing:
 
@@ -107,12 +107,12 @@ the checks above.
 
 The repository splits its TypeScript configuration the way Vite expects:
 
-| File | Covers | Resolution |
-| --- | --- | --- |
-| `tsconfig.json` | solution file only — no inputs, just references | — |
-| `tsconfig.app.json` | `src` (renderer) | `module: ESNext`, `moduleResolution: bundler`, `noEmit` |
-| `tsconfig.node.json` | `vite.config.ts` | `module: ESNext`, `moduleResolution: bundler`, `noEmit` |
-| `tsconfig.electron.json` | `electron` (main process) | `module: CommonJS`, `moduleResolution: Node`, emits to `dist-electron` |
+| File                     | Covers                                          | Resolution                                                             |
+| ------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `tsconfig.json`          | solution file only — no inputs, just references | —                                                                      |
+| `tsconfig.app.json`      | `src` (renderer)                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                |
+| `tsconfig.node.json`     | `vite.config.ts`                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                |
+| `tsconfig.electron.json` | `electron` (main process)                       | `module: CommonJS`, `moduleResolution: Node`, emits to `dist-electron` |
 
 The split exists to protect a specific failure. `vite.config.ts` is an ES module, and
 `package.json` declares no `"type": "module"`. When the config file inherited
@@ -125,15 +125,15 @@ CommonJS.
 
 ## Directory map
 
-| Path | What it holds |
-| --- | --- |
-| `electron/` | main process, services, and the Weaver pipeline |
-| `electron/services/` | boundary and reference mutation services |
-| `electron/weaver/` | planning graph, prompts, providers, schema, context, logging |
-| `src/` | renderer: components, hooks, state contexts, pure helpers, styles |
-| `src/lib/` | pure renderer helpers, with the renderer test files beside them |
-| `tests/electron/` | `node:test` suites that load compiled output from `dist-electron/` |
-| `dist/` | Vite renderer build output |
-| `dist-electron/` | compiled main-process output |
+| Path                                                          | What it holds                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `electron/`                                                   | main process, services, and the Weaver pipeline                                                                                                                                                                                                                             |
+| `electron/services/`                                          | boundary and reference mutation services                                                                                                                                                                                                                                    |
+| `electron/weaver/`                                            | planning graph, prompts, providers, schema, context, logging                                                                                                                                                                                                                |
+| `src/`                                                        | renderer: components, hooks, state contexts, pure helpers, styles                                                                                                                                                                                                           |
+| `src/lib/`                                                    | pure renderer helpers, with the renderer test files beside them                                                                                                                                                                                                             |
+| `tests/electron/`                                             | `node:test` suites that load compiled output from `dist-electron/`                                                                                                                                                                                                          |
+| `dist/`                                                       | Vite renderer build output                                                                                                                                                                                                                                                  |
+| `dist-electron/`                                              | compiled main-process output                                                                                                                                                                                                                                                |
 | `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | checked-in sample material for manual exercise: `mock-vault/` is the original sample vault, `mock-vault_sample/` is a copy to test against so the original stays untouched, and `template-mock-gallery/` is a template gallery; none of them is referenced by code or tests |
-| `docs/` | current documentation, plus the [archive](../archive/README.md) |
+| `docs/`                                                       | current documentation, plus the [archive](../archive/README.md)                                                                                                                                                                                                             |

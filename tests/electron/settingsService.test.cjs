@@ -17,7 +17,10 @@ test('settings mutations are serialized and do not clobber independent keys', as
   try {
     await Promise.all([
       settingsService.setCardStorePath(rootPath, path.join(tempDir, 'cards')),
-      settingsService.setImageDirectories(rootPath, [path.join(tempDir, 'images'), ` ${path.join(tempDir, 'images')} `]),
+      settingsService.setImageDirectories(rootPath, [
+        path.join(tempDir, 'images'),
+        ` ${path.join(tempDir, 'images')} `,
+      ]),
       settingsService.setWeaverPreferredModel('openai/gpt-4o'),
       settingsService.setCrashpadDeletePreferences({
         removeNoteBoundariesByDefault: false,
@@ -30,7 +33,9 @@ test('settings mutations are serialized and do not clobber independent keys', as
     const vaultKey = path.resolve(rootPath);
 
     assert.equal(parsed.cardStoreByVault[vaultKey], path.resolve(path.join(tempDir, 'cards')));
-    assert.deepEqual(parsed.imageDirectoriesByVault[vaultKey], [path.resolve(path.join(tempDir, 'images'))]);
+    assert.deepEqual(parsed.imageDirectoriesByVault[vaultKey], [
+      path.resolve(path.join(tempDir, 'images')),
+    ]);
     assert.equal(parsed.weaverPreferredModel, 'openai/gpt-4o');
     assert.deepEqual(parsed.crashpadDeletePreferences, {
       removeNoteBoundariesByDefault: false,

@@ -19,9 +19,16 @@ type UseCrashpadCardMutationActionsOptions = {
   allCards: CardDocument[];
   crashpadDeletePreferences: CrashpadDeletePreferences;
   persistCrashpad: (nextCrashpad: CrashpadDocument) => Promise<CrashpadDocument | null>;
-  refreshCardsCatalog: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
-  refreshInternalDirectories: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
-  applyCardRenameResult: (rootPath: string, renameSummary: CardRenameResult) => Promise<Awaited<ReturnType<typeof window.crashWeaver.updateIndex>>>;
+  refreshCardsCatalog: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
+  refreshInternalDirectories: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listInternalDirectories>>>;
+  applyCardRenameResult: (
+    rootPath: string,
+    renameSummary: CardRenameResult,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.updateIndex>>>;
   pushCrashpadHistory: (entry: CrashpadHistoryEntry) => void;
   setFocusedCardUid: (uid: string | null) => void;
   setStatusMessage: (message: string | null) => void;
@@ -77,7 +84,10 @@ export function useCrashpadCardMutationActions({
 
       const nextCrashpad: CrashpadDocument = {
         ...activeCrashpad,
-        cards: [...activeCrashpad.cards, { uid: normalizedUid, origin: 'existing', addedAt: new Date().toISOString() }],
+        cards: [
+          ...activeCrashpad.cards,
+          { uid: normalizedUid, origin: 'existing', addedAt: new Date().toISOString() },
+        ],
       };
 
       await persistCrashpad(nextCrashpad);
@@ -122,7 +132,10 @@ export function useCrashpadCardMutationActions({
         await window.crashWeaver.createCard(vaultPath, normalizedUid);
         const nextCrashpad: CrashpadDocument = {
           ...activeCrashpad,
-          cards: [...activeCrashpad.cards, { uid: normalizedUid, origin: 'new', addedAt: new Date().toISOString() }],
+          cards: [
+            ...activeCrashpad.cards,
+            { uid: normalizedUid, origin: 'new', addedAt: new Date().toISOString() },
+          ],
         };
 
         await refreshCardsCatalog(vaultPath);
@@ -289,7 +302,9 @@ export function useCrashpadCardMutationActions({
         return;
       }
 
-      const snapshot = activeCrashpad.deletedCards.find((item) => item.uid === uid && item.deletedAt === deletedAt);
+      const snapshot = activeCrashpad.deletedCards.find(
+        (item) => item.uid === uid && item.deletedAt === deletedAt,
+      );
 
       if (!snapshot) {
         setErrorMessage(`Could not find deletion snapshot for card ${uid}.`);
@@ -302,13 +317,20 @@ export function useCrashpadCardMutationActions({
 
       const nextCrashpad: CrashpadDocument = {
         ...activeCrashpad,
-        cards: [...activeCrashpad.cards, { uid: snapshot.uid, origin: snapshot.origin, addedAt: new Date().toISOString() }],
-        deletedCards: activeCrashpad.deletedCards.filter((item) => !(item.uid === uid && item.deletedAt === deletedAt)),
+        cards: [
+          ...activeCrashpad.cards,
+          { uid: snapshot.uid, origin: snapshot.origin, addedAt: new Date().toISOString() },
+        ],
+        deletedCards: activeCrashpad.deletedCards.filter(
+          (item) => !(item.uid === uid && item.deletedAt === deletedAt),
+        ),
       };
 
       await persistCrashpad(nextCrashpad);
       setFocusedCardUid(snapshot.uid);
-      setStatusMessage(formatCardRestoreStatus(uid, snapshot.removeNoteBoundaries, restoreMode, restoreResult));
+      setStatusMessage(
+        formatCardRestoreStatus(uid, snapshot.removeNoteBoundaries, restoreMode, restoreResult),
+      );
       setErrorMessage(null);
     },
     [

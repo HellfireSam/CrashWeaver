@@ -20,11 +20,11 @@ import type { WeaveProgressCallback } from './weaveGraphState';
 import { getWeaverSettings } from '../settingsService';
 import { resolveModel, resolveFullModelProfile } from './weaveModelProfiles';
 import { OpenRouterHttpClient } from './weaveHttpClient';
-import { createWeaveRequestSessionLogger, type WeaveRequestSessionLogger } from './weaveRequestLogger';
 import {
-  createWeaveContextToolRuntime,
-  type WeaveContextSnapshot,
-} from './weaveContextService';
+  createWeaveRequestSessionLogger,
+  type WeaveRequestSessionLogger,
+} from './weaveRequestLogger';
+import { createWeaveContextToolRuntime, type WeaveContextSnapshot } from './weaveContextService';
 import { resolveWeaveEffectiveBudget, runWeaveGraph } from './weaveGraph';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
@@ -170,9 +170,7 @@ export class OpenRouterWeaveProvider {
             'Content-Type': 'application/json',
           },
         }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 10_000),
-        ),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10_000)),
       ]);
 
       if (response.status === 401 || response.status === 403) {
@@ -181,7 +179,9 @@ export class OpenRouterWeaveProvider {
           const body = await response.text();
           const parsed = JSON.parse(body) as { error?: { message?: string } };
           if (parsed.error?.message) detail = ` — ${parsed.error.message}`;
-        } catch { /* ignore parse failures */ }
+        } catch {
+          /* ignore parse failures */
+        }
         return {
           ok: false,
           provider: 'openrouter',
@@ -198,7 +198,9 @@ export class OpenRouterWeaveProvider {
           const body = await response.text();
           const parsed = JSON.parse(body) as { error?: { message?: string } };
           if (parsed.error?.message) detail = ` — ${parsed.error.message}`;
-        } catch { /* ignore parse failures */ }
+        } catch {
+          /* ignore parse failures */
+        }
         return {
           ok: false,
           provider: 'openrouter',
@@ -215,7 +217,9 @@ export class OpenRouterWeaveProvider {
           const body = await response.text();
           const parsed = JSON.parse(body) as { error?: { message?: string } };
           if (parsed.error?.message) detail = ` — ${parsed.error.message}`;
-        } catch { /* ignore parse failures */ }
+        } catch {
+          /* ignore parse failures */
+        }
         return {
           ok: false,
           provider: 'openrouter',
@@ -274,9 +278,7 @@ export class OpenRouterWeaveProvider {
         this.fetchImpl(`${OPENROUTER_BASE_URL}/models`, {
           headers: { Authorization: `Bearer ${this.apiKey}` },
         }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 15_000),
-        ),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 15_000)),
       ]);
 
       if (!response.ok) return [];
@@ -290,8 +292,7 @@ export class OpenRouterWeaveProvider {
             typeof m.id === 'string' && m.id.trim() !== '',
         )
         .map((m) => {
-          const isFree =
-            m.id.endsWith(':free') || parseFloat(m.pricing?.prompt ?? '0') === 0;
+          const isFree = m.id.endsWith(':free') || parseFloat(m.pricing?.prompt ?? '0') === 0;
           return {
             id: m.id,
             name: m.name?.trim() || m.id,
@@ -313,4 +314,3 @@ export class OpenRouterWeaveProvider {
     }
   }
 }
-

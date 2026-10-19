@@ -41,9 +41,7 @@ export function AppErrorFallback({ error, onReset }: AppErrorFallbackProps) {
         gap: '1rem',
       }}
     >
-      <h1 style={{ fontSize: '1.5rem', margin: 0 }}>
-        Something went wrong in CrashWeaver
-      </h1>
+      <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Something went wrong in CrashWeaver</h1>
 
       <p
         style={{
@@ -53,9 +51,9 @@ export function AppErrorFallback({ error, onReset }: AppErrorFallbackProps) {
           lineHeight: 1.5,
         }}
       >
-        An unexpected render error occurred. Your vault files have not been
-        modified. You can try reloading the window — if the error persists,
-        please copy the diagnostic details and report them.
+        An unexpected render error occurred. Your vault files have not been modified. You can try
+        reloading the window — if the error persists, please copy the diagnostic details and report
+        them.
       </p>
 
       <div

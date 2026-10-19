@@ -11,14 +11,14 @@ works today lives in [the architecture documents](./architecture/overview.md) an
 The application was built in stages. The table records the steps in the order they were taken; the
 state is a note about that sequence, not a verification.
 
-| Step | Scope | State |
-| --- | --- | --- |
-| 1. Shell foundation | Electron shell, preload bridge, renderer base | reached |
-| 2. Vault backend and editor shell | Vault open/read/write/index, editor shell | reached |
-| 3. Crash Card parser and card store sync | Strict UID parser and reference sync | reached |
-| 4. Crashpad canvas and card authoring | Crashpad files, card CRUD, undo/redo | reached |
-| 5. Weaver planning and guided insert | Guided insert with optional content permissions, intelligent restructuring, live provider path, session history, progress feed, budget controls, embedding search | reached |
-| 6. Approval layer and diff UX | Explicit accept/reject review before any Weaver write, apply service for all operation kinds, per-operation diff previews, destructive-operation confirmation | reached |
+| Step                                     | Scope                                                                                                                                                             | State   |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1. Shell foundation                      | Electron shell, preload bridge, renderer base                                                                                                                     | reached |
+| 2. Vault backend and editor shell        | Vault open/read/write/index, editor shell                                                                                                                         | reached |
+| 3. Crash Card parser and card store sync | Strict UID parser and reference sync                                                                                                                              | reached |
+| 4. Crashpad canvas and card authoring    | Crashpad files, card CRUD, undo/redo                                                                                                                              | reached |
+| 5. Weaver planning and guided insert     | Guided insert with optional content permissions, intelligent restructuring, live provider path, session history, progress feed, budget controls, embedding search | reached |
+| 6. Approval layer and diff UX            | Explicit accept/reject review before any Weaver write, apply service for all operation kinds, per-operation diff previews, destructive-operation confirmation     | reached |
 
 ## The rework in flight
 

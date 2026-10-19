@@ -36,7 +36,9 @@ export function formatCardRestoreStatus(
   }
 
   if (result.skippedNotePaths.length > 0) {
-    messages.push(`Skipped ${result.skippedNotePaths.length} notes whose saved card block could no longer be matched.`);
+    messages.push(
+      `Skipped ${result.skippedNotePaths.length} notes whose saved card block could no longer be matched.`,
+    );
   }
 
   return messages.join(' ');

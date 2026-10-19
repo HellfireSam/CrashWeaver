@@ -22,7 +22,9 @@ type UseNoteSaveActionsOptions = {
   setDraftContent: (content: string) => void;
   setSavedContent: (content: string) => void;
   moveStoredTabState: (previousPath: string, nextPath: string) => void;
-  refreshCardsCatalog: (rootPath: string) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
+  refreshCardsCatalog: (
+    rootPath: string,
+  ) => Promise<Awaited<ReturnType<typeof window.crashWeaver.listCards>>>;
 };
 
 export function useNoteSaveActions({

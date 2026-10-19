@@ -16,9 +16,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     <VaultStateProvider>
       <EditorStateProvider>
         <WeaverStateProvider>
-          <UIStateProvider>
-            {children}
-          </UIStateProvider>
+          <UIStateProvider>{children}</UIStateProvider>
         </WeaverStateProvider>
       </EditorStateProvider>
     </VaultStateProvider>

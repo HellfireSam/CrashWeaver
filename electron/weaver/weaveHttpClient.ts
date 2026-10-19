@@ -65,7 +65,10 @@ function makeWeaveError(message: string, category: WeaveErrorCategory): Error {
   return Object.assign(new Error(message), { errorCategory: category });
 }
 
-function categorizeHttpError(status: number, responseBody?: string): { category: WeaveErrorCategory; message: string } {
+function categorizeHttpError(
+  status: number,
+  responseBody?: string,
+): { category: WeaveErrorCategory; message: string } {
   if (status === 401 || status === 403) {
     const detail = extractOpenRouterErrorMessage(responseBody);
     return {
@@ -136,7 +139,7 @@ function redactSensitiveLoggingData(data: unknown, maxLength = 300): unknown {
   }
 
   if (Array.isArray(data)) {
-    return data.map(item => redactSensitiveLoggingData(item, maxLength));
+    return data.map((item) => redactSensitiveLoggingData(item, maxLength));
   }
 
   if (data !== null && typeof data === 'object') {
@@ -144,10 +147,11 @@ function redactSensitiveLoggingData(data: unknown, maxLength = 300): unknown {
     const redacted: Record<string, unknown> = {};
 
     if ('messages' in obj && Array.isArray(obj.messages)) {
-      redacted.messages = (obj.messages as Array<unknown>).map(msg => {
+      redacted.messages = (obj.messages as Array<unknown>).map((msg) => {
         if (msg && typeof msg === 'object' && 'role' in msg && 'content' in msg) {
           const msgObj = msg as { role?: string; content?: unknown };
-          const content = typeof msgObj.content === 'string' ? msgObj.content : String(msgObj.content);
+          const content =
+            typeof msgObj.content === 'string' ? msgObj.content : String(msgObj.content);
           const hash = createHash('sha256').update(content).digest('hex').slice(0, 16);
           return {
             role: msgObj.role,
@@ -277,8 +281,7 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
 
         // Do not retry auth errors, parse errors, empty responses, or timeouts
         const errorCategory = (lastError as { errorCategory?: WeaveErrorCategory }).errorCategory;
-        const isRetryable =
-          errorCategory === 'rate-limit' || errorCategory === 'provider-error';
+        const isRetryable = errorCategory === 'rate-limit' || errorCategory === 'provider-error';
 
         if (!isRetryable || attempt >= this.maxRetries) {
           throw lastError;
@@ -338,8 +341,7 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
       clearTimeout(timeoutId);
 
       const isAbort =
-        controller.signal.aborted ||
-        (error instanceof Error && error.name === 'AbortError');
+        controller.signal.aborted || (error instanceof Error && error.name === 'AbortError');
 
       if (isAbort) {
         throw makeWeaveError(
@@ -374,7 +376,10 @@ export class OpenRouterHttpClient implements WeaveHttpClient {
 
     if (!response.ok) {
       const { message, category } = categorizeHttpError(response.status, responseText);
-      console.error(`CrashWeaver Weaver: OpenRouter error ${response.status}`, responseText.slice(0, 500));
+      console.error(
+        `CrashWeaver Weaver: OpenRouter error ${response.status}`,
+        responseText.slice(0, 500),
+      );
       throw makeWeaveError(message, category);
     }
 

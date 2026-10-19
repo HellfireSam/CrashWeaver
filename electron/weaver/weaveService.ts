@@ -23,7 +23,15 @@ import {
   getWeaverRequestLogsDirectory,
   setWeaverRequestLogsDirectory as persistWeaverRequestLogsDirectory,
 } from '../settingsService';
-import type { WeavePlanRequest, WeavePlanResult, WeaveModelProvider, WeaveModelInfo, WeaveProviderHealth, WeaverSettings, WeaverKeyStatus } from '../vault-contract';
+import type {
+  WeavePlanRequest,
+  WeavePlanResult,
+  WeaveModelProvider,
+  WeaveModelInfo,
+  WeaveProviderHealth,
+  WeaverSettings,
+  WeaverKeyStatus,
+} from '../vault-contract';
 import type { WeaveProgressCallback } from './weaveGraphState';
 
 export type { WeaveModelProvider };
@@ -97,13 +105,17 @@ export async function clearWeaveApiKey(): Promise<void> {
   await initializeWeaveProvider();
 }
 
-export async function setWeaverPreferredModel(preferredModel: string | null): Promise<WeaverSettings> {
+export async function setWeaverPreferredModel(
+  preferredModel: string | null,
+): Promise<WeaverSettings> {
   const settings = await persistWeaverPreferredModel(preferredModel);
   await initializeWeaveProvider();
   return settings;
 }
 
-export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Promise<WeaverSettings> {
+export async function updateWeaverSettings(
+  updates: Partial<WeaverSettings>,
+): Promise<WeaverSettings> {
   const settings = await persistUpdateWeaverSettings(updates);
   await initializeWeaveProvider();
   return settings;
@@ -113,7 +125,9 @@ export async function getConfiguredWeaverRequestLogsDirectory(): Promise<string 
   return getWeaverRequestLogsDirectory();
 }
 
-export async function setConfiguredWeaverRequestLogsDirectory(directoryPath: string | null): Promise<string | null> {
+export async function setConfiguredWeaverRequestLogsDirectory(
+  directoryPath: string | null,
+): Promise<string | null> {
   return persistWeaverRequestLogsDirectory(directoryPath);
 }
 
@@ -136,14 +150,16 @@ export async function generateWeavePlan(
   const validatedRequest = validateWeavePlanRequest(request, settings);
   const resolvedRoot = await assertVaultRoot(validatedRequest.rootPath);
   const configuredLogsDirectory = await getWeaverRequestLogsDirectory();
-  const requestLogDirectory = configuredLogsDirectory ?? path.join(resolvedRoot, '.crashweaver', 'weaver-request-logs');
+  const requestLogDirectory =
+    configuredLogsDirectory ?? path.join(resolvedRoot, '.crashweaver', 'weaver-request-logs');
   const normalizedRequest = {
     ...validatedRequest,
     rootPath: resolvedRoot,
   };
 
   // Attempt to enrich context with embeddings if an API key is configured
-  let embeddingOptions: import('./weaveContextService').BuildWeaveContextOptions['embedding'] | undefined;
+  let embeddingOptions:
+    import('./weaveContextService').BuildWeaveContextOptions['embedding'] | undefined;
   try {
     const apiKey = await getOpenRouterApiKeyDecrypted();
     if (apiKey) {
@@ -174,7 +190,11 @@ export function checkWeaveProvider() {
 
 // ── Session history ───────────────────────────────────────────────────────────
 
-export type { WeaverSessionSummary, WeaverSessionDetail, WeaverSessionStep } from './weaverSessionHistory';
+export type {
+  WeaverSessionSummary,
+  WeaverSessionDetail,
+  WeaverSessionStep,
+} from './weaverSessionHistory';
 
 async function resolveSessionLogsDirectory(rootPath?: string): Promise<string | null> {
   const configuredDirectory = await getWeaverRequestLogsDirectory();
@@ -190,7 +210,10 @@ export async function listSessions(rootPath?: string): Promise<WeaverSessionSumm
   return listWeaverSessions(logsDir);
 }
 
-export async function getSession(sessionId: string, rootPath?: string): Promise<WeaverSessionDetail | null> {
+export async function getSession(
+  sessionId: string,
+  rootPath?: string,
+): Promise<WeaverSessionDetail | null> {
   const logsDir = await resolveSessionLogsDirectory(rootPath);
   if (!logsDir) return null;
   return getWeaverSession(logsDir, sessionId);

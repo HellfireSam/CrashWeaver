@@ -4,8 +4,13 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
-const { reinsertCardBoundariesForReferences } = require('../../dist-electron/services/cardRestoreMutationService.js');
-const { formatCardStartBoundary, formatCardEndBoundary } = require('../../dist-electron/cardParser.js');
+const {
+  reinsertCardBoundariesForReferences,
+} = require('../../dist-electron/services/cardRestoreMutationService.js');
+const {
+  formatCardStartBoundary,
+  formatCardEndBoundary,
+} = require('../../dist-electron/cardParser.js');
 
 test('reinsertCardBoundariesForReferences reinserts boundaries into matching note content', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-restore-mutation-insert-'));

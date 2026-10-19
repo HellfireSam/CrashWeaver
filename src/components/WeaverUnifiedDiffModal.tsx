@@ -1,6 +1,18 @@
 import { useMemo, useEffect, useRef, useState } from 'react';
 import { diffLines } from 'diff';
-import type { WeavePlanOperation, InsertBoundaryPairPayload, EditNoteContentPayload, CreateNotePayload, RenameNotePayload, MoveNotePayload, DeleteNotePayload, CreateDirectoryPayload, RenameDirectoryPayload, MoveDirectoryPayload, DeleteDirectoryPayload } from '../../electron/vault-contract';
+import type {
+  WeavePlanOperation,
+  InsertBoundaryPairPayload,
+  EditNoteContentPayload,
+  CreateNotePayload,
+  RenameNotePayload,
+  MoveNotePayload,
+  DeleteNotePayload,
+  CreateDirectoryPayload,
+  RenameDirectoryPayload,
+  MoveDirectoryPayload,
+  DeleteDirectoryPayload,
+} from '../../electron/vault-contract';
 import { isDestructiveOperation } from './WeaverConfirmDialog';
 
 // ── Boundary format helpers ─────────────────────────────────────────────────
@@ -28,7 +40,10 @@ interface FullFileDiffLine {
  * with changes highlighted. The first change line gets an `isFirstChange` flag
  * for scroll-to-focus.
  */
-function computeFullFileDiff(oldText: string, newText: string): {
+function computeFullFileDiff(
+  oldText: string,
+  newText: string,
+): {
   lines: FullFileDiffLine[];
   firstChangeIndex: number;
   additions: number;
@@ -46,7 +61,8 @@ function computeFullFileDiff(oldText: string, newText: string): {
 
   for (const change of changes) {
     const changeLines = change.value.replace(/\n$/, '').split('\n');
-    const effectiveLines = changeLines[changeLines.length - 1] === '' ? changeLines.slice(0, -1) : changeLines;
+    const effectiveLines =
+      changeLines[changeLines.length - 1] === '' ? changeLines.slice(0, -1) : changeLines;
 
     if (change.added) {
       for (let idx = 0; idx < effectiveLines.length; idx += 1) {
@@ -138,12 +154,8 @@ function EditNoteContentDiffView({ payload }: { payload: EditNoteContentPayload 
             ref={i === firstChangeIndex ? firstChangeRef : undefined}
             className={`uwe-diffLine ${line.kind === 'add' ? 'uwe-diffAdd' : line.kind === 'remove' ? 'uwe-diffRemove' : 'uwe-diffContext'}`}
           >
-            <span className="uwe-diffLineNum uwe-diffOldNum">
-              {line.oldLineNum ?? ''}
-            </span>
-            <span className="uwe-diffLineNum uwe-diffNewNum">
-              {line.newLineNum ?? ''}
-            </span>
+            <span className="uwe-diffLineNum uwe-diffOldNum">{line.oldLineNum ?? ''}</span>
+            <span className="uwe-diffLineNum uwe-diffNewNum">{line.newLineNum ?? ''}</span>
             <span className="uwe-diffSign">
               {line.kind === 'add' ? '+' : line.kind === 'remove' ? '−' : ' '}
             </span>
@@ -173,11 +185,17 @@ function buildBoundaryBlockLines(payload: InsertBoundaryPairPayload): string {
 }
 
 function findHeadingLine(lines: string[], headingText: string): number {
-  const normalized = headingText.replace(/^#+\s*/, '').trim().toLowerCase();
+  const normalized = headingText
+    .replace(/^#+\s*/, '')
+    .trim()
+    .toLowerCase();
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
     if (/^#{1,6}\s/.test(line)) {
-      const title = line.replace(/^#+\s*/, '').trim().toLowerCase();
+      const title = line
+        .replace(/^#+\s*/, '')
+        .trim()
+        .toLowerCase();
       if (title === normalized || title.includes(normalized) || normalized.includes(title)) {
         return i;
       }
@@ -283,7 +301,9 @@ function InsertBoundaryDiffView({
       .catch((err: Error) => {
         if (!cancelled) setLoadError(err.message ?? 'Failed to read note');
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [vaultPath, targetPath]);
 
   const diffResult = useMemo(() => {
@@ -323,8 +343,7 @@ function InsertBoundaryDiffView({
     const block = payload.boundaryBlock ?? '';
     const trimmedBlock = block.trim();
     const blockIsSelfContained =
-      trimmedBlock.includes('%%CW_CARD_START') &&
-      trimmedBlock.includes('%%CW_CARD_END');
+      trimmedBlock.includes('%%CW_CARD_START') && trimmedBlock.includes('%%CW_CARD_END');
     const addedLines = blockIsSelfContained
       ? trimmedBlock.split('\n').length
       : 2 + (trimmedBlock ? trimmedBlock.split('\n').length : 0);
@@ -336,14 +355,16 @@ function InsertBoundaryDiffView({
         ) : null}
         <div className="uwe-diffHunk">
           <div className="uwe-diffHunkHeader">@@ -0,0 +1,{addedLines} @@ (insertion only)</div>
-          {buildBoundaryBlockLines(payload).split('\n').map((line, i) => (
-            <div key={i} className="uwe-diffLine uwe-diffAdd">
-              <span className="uwe-diffLineNum uwe-diffOldNum"></span>
-              <span className="uwe-diffLineNum uwe-diffNewNum">{i + 1}</span>
-              <span className="uwe-diffSign">+</span>
-              <code className="uwe-diffCode">{line || '\u00A0'}</code>
-            </div>
-          ))}
+          {buildBoundaryBlockLines(payload)
+            .split('\n')
+            .map((line, i) => (
+              <div key={i} className="uwe-diffLine uwe-diffAdd">
+                <span className="uwe-diffLineNum uwe-diffOldNum"></span>
+                <span className="uwe-diffLineNum uwe-diffNewNum">{i + 1}</span>
+                <span className="uwe-diffSign">+</span>
+                <code className="uwe-diffCode">{line || '\u00A0'}</code>
+              </div>
+            ))}
         </div>
         <div className="uwe-diffStats">
           <span className="uwe-statAdd">+{addedLines}</span>
@@ -358,21 +379,15 @@ function InsertBoundaryDiffView({
   return (
     <>
       <div className="uwe-diffHunk uwe-diffFullFile">
-        <div className="uwe-diffHunkHeader">
-          @@ full file diff · {payload.placement} @@
-        </div>
+        <div className="uwe-diffHunkHeader">@@ full file diff · {payload.placement} @@</div>
         {lines.map((line, i) => (
           <div
             key={i}
             ref={i === firstChangeIndex ? firstChangeRef : undefined}
             className={`uwe-diffLine ${line.kind === 'add' ? 'uwe-diffAdd' : line.kind === 'remove' ? 'uwe-diffRemove' : 'uwe-diffContext'}`}
           >
-            <span className="uwe-diffLineNum uwe-diffOldNum">
-              {line.oldLineNum ?? ''}
-            </span>
-            <span className="uwe-diffLineNum uwe-diffNewNum">
-              {line.newLineNum ?? ''}
-            </span>
+            <span className="uwe-diffLineNum uwe-diffOldNum">{line.oldLineNum ?? ''}</span>
+            <span className="uwe-diffLineNum uwe-diffNewNum">{line.newLineNum ?? ''}</span>
             <span className="uwe-diffSign">
               {line.kind === 'add' ? '+' : line.kind === 'remove' ? '−' : ' '}
             </span>
@@ -424,10 +439,19 @@ function CreateNoteDiffView({ payload }: { payload: CreateNotePayload }) {
   );
 }
 
-function PathChangeDiffView({ payload }: { payload: RenameNotePayload | MoveNotePayload | RenameDirectoryPayload | MoveDirectoryPayload }) {
+function PathChangeDiffView({
+  payload,
+}: {
+  payload: RenameNotePayload | MoveNotePayload | RenameDirectoryPayload | MoveDirectoryPayload;
+}) {
   const fromPath = 'fromPath' in payload ? payload.fromPath : '';
   const toPath = 'toPath' in payload ? payload.toPath : '';
-  const reason = 'renameReason' in payload ? payload.renameReason : 'moveReason' in payload ? (payload as MoveNotePayload).moveReason : '';
+  const reason =
+    'renameReason' in payload
+      ? payload.renameReason
+      : 'moveReason' in payload
+        ? (payload as MoveNotePayload).moveReason
+        : '';
 
   return (
     <>
@@ -506,14 +530,20 @@ function DeleteDirectoryDiffView({ payload }: { payload: DeleteDirectoryPayload 
         </div>
       </div>
       <p className="uwe-diffReason">{payload.deleteReason}</p>
-      <div className="uwe-diffWarning">⚠ This directory and all its contents will be permanently deleted.</div>
+      <div className="uwe-diffWarning">
+        ⚠ This directory and all its contents will be permanently deleted.
+      </div>
     </>
   );
 }
 
 // ── Main modal component ────────────────────────────────────────────────────
 
-export function WeaverUnifiedDiffModal({ operation, onClose, vaultPath }: WeaverUnifiedDiffModalProps) {
+export function WeaverUnifiedDiffModal({
+  operation,
+  onClose,
+  vaultPath,
+}: WeaverUnifiedDiffModalProps) {
   const label = OPERATION_LABELS[operation.kind] ?? operation.kind;
   const isDestructive = isDestructiveOperation(operation.kind);
 
@@ -547,9 +577,7 @@ export function WeaverUnifiedDiffModal({ operation, onClose, vaultPath }: Weaver
         return <DeleteDirectoryDiffView payload={operation.payload as DeleteDirectoryPayload} />;
       default: {
         const fallback = operation as { kind: string; payload: unknown };
-        return (
-          <pre className="uwe-diffRaw">{JSON.stringify(fallback.payload, null, 2)}</pre>
-        );
+        return <pre className="uwe-diffRaw">{JSON.stringify(fallback.payload, null, 2)}</pre>;
       }
     }
   };
@@ -570,21 +598,24 @@ export function WeaverUnifiedDiffModal({ operation, onClose, vaultPath }: Weaver
             title="Close diff view"
             aria-label="Close diff view"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              width="16"
+              height="16"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Rationale */}
-        {operation.rationale ? (
-          <div className="uwe-rationale">{operation.rationale}</div>
-        ) : null}
+        {operation.rationale ? <div className="uwe-rationale">{operation.rationale}</div> : null}
 
         {/* Diff body */}
-        <div className="uwe-body">
-          {renderDiffContent()}
-        </div>
+        <div className="uwe-body">{renderDiffContent()}</div>
       </div>
     </div>
   );

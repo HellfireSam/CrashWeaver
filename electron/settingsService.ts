@@ -63,41 +63,108 @@ interface WeaverBudgetFieldDescriptor {
  * all derive their behaviour from this registry.
  */
 const WEAVER_BUDGET_FIELD_REGISTRY: WeaverBudgetFieldDescriptor[] = [
-  { settingsKey: 'weaverGuidedInsertBaseMaxTokens',       responseKey: 'guidedInsertBaseMaxTokens',       boundCategory: 'tokens' },
-  { settingsKey: 'weaverGuidedInsertBaseTimeoutMs',       responseKey: 'guidedInsertBaseTimeoutMs',       boundCategory: 'timeoutMs' },
-  { settingsKey: 'weaverGuidedInsertExpandedMaxTokens',   responseKey: 'guidedInsertExpandedMaxTokens',   boundCategory: 'tokens' },
-  { settingsKey: 'weaverGuidedInsertExpandedTimeoutMs',   responseKey: 'guidedInsertExpandedTimeoutMs',   boundCategory: 'timeoutMs' },
-  { settingsKey: 'weaverIntelligentLightMaxTokens',       responseKey: 'intelligentLightMaxTokens',       boundCategory: 'tokens' },
-  { settingsKey: 'weaverIntelligentLightTimeoutMs',       responseKey: 'intelligentLightTimeoutMs',       boundCategory: 'timeoutMs' },
-  { settingsKey: 'weaverIntelligentLightIterationLimit',  responseKey: 'intelligentLightIterationLimit',  boundCategory: 'iterations' },
-  { settingsKey: 'weaverIntelligentStandardMaxTokens',    responseKey: 'intelligentStandardMaxTokens',    boundCategory: 'tokens' },
-  { settingsKey: 'weaverIntelligentStandardTimeoutMs',    responseKey: 'intelligentStandardTimeoutMs',    boundCategory: 'timeoutMs' },
-  { settingsKey: 'weaverIntelligentStandardIterationLimit', responseKey: 'intelligentStandardIterationLimit', boundCategory: 'iterations' },
-  { settingsKey: 'weaverIntelligentGoHamMaxTokens',       responseKey: 'intelligentGoHamMaxTokens',       boundCategory: 'tokens' },
-  { settingsKey: 'weaverIntelligentGoHamTimeoutMs',       responseKey: 'intelligentGoHamTimeoutMs',       boundCategory: 'timeoutMs' },
-  { settingsKey: 'weaverIntelligentGoHamIterationLimit',  responseKey: 'intelligentGoHamIterationLimit',  boundCategory: 'iterations' },
-  { settingsKey: 'weaverGuidedInsertMaxOperations',       responseKey: 'guidedInsertMaxOperations',       boundCategory: 'operations' },
-  { settingsKey: 'weaverIntelligentLightMaxOperations',   responseKey: 'intelligentLightMaxOperations',   boundCategory: 'operations' },
-  { settingsKey: 'weaverIntelligentStandardMaxOperations', responseKey: 'intelligentStandardMaxOperations', boundCategory: 'operations' },
-  { settingsKey: 'weaverIntelligentGoHamMaxOperations',   responseKey: 'intelligentGoHamMaxOperations',   boundCategory: 'operations' },
+  {
+    settingsKey: 'weaverGuidedInsertBaseMaxTokens',
+    responseKey: 'guidedInsertBaseMaxTokens',
+    boundCategory: 'tokens',
+  },
+  {
+    settingsKey: 'weaverGuidedInsertBaseTimeoutMs',
+    responseKey: 'guidedInsertBaseTimeoutMs',
+    boundCategory: 'timeoutMs',
+  },
+  {
+    settingsKey: 'weaverGuidedInsertExpandedMaxTokens',
+    responseKey: 'guidedInsertExpandedMaxTokens',
+    boundCategory: 'tokens',
+  },
+  {
+    settingsKey: 'weaverGuidedInsertExpandedTimeoutMs',
+    responseKey: 'guidedInsertExpandedTimeoutMs',
+    boundCategory: 'timeoutMs',
+  },
+  {
+    settingsKey: 'weaverIntelligentLightMaxTokens',
+    responseKey: 'intelligentLightMaxTokens',
+    boundCategory: 'tokens',
+  },
+  {
+    settingsKey: 'weaverIntelligentLightTimeoutMs',
+    responseKey: 'intelligentLightTimeoutMs',
+    boundCategory: 'timeoutMs',
+  },
+  {
+    settingsKey: 'weaverIntelligentLightIterationLimit',
+    responseKey: 'intelligentLightIterationLimit',
+    boundCategory: 'iterations',
+  },
+  {
+    settingsKey: 'weaverIntelligentStandardMaxTokens',
+    responseKey: 'intelligentStandardMaxTokens',
+    boundCategory: 'tokens',
+  },
+  {
+    settingsKey: 'weaverIntelligentStandardTimeoutMs',
+    responseKey: 'intelligentStandardTimeoutMs',
+    boundCategory: 'timeoutMs',
+  },
+  {
+    settingsKey: 'weaverIntelligentStandardIterationLimit',
+    responseKey: 'intelligentStandardIterationLimit',
+    boundCategory: 'iterations',
+  },
+  {
+    settingsKey: 'weaverIntelligentGoHamMaxTokens',
+    responseKey: 'intelligentGoHamMaxTokens',
+    boundCategory: 'tokens',
+  },
+  {
+    settingsKey: 'weaverIntelligentGoHamTimeoutMs',
+    responseKey: 'intelligentGoHamTimeoutMs',
+    boundCategory: 'timeoutMs',
+  },
+  {
+    settingsKey: 'weaverIntelligentGoHamIterationLimit',
+    responseKey: 'intelligentGoHamIterationLimit',
+    boundCategory: 'iterations',
+  },
+  {
+    settingsKey: 'weaverGuidedInsertMaxOperations',
+    responseKey: 'guidedInsertMaxOperations',
+    boundCategory: 'operations',
+  },
+  {
+    settingsKey: 'weaverIntelligentLightMaxOperations',
+    responseKey: 'intelligentLightMaxOperations',
+    boundCategory: 'operations',
+  },
+  {
+    settingsKey: 'weaverIntelligentStandardMaxOperations',
+    responseKey: 'intelligentStandardMaxOperations',
+    boundCategory: 'operations',
+  },
+  {
+    settingsKey: 'weaverIntelligentGoHamMaxOperations',
+    responseKey: 'intelligentGoHamMaxOperations',
+    boundCategory: 'operations',
+  },
 ];
 
 /** Returns the {min, max} bound pair for a budget category. */
 function getBoundsForCategory(category: WeaverBudgetCategory): { min: number; max: number } {
   switch (category) {
-    case 'tokens':     return { min: WEAVER_BUDGET_BOUNDS.minTokens,     max: WEAVER_BUDGET_BOUNDS.maxTokens };
-    case 'timeoutMs':  return { min: WEAVER_BUDGET_BOUNDS.minTimeoutMs,  max: WEAVER_BUDGET_BOUNDS.maxTimeoutMs };
-    case 'iterations': return { min: WEAVER_BUDGET_BOUNDS.minIterations, max: WEAVER_BUDGET_BOUNDS.maxIterations };
-    case 'operations': return { min: WEAVER_BUDGET_BOUNDS.minOperations, max: WEAVER_BUDGET_BOUNDS.maxOperations };
+    case 'tokens':
+      return { min: WEAVER_BUDGET_BOUNDS.minTokens, max: WEAVER_BUDGET_BOUNDS.maxTokens };
+    case 'timeoutMs':
+      return { min: WEAVER_BUDGET_BOUNDS.minTimeoutMs, max: WEAVER_BUDGET_BOUNDS.maxTimeoutMs };
+    case 'iterations':
+      return { min: WEAVER_BUDGET_BOUNDS.minIterations, max: WEAVER_BUDGET_BOUNDS.maxIterations };
+    case 'operations':
+      return { min: WEAVER_BUDGET_BOUNDS.minOperations, max: WEAVER_BUDGET_BOUNDS.maxOperations };
   }
 }
 
-function normalizeBoundedNumber(
-  value: unknown,
-  label: string,
-  min: number,
-  max: number,
-): number {
+function normalizeBoundedNumber(value: unknown, label: string, min: number, max: number): number {
   const num = Number(value);
   if (!Number.isFinite(num)) {
     throw new Error(`Invalid ${label}: value must be finite.`);
@@ -109,7 +176,9 @@ function normalizeBoundedNumber(
 }
 
 function toStringArray(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
 }
 
 function normalizeDirectoryList(directories: string[]) {
@@ -201,34 +270,48 @@ async function readSettings(): Promise<PersistedSettings> {
         parsed.cardStoreByVault && typeof parsed.cardStoreByVault === 'object'
           ? Object.fromEntries(
               Object.entries(parsed.cardStoreByVault).filter(
-                (entry): entry is [string, string] => typeof entry[0] === 'string' && typeof entry[1] === 'string',
+                (entry): entry is [string, string] =>
+                  typeof entry[0] === 'string' && typeof entry[1] === 'string',
               ),
             )
           : {},
       openrouterApiKeyEncrypted:
-        typeof parsed.openrouterApiKeyEncrypted === 'string' ? parsed.openrouterApiKeyEncrypted : undefined,
-      weaverPreferredModel: normalizePreferredModel((parsed as { weaverPreferredModel?: unknown }).weaverPreferredModel),
-      weaverRequestLogsDirectory: normalizeLogDirectory((parsed as { weaverRequestLogsDirectory?: unknown }).weaverRequestLogsDirectory),
+        typeof parsed.openrouterApiKeyEncrypted === 'string'
+          ? parsed.openrouterApiKeyEncrypted
+          : undefined,
+      weaverPreferredModel: normalizePreferredModel(
+        (parsed as { weaverPreferredModel?: unknown }).weaverPreferredModel,
+      ),
+      weaverRequestLogsDirectory: normalizeLogDirectory(
+        (parsed as { weaverRequestLogsDirectory?: unknown }).weaverRequestLogsDirectory,
+      ),
       imageDirectoriesByVault:
         parsed.imageDirectoriesByVault && typeof parsed.imageDirectoriesByVault === 'object'
           ? Object.fromEntries(
-              Object.entries(parsed.imageDirectoriesByVault).map(([vaultKey, directories]) => [vaultKey, toStringArray(directories)]),
+              Object.entries(parsed.imageDirectoriesByVault).map(([vaultKey, directories]) => [
+                vaultKey,
+                toStringArray(directories),
+              ]),
             )
           : {},
       crashpadDeletePreferences:
         parsed.crashpadDeletePreferences && typeof parsed.crashpadDeletePreferences === 'object'
           ? {
               removeNoteBoundariesByDefault:
-                (parsed.crashpadDeletePreferences as Partial<CrashpadDeletePreferences>).removeNoteBoundariesByDefault !== false,
+                (parsed.crashpadDeletePreferences as Partial<CrashpadDeletePreferences>)
+                  .removeNoteBoundariesByDefault !== false,
               requireConfirmationForNewCards:
-                (parsed.crashpadDeletePreferences as Partial<CrashpadDeletePreferences>).requireConfirmationForNewCards !== false,
+                (parsed.crashpadDeletePreferences as Partial<CrashpadDeletePreferences>)
+                  .requireConfirmationForNewCards !== false,
               requireStrictConfirmationForExistingCards:
-                (parsed.crashpadDeletePreferences as Partial<CrashpadDeletePreferences>).requireStrictConfirmationForExistingCards !==
-                false,
+                (parsed.crashpadDeletePreferences as Partial<CrashpadDeletePreferences>)
+                  .requireStrictConfirmationForExistingCards !== false,
             }
           : createDefaultSettings().crashpadDeletePreferences,
       weaverDisableBudgetRestrictions:
-        typeof parsed.weaverDisableBudgetRestrictions === 'boolean' ? parsed.weaverDisableBudgetRestrictions : undefined,
+        typeof parsed.weaverDisableBudgetRestrictions === 'boolean'
+          ? parsed.weaverDisableBudgetRestrictions
+          : undefined,
     };
 
     // All budget fields from the registry — single loop, no per-field boilerplate.
@@ -257,7 +340,9 @@ async function writeSettings(settings: PersistedSettings) {
   await writeJsonAtomically(filePath, settings);
 }
 
-async function mutateSettings<T>(mutator: (settings: PersistedSettings) => Promise<T> | T): Promise<T> {
+async function mutateSettings<T>(
+  mutator: (settings: PersistedSettings) => Promise<T> | T,
+): Promise<T> {
   const pendingMutation = settingsMutationQueue.then(async () => {
     const settings = await readSettings();
     const result = await mutator(settings);
@@ -285,7 +370,10 @@ export async function getCardStoreConfig(rootPath: string): Promise<CardStoreCon
   };
 }
 
-export async function setCardStorePath(rootPath: string, cardStorePath: string): Promise<CardStoreConfig> {
+export async function setCardStorePath(
+  rootPath: string,
+  cardStorePath: string,
+): Promise<CardStoreConfig> {
   const vaultKey = getVaultKey(rootPath);
   const resolvedCardStorePath = path.resolve(cardStorePath);
 
@@ -305,7 +393,10 @@ export async function getImageDirectories(rootPath: string): Promise<string[]> {
   return toStringArray(settings.imageDirectoriesByVault[vaultKey]);
 }
 
-export async function setImageDirectories(rootPath: string, imageDirectories: string[]): Promise<string[]> {
+export async function setImageDirectories(
+  rootPath: string,
+  imageDirectories: string[],
+): Promise<string[]> {
   const vaultKey = getVaultKey(rootPath);
   const normalizedDirectories = normalizeDirectoryList(imageDirectories);
 
@@ -331,7 +422,8 @@ export async function setCrashpadDeletePreferences(
   const nextValue: CrashpadDeletePreferences = {
     removeNoteBoundariesByDefault: value.removeNoteBoundariesByDefault !== false,
     requireConfirmationForNewCards: value.requireConfirmationForNewCards !== false,
-    requireStrictConfirmationForExistingCards: value.requireStrictConfirmationForExistingCards !== false,
+    requireStrictConfirmationForExistingCards:
+      value.requireStrictConfirmationForExistingCards !== false,
   };
 
   return mutateSettings((settings) => {
@@ -350,8 +442,8 @@ function encryptApiKey(key: string): string {
     // filesystem access to the settings JSON file.
     console.warn(
       'CrashWeaver SECURITY: OS-level encryption is unavailable on this system. ' +
-      'The OpenRouter API key will be stored in plaintext in the settings file. ' +
-      'Anyone with access to this machine can read it.',
+        'The OpenRouter API key will be stored in plaintext in the settings file. ' +
+        'Anyone with access to this machine can read it.',
     );
     return `plain:${key}`;
   }
@@ -365,7 +457,7 @@ function decryptApiKey(encrypted: string): string {
     if (!decryptApiKey._warnedPlaintext) {
       console.warn(
         'CrashWeaver SECURITY: Reading OpenRouter API key from plaintext storage. ' +
-        'Re-save your API key in Settings → Weaver to attempt OS-level encryption.',
+          'Re-save your API key in Settings → Weaver to attempt OS-level encryption.',
       );
       decryptApiKey._warnedPlaintext = true;
     }
@@ -435,7 +527,9 @@ export async function getWeaverSettings(): Promise<WeaverSettings> {
   return buildWeaverSettingsResponse(settings);
 }
 
-export async function setWeaverPreferredModel(preferredModel: string | null): Promise<WeaverSettings> {
+export async function setWeaverPreferredModel(
+  preferredModel: string | null,
+): Promise<WeaverSettings> {
   const normalizedPreferredModel = normalizePreferredModel(preferredModel);
 
   return mutateSettings((settings) => {
@@ -449,7 +543,9 @@ export async function setWeaverPreferredModel(preferredModel: string | null): Pr
   });
 }
 
-export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Promise<WeaverSettings> {
+export async function updateWeaverSettings(
+  updates: Partial<WeaverSettings>,
+): Promise<WeaverSettings> {
   return mutateSettings((settings) => {
     if (updates.disableBudgetRestrictions !== undefined) {
       settings.weaverDisableBudgetRestrictions = updates.disableBudgetRestrictions;
@@ -460,12 +556,8 @@ export async function updateWeaverSettings(updates: Partial<WeaverSettings>): Pr
       const updateValue = (updates as Record<string, unknown>)[field.responseKey];
       if (updateValue !== undefined) {
         const bounds = getBoundsForCategory(field.boundCategory);
-        (settings as unknown as Record<string, unknown>)[field.settingsKey] = normalizeBoundedNumber(
-          updateValue,
-          field.responseKey,
-          bounds.min,
-          bounds.max,
-        );
+        (settings as unknown as Record<string, unknown>)[field.settingsKey] =
+          normalizeBoundedNumber(updateValue, field.responseKey, bounds.min, bounds.max);
       }
     }
 
@@ -478,7 +570,9 @@ export async function getWeaverRequestLogsDirectory(): Promise<string | null> {
   return settings.weaverRequestLogsDirectory ?? null;
 }
 
-export async function setWeaverRequestLogsDirectory(directoryPath: string | null): Promise<string | null> {
+export async function setWeaverRequestLogsDirectory(
+  directoryPath: string | null,
+): Promise<string | null> {
   const normalizedDirectoryPath = normalizeLogDirectory(directoryPath);
 
   return mutateSettings((settings) => {

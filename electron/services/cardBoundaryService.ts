@@ -112,11 +112,13 @@ export function restoreCardBoundaryLines(
   }
 
   if (!rawContent.length) {
-    return insertAtSavedLineRange() ?? {
-      content: lines.join('\n'),
-      inserted: false,
-      alreadyPresent: false,
-    };
+    return (
+      insertAtSavedLineRange() ?? {
+        content: lines.join('\n'),
+        inserted: false,
+        alreadyPresent: false,
+      }
+    );
   }
 
   const blockLines = rawContent.replace(/\r\n/g, '\n').split('\n');
@@ -138,11 +140,13 @@ export function restoreCardBoundaryLines(
   }
 
   if (candidateStarts.length === 0) {
-    return insertAtSavedLineRange() ?? {
-      content: lines.join('\n'),
-      inserted: false,
-      alreadyPresent: false,
-    };
+    return (
+      insertAtSavedLineRange() ?? {
+        content: lines.join('\n'),
+        inserted: false,
+        alreadyPresent: false,
+      }
+    );
   }
 
   const preferredStartIndex = Math.max(0, preferredStartLine - 1);

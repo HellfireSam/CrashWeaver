@@ -30,11 +30,9 @@ function normalizeModelCandidate(candidate?: string | null) {
  * Resolve the actual OpenRouter model ID from the explicit request model
  * or persisted preference. Falls back to a safe balanced default if neither is present.
  */
-export function resolveModel(
-  explicitModel?: string,
-  preferredModel?: string | null,
-): string {
-  const resolvedModel = normalizeModelCandidate(explicitModel) ?? normalizeModelCandidate(preferredModel);
+export function resolveModel(explicitModel?: string, preferredModel?: string | null): string {
+  const resolvedModel =
+    normalizeModelCandidate(explicitModel) ?? normalizeModelCandidate(preferredModel);
 
   if (!resolvedModel) {
     return DEFAULT_FALLBACK_MODEL;
@@ -85,11 +83,11 @@ export const BUDGET_VALIDATION_BOUNDS = {
   // Token budgets
   minTokens: 100,
   maxTokens: 32_000,
-  
+
   // Timeout budgets
-  minTimeoutMs: 5_000,     // 5 seconds minimum
-  maxTimeoutMs: 600_000,   // 10 minutes maximum
-  
+  minTimeoutMs: 5_000, // 5 seconds minimum
+  maxTimeoutMs: 600_000, // 10 minutes maximum
+
   // Iteration limits
   minIterations: 1,
   maxIterations: 20,
@@ -114,9 +112,7 @@ export function validateAndClampBudgetValue(
   }
 
   if (num < bounds.min || num > bounds.max) {
-    console.warn(
-      `CrashWeaver: ${fieldName} clamped from ${num} to [${bounds.min}, ${bounds.max}]`,
-    );
+    console.warn(`CrashWeaver: ${fieldName} clamped from ${num} to [${bounds.min}, ${bounds.max}]`);
     return Math.max(bounds.min, Math.min(bounds.max, num));
   }
 
@@ -139,20 +135,13 @@ function extractProviderPrefix(modelId: string): string {
  * Provider families known to support native JSON mode via `response_format`.
  * These providers guarantee valid JSON in their output.
  */
-const JSON_MODE_PROVIDERS = new Set([
-  'openai',
-  'google',
-  'deepseek',
-  'x-ai',
-]);
+const JSON_MODE_PROVIDERS = new Set(['openai', 'google', 'deepseek', 'x-ai']);
 
 /**
  * Provider families for Anthropic/Claude models.
  * These require a different prompt overlay and use conservative repair.
  */
-const CLAUDE_PROVIDERS = new Set([
-  'anthropic',
-]);
+const CLAUDE_PROVIDERS = new Set(['anthropic']);
 
 // ── Model-specific profile helpers ────────────────────────────────────────────
 
@@ -193,7 +182,9 @@ function resolveRepairStrategy(modelId: string): WeaveRepairStrategy {
   return CLAUDE_PROVIDERS.has(provider) ? 'conservative' : 'aggressive';
 }
 
-function resolveResponseFormatParams(mode: WeaveStructuredOutputMode): Record<string, unknown> | undefined {
+function resolveResponseFormatParams(
+  mode: WeaveStructuredOutputMode,
+): Record<string, unknown> | undefined {
   if (mode === 'json_mode') {
     // Enables OpenAI JSON mode — model is guaranteed to emit valid JSON.
     return { response_format: { type: 'json_object' } };
@@ -231,7 +222,14 @@ function resolveBudget(request: WeavePlanRequest, settings?: WeaverSettings | nu
     return {
       maxTokens: BUDGET_VALIDATION_BOUNDS.maxTokens,
       timeoutMs: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs,
-      temperature: request.kind === 'guided-insert' ? 0.15 : (request.strength === 'go-ham' ? 0.5 : request.strength === 'standard' ? 0.3 : 0.18),
+      temperature:
+        request.kind === 'guided-insert'
+          ? 0.15
+          : request.strength === 'go-ham'
+            ? 0.5
+            : request.strength === 'standard'
+              ? 0.3
+              : 0.18,
       // When unrestricted, allow up to 200 tool calls (still has a safety cap)
       iterationLimit: 200,
     };
@@ -281,30 +279,30 @@ function resolveBudget(request: WeavePlanRequest, settings?: WeaverSettings | nu
 
   const maxTokens = validateAndClampBudgetValue(
     s === 'light'
-      ? settings?.intelligentLightMaxTokens ?? defaults.maxTokens
+      ? (settings?.intelligentLightMaxTokens ?? defaults.maxTokens)
       : s === 'standard'
-        ? settings?.intelligentStandardMaxTokens ?? defaults.maxTokens
-        : settings?.intelligentGoHamMaxTokens ?? defaults.maxTokens,
+        ? (settings?.intelligentStandardMaxTokens ?? defaults.maxTokens)
+        : (settings?.intelligentGoHamMaxTokens ?? defaults.maxTokens),
     `intelligent${s}MaxTokens`,
     { min: BUDGET_VALIDATION_BOUNDS.minTokens, max: BUDGET_VALIDATION_BOUNDS.maxTokens },
   );
 
   const timeoutMs = validateAndClampBudgetValue(
     s === 'light'
-      ? settings?.intelligentLightTimeoutMs ?? defaults.timeoutMs
+      ? (settings?.intelligentLightTimeoutMs ?? defaults.timeoutMs)
       : s === 'standard'
-        ? settings?.intelligentStandardTimeoutMs ?? defaults.timeoutMs
-        : settings?.intelligentGoHamTimeoutMs ?? defaults.timeoutMs,
+        ? (settings?.intelligentStandardTimeoutMs ?? defaults.timeoutMs)
+        : (settings?.intelligentGoHamTimeoutMs ?? defaults.timeoutMs),
     `intelligent${s}TimeoutMs`,
     { min: BUDGET_VALIDATION_BOUNDS.minTimeoutMs, max: BUDGET_VALIDATION_BOUNDS.maxTimeoutMs },
   );
 
   const iterationLimit = validateAndClampBudgetValue(
     s === 'light'
-      ? settings?.intelligentLightIterationLimit ?? defaults.iterationLimit
+      ? (settings?.intelligentLightIterationLimit ?? defaults.iterationLimit)
       : s === 'standard'
-        ? settings?.intelligentStandardIterationLimit ?? defaults.iterationLimit
-        : settings?.intelligentGoHamIterationLimit ?? defaults.iterationLimit,
+        ? (settings?.intelligentStandardIterationLimit ?? defaults.iterationLimit)
+        : (settings?.intelligentGoHamIterationLimit ?? defaults.iterationLimit),
     `intelligent${s}IterationLimit`,
     { min: BUDGET_VALIDATION_BOUNDS.minIterations, max: BUDGET_VALIDATION_BOUNDS.maxIterations },
   );

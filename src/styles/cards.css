@@ -175,7 +175,9 @@
   cursor: pointer;
   font-size: 0.88rem;
   margin-bottom: -1px;
-  transition: color 140ms ease, border-color 140ms ease;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease;
 }
 
 .cpPanelTab:hover {
