@@ -224,10 +224,11 @@ Reading. `src/lib/cards.ts` owns the mapping. `toCardViewRecordFromCard` convert
 into a `CardViewRecord`, computing `currentReference` with `getPreferredReference` (the Reference
 for the selected note, otherwise the first entry of `referenced_in` as stored) and deriving
 `cardFilePath` as `<cardStorePath>/<uid>.json`. `toCardViewRecordFromParsedCard` handles a parsed
-note card and calls `createFallbackCard` when no card file is linked. `App.tsx` builds its three
-card collections from these functions: `currentNoteCards` from the active note's `parsedCards`,
-`currentVaultCards` from the `listCards` catalog, and `crashpadCards` from the active crashpad's
-entries filtered against the catalog.
+note card and calls `createFallbackCard` when no card file is linked. `src/lib/cardProjection.ts`
+builds the rendered card surface from these functions and the renderer state: the note-scope
+cards from the active note's `parsedCards`, the vault-scope cards from the `listCards` catalog,
+and the crashpad cards from the active crashpad's entries filtered against the catalog. `App.tsx`
+renders the projection's visible cards, focused card and default Weave card.
 
 Display. `src/components/CardsWorkspace.tsx` renders the `CardDetailTab` views `content`,
 `memory-technique`, `qna` and `metadata` from a `CardViewRecord`. `CardMetadataPanel` shows

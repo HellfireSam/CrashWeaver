@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
 import 'katex/dist/katex.min.css';
 import type {
   WeaveKind,
@@ -14,14 +13,10 @@ import { InspectorPane } from './components/InspectorPane';
 import type { WeaverSessionSummary, WeaverSessionDetail } from './components/WeaverSessionHistory';
 import { WeaverConfirmDialog, isDestructiveOperation } from './components/WeaverConfirmDialog';
 import { SettingsModal } from './components/SettingsModal';
-import {
-  type CardViewRecord,
-  getFileName,
-  sortCardViewRecords,
-  toCardViewRecordFromCard,
-  toCardViewRecordFromParsedCard,
-} from './lib/cards';
+import { projectCards, selectDefaultWeaveCardUid, selectFocusedCard } from './lib/cardProjection';
+import { getFileName } from './lib/cards';
 import { formatCardRestoreStatus } from './lib/crashpadStatus';
+import { computeLayoutStyle } from './lib/layout';
 import { renderMarkdownPreview } from './lib/markdownPreview';
 import { useCardDetailState } from './hooks/useCardDetailState';
 import { useCrashpadActions } from './hooks/useCrashpadActions';
@@ -60,14 +55,6 @@ const DEFAULT_DRAFT_CONTENT = [
   '',
   '#stage2 #vault',
 ].join('\n');
-
-function getDefaultWeaveCardUid(cards: CardViewRecord[], focusedUid: string | null) {
-  if (focusedUid && cards.some((card) => card.uid === focusedUid)) {
-    return focusedUid;
-  }
-
-  return cards[0]?.uid ?? null;
-}
 
 function getSelectedTextareaText(element: HTMLTextAreaElement | null) {
   if (!element) {
@@ -287,85 +274,33 @@ export default function App() {
     replaceOpenTabPath,
     renameCardDetailState,
   });
-  const currentNoteCards = useMemo(
+  const { visibleCards, crashpadCards } = useMemo(
     () =>
-      sortCardViewRecords(
-        (activeNote?.parsedCards ?? []).map((card) =>
-          toCardViewRecordFromParsedCard(card, activeNote?.filePath ?? draftPath),
-        ),
-      ),
-    [activeNote, draftPath],
+      projectCards({
+        activeNote,
+        allCards,
+        cardStorePath: vault?.cardStore?.cardStorePath,
+        selectedNotePath,
+        activeCrashpad,
+        activeCardFileUid,
+        cardScope,
+        isCrashpadEditor,
+        isCardEditor,
+      }),
+    [
+      activeNote,
+      allCards,
+      vault?.cardStore?.cardStorePath,
+      selectedNotePath,
+      activeCrashpad,
+      activeCardFileUid,
+      cardScope,
+      isCrashpadEditor,
+      isCardEditor,
+    ],
   );
-  const currentVaultCards = useMemo(
-    () =>
-      sortCardViewRecords(
-        allCards.map((card) =>
-          toCardViewRecordFromCard(card, vault?.cardStore?.cardStorePath, selectedNotePath || null),
-        ),
-      ),
-    [allCards, selectedNotePath, vault?.cardStore?.cardStorePath],
-  );
-  const cardFileCards = useMemo(() => {
-    if (!activeCardFileUid) {
-      return [];
-    }
-
-    return currentVaultCards.filter((card) => card.uid === activeCardFileUid);
-  }, [activeCardFileUid, currentVaultCards]);
-  const crashpadCards = useMemo(() => {
-    if (!activeCrashpad) {
-      return [];
-    }
-
-    const cardByUid = new Map(allCards.map((card) => [card.uid, card]));
-
-    return sortCardViewRecords(
-      activeCrashpad.cards
-        .map((entry) => {
-          const card = cardByUid.get(entry.uid);
-
-          if (!card) {
-            return null;
-          }
-
-          return toCardViewRecordFromCard(
-            card,
-            vault?.cardStore?.cardStorePath,
-            selectedNotePath || null,
-            'crashpad',
-            entry.origin,
-          );
-        })
-        .filter((card): card is ReturnType<typeof toCardViewRecordFromCard> => card !== null),
-    );
-  }, [activeCrashpad, allCards, selectedNotePath, vault?.cardStore?.cardStorePath]);
-  const visibleCards = useMemo(() => {
-    if (isCrashpadEditor) {
-      return crashpadCards;
-    }
-
-    if (isCardEditor) {
-      return cardFileCards;
-    }
-
-    return cardScope === 'current-vault' ? currentVaultCards : currentNoteCards;
-  }, [
-    cardFileCards,
-    cardScope,
-    crashpadCards,
-    currentNoteCards,
-    currentVaultCards,
-    isCardEditor,
-    isCrashpadEditor,
-  ]);
-  const focusedCard = useMemo(
-    () => visibleCards.find((card) => card.uid === focusedCardUid) ?? visibleCards[0] ?? null,
-    [focusedCardUid, visibleCards],
-  );
-  const crashpadWeaveCardUid = useMemo(
-    () => getDefaultWeaveCardUid(crashpadCards, focusedCardUid),
-    [crashpadCards, focusedCardUid],
-  );
+  const focusedCard = selectFocusedCard(visibleCards, focusedCardUid);
+  const crashpadWeaveCardUid = selectDefaultWeaveCardUid(crashpadCards, focusedCardUid);
   const isCardsSurfaceActive =
     isCrashpadEditor || isCardEditor || (isMarkdownEditor && viewMode === 'cards');
 
@@ -680,14 +615,13 @@ export default function App() {
     setStatusMessage,
     setErrorMessage,
   });
-  const layoutStyle = {
-    '--widgets-width': '56px',
-    '--sidebar-width': isSidebarVisible ? `${sidebarWidth}px` : '0px',
-    '--left-splitter-width': isSidebarVisible ? '8px' : '0px',
-    '--inspector-width': isInspectorVisible ? `${inspectorWidth}px` : '0px',
-    '--right-splitter-width': isInspectorVisible ? '8px' : '0px',
-    '--editor-font-size': `${editorFontSize}px`,
-  } as CSSProperties;
+  const layoutStyle = computeLayoutStyle({
+    isSidebarVisible,
+    sidebarWidth,
+    isInspectorVisible,
+    inspectorWidth,
+    editorFontSize,
+  });
 
   // Reset Weaver composer when switching crashpads (but preserve plan results
   // so the user can still accept/reject proposals after switching tabs).

@@ -133,9 +133,10 @@ errors by stripping Electron's wrapper with a regex matching
 ### App.tsx
 
 `src/App.tsx` is the root component and the largest renderer file. It destructures all four state
-contexts, keeps `useRef` handles for DOM nodes and current-value mirrors, derives the
-visible card set (`visibleCards`, `focusedCard`, `crashpadCards` and the rest), calls the hook
-layer, and renders the shell: the widget rail, sidebar, splitter layout, editor tab strip and
+contexts, keeps `useRef` handles for DOM nodes and current-value mirrors, projects the card
+surface through the pure `projectCards` in `src/lib/cardProjection.ts`, computes the shell layout
+style with `computeLayoutStyle` in `src/lib/layout.ts`, calls the hook layer, and renders the
+shell: the widget rail, sidebar, splitter layout, editor tab strip and
 view-mode bar, the markdown, cards or Crashpad surface, the Inspector pane, the confirm dialog
 for destructive Weave operations, and the settings modal. It is also where a Weaver request is
 assembled (`handleGenerateWeavePlan`), a plan is applied (`handleApplyWeaveOperations`), and the
@@ -178,10 +179,11 @@ A few components call `window.crashWeaver` directly rather than going through `A
 `WeaverProposalPanel` uses `isStubWeaveProvider`, `listWeaveModels` and `onWeavePlanProgress`,
 `WeaverSessionHistory` uses `getWeaverSession`, and `WeaverUnifiedDiffModal` uses `readNote`.
 
-`src/lib/` holds the pure helpers — `cards.ts`, `crashpadHistory.ts`, `crashpadStatus.ts`,
-`editorPaths.ts`, `errorUtils.ts`, `explorerTree.ts`, `layout.ts`, `markdownPreview.ts`,
-`stateUtils.ts` — with no React and no IPC. Vitest suites sit beside `crashpadStatus.ts`,
-`editorPaths.ts` and `markdownPreview.ts`.
+`src/lib/` holds the pure helpers — `cardProjection.ts`, `cards.ts`, `crashpadHistory.ts`,
+`crashpadStatus.ts`, `editorPaths.ts`, `errorUtils.ts`, `explorerTree.ts`, `layout.ts`,
+`markdownPreview.ts`, `stateUtils.ts` — with no React state and no IPC. Vitest suites sit beside
+`cardProjection.ts`, `crashpadStatus.ts`, `editorPaths.ts`, `layout.ts` and
+`markdownPreview.ts`.
 
 ### Error boundaries
 

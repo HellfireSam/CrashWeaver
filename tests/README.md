@@ -46,12 +46,13 @@ it where a ticket does.
   `window.crashWeaver` members match the main-process handlers, or that the channel literals on
   the two sides agree. A rename on one side is still a silent runtime hang. Tickets #20 and #21.
 - **Renderer UI layer.** `src/App.tsx`, `src/components/**`, `src/hooks/**` and `src/state/**`
-  have no tests; only the pure helpers in `src/lib/` are covered. The pure card projection and
-  layout computation inside the largest module are extracted and tested by #13, and the module
-  split is #15.
+  have no tests; only the pure helpers in `src/lib/` are covered. The pure logic extracted from
+  the largest module is tested — `src/lib/cardProjection.ts` (the rendered card surface) and
+  `src/lib/layout.ts` (the shell layout style) — and the remaining module split is #15.
 - **Untested pure renderer helpers.** `src/lib/cards.ts`, `src/lib/crashpadHistory.ts`,
-  `src/lib/errorUtils.ts`, `src/lib/explorerTree.ts`, `src/lib/layout.ts` and
-  `src/lib/stateUtils.ts` have no test files.
+  `src/lib/errorUtils.ts`, `src/lib/explorerTree.ts` and `src/lib/stateUtils.ts` have no test
+  files of their own; only the `cards.ts` mapping functions are exercised, indirectly through the
+  card-projection suite.
 - **Weaver orchestration — `electron/weaver/weaveService.ts`.** The graph, nodes, providers,
   schema, prompts and context retrieval have suites; the service facade that sequences them and
   owns session history and request logging (`weaverSessionHistory.ts`, `weaveRequestLogger.ts`)
