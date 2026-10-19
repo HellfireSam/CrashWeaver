@@ -18,9 +18,11 @@ Superseded documents are kept in [`docs/archive/`](./docs/archive/README.md).
 
 ```bash
 npm install
+npm run lint
+npm run format:check
 npm run typecheck
 npm test
 npm run build
 ```
 
-A single one-command gate is not in place yet; until it is, run the four commands above.
+A single one-command gate is not in place yet; until it is, run the commands above.

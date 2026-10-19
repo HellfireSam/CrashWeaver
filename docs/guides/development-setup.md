@@ -90,6 +90,44 @@ A single renderer test file needs no build:
 npx vitest run src/lib/markdownPreview.test.ts
 ```
 
+## Lint and format
+
+Lint the repository:
+
+```bash
+npm run lint
+```
+
+`lint` runs ESLint over `src/`, `electron/`, `vite.config.ts` and the CommonJS test
+suites. The rule set is ESLint's recommended set, typescript-eslint's recommended set, the
+React hooks and React refresh plugins, and three type-aware async rules —
+`no-floating-promises`, `no-misused-promises` and `await-thenable` — which catch the failure this
+codebase has actually suffered: a promise that never settles and raises no error. Those rules need
+a TypeScript program, so each file group is resolved against its own project
+(`tsconfig.app.json`, `tsconfig.electron.json`, `tsconfig.node.json`). The config lives in
+[`eslint.config.mjs`](../../eslint.config.mjs).
+
+The command currently exits 0 with warnings: 20 `react-hooks/exhaustive-deps` and 8
+`react-refresh/only-export-components`. They are left visible rather than suppressed. The
+warnings-to-zero ratchet belongs with the coding standards, not with the change that introduced the
+linter, so treat a _new_ warning as a regression even though the command stays green.
+
+Check or apply formatting:
+
+```bash
+npm run format:check
+npm run format
+```
+
+Prettier owns formatting and no stylistic ESLint rule is enabled, so the two cannot contradict each
+other. One commit in this repository's history is a whole-repository Prettier run; its hash is
+listed in [`.git-blame-ignore-revs`](../../.git-blame-ignore-revs) and excluded from blame. To have
+`git blame` honour that file in your clone:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 Build everything:
 
 ```bash
@@ -100,19 +138,20 @@ npm run build
 `build:main` (`tsc -p tsconfig.electron.json`, output in `dist-electron/`). The individual
 halves are available as `npm run build:renderer` and `npm run build:main`.
 
-There is no one-command gate and no linter or formatter yet; until they land, "green" means
-the checks above.
+A one-command gate is not in place yet. Until it is, "green" means `npm run lint`,
+`npm run format:check`, `npm run typecheck`, `npm test` and `npm run build` all pass. (The gate and
+its CI wiring are ticket #8.)
 
 ## TypeScript project layout
 
 The repository splits its TypeScript configuration the way Vite expects:
 
-| File                     | Covers                                          | Resolution                                                             |
-| ------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------- |
-| `tsconfig.json`          | solution file only — no inputs, just references | —                                                                      |
-| `tsconfig.app.json`      | `src` (renderer)                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                |
-| `tsconfig.node.json`     | `vite.config.ts`                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                |
-| `tsconfig.electron.json` | `electron` (main process)                       | `module: CommonJS`, `moduleResolution: Node`, emits to `dist-electron` |
+| File                     | Covers                                          | Resolution                                                                                                |
+| ------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `tsconfig.json`          | solution file only — no inputs, just references | —                                                                                                         |
+| `tsconfig.app.json`      | `src` (renderer)                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
+| `tsconfig.node.json`     | `vite.config.ts`                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
+| `tsconfig.electron.json` | `electron` (main process)                       | `module: CommonJS`, `moduleResolution: Node`, `lib: ES2022` for `Error` `cause`, emits to `dist-electron` |
 
 The split exists to protect a specific failure. `vite.config.ts` is an ES module, and
 `package.json` declares no `"type": "module"`. When the config file inherited
@@ -135,5 +174,6 @@ CommonJS.
 | `tests/electron/`                                             | `node:test` suites that load compiled output from `dist-electron/`                                                                                                                                                                                                          |
 | `dist/`                                                       | Vite renderer build output                                                                                                                                                                                                                                                  |
 | `dist-electron/`                                              | compiled main-process output                                                                                                                                                                                                                                                |
+| `eslint.config.mjs`, `.prettierrc.json`, `.prettierignore`    | lint and format configuration: the rules, and the files both tools skip                                                                                                                                                                                                     |
 | `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | checked-in sample material for manual exercise: `mock-vault/` is the original sample vault, `mock-vault_sample/` is a copy to test against so the original stays untouched, and `template-mock-gallery/` is a template gallery; none of them is referenced by code or tests |
 | `docs/`                                                       | current documentation, plus the [archive](../archive/README.md)                                                                                                                                                                                                             |

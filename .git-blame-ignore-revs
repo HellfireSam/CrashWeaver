@@ -6,3 +6,6 @@
 #
 # Formatting-only commits appear below. A commit is only listed here when the
 # change it contains is purely Prettier output.
+
+# Prettier reformat of the whole repository. Contains no code changes.
+573b30203f85ac0abf05212250b82a3dac2b6404
