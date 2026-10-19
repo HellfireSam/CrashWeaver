@@ -192,7 +192,7 @@ schema validation, the diff UI and per-kind apply semantics in full.
 | `electron/`                                           | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the shared contract (`vault-contract.ts`), and the vault services: cards, notes, boundaries, crashpads, settings, index                                                                                                                     |
 | `electron/weaver/`                                    | The Weaver: service facade, context retrieval, ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging and session history                                                                                                                                                     |
 | `src/`                                                | The renderer: `App.tsx`, `components/`, `hooks/`, `state/` contexts, and `lib/` helpers                                                                                                                                                                                                                        |
-| `tests/electron/`                                     | `node:test` suites for the main-process services and the Weaver, loaded from the compiled `dist-electron/` output                                                                                                                                                                                              |
+| `tests/electron/`                                     | Test suites for the main-process services and the Weaver, loaded from the compiled `dist-electron/` output: ported suites are `.test.ts` under Vitest, the rest are `.test.cjs` under `node:test` until ticket #11 finishes the port                                                                           |
 | `dist/`                                               | Vite's renderer build output, loaded by the window in production (git-ignored)                                                                                                                                                                                                                                 |
 | `dist-electron/`                                      | `tsc`'s CommonJS build of `electron/`, referenced by `package.json`'s `main` (git-ignored)                                                                                                                                                                                                                     |
 | `fixtures/mock-vault/`, `fixtures/mock-vault_sample/` | Checked-in sample material for exercising the app manually: `mock-vault/` is the original sample vault, and `mock-vault_sample/` is a slightly older copy to open and test against so the original stays untouched. See [fixtures/README.md](../../fixtures/README.md). Neither is referenced by code or tests |
@@ -204,11 +204,12 @@ bridge's signatures are drawn from the same declarations. That file is the reaso
 payload shape surfaces as a type error on both sides of the process boundary. The renderer's
 window global is re-declared against it in `src/vite-env.d.ts`.
 
-Because the main-process tests import compiled JavaScript from `dist-electron/`, `npm test`
-builds the main process before running them (`package.json`'s `test:electron` script), and
-`tests/electron/vaultService.test.cjs` exercises real behaviour against temporary vaults: card
+The main-process tests run against the compiled JavaScript in `dist-electron/`. The vault suite
+(`tests/electron/vaultService.test.ts`) exercises real behaviour against temporary vaults: card
 rename propagating boundary UIDs into notes and crashpad entries, boundary removal on delete,
-and restore in both reinsert and forget modes.
+and restore in both reinsert and forget modes. The suites, the test commands and the known gaps
+are described in [`tests/README.md`](../../tests/README.md), and the way they are run is the
+[testing standard](../standards/testing.md).
 
 ## How to read the rest of these docs
 

@@ -5,18 +5,21 @@
 // type-aware async rules are the ones that catch it, so they are enabled for
 // every project TypeScript checks:
 //
-//   - `src/**`         → tsconfig.app.json       (renderer)
-//   - `electron/**`    → tsconfig.electron.json  (main process, CommonJS)
-//   - `vite.config.ts` → tsconfig.node.json      (the Vite config)
+//   - `src/**`           → tsconfig.app.json       (renderer)
+//   - `electron/**`      → tsconfig.electron.json  (main process, CommonJS)
+//   - `vite.config.ts`,
+//     `vitest.config.ts` → tsconfig.node.json      (the build and test configs)
+//   - `tests/**/*.ts`    → tsconfig.tests.json     (the ported test suites)
 //
 // Type-aware rules need a TypeScript program, hence the explicit `project` per
-// group. Files outside those three projects — a future script, or the CommonJS
-// test suites — are still linted, but only with rules that need no types, so the
-// async safety net does not cover them. They are not silently skipped: this file
-// matches every `.ts`/`.tsx` and every `.js`/`.mjs`/`.cjs` under the repository.
-// When a new TypeScript source directory appears, give it a project group like
-// the three below and it joins the type-aware set. The CommonJS electron suites
-// join it when ticket #11 moves them into the TypeScript layer.
+// group. Files outside those projects — a future script, or the CommonJS
+// `node:test` suites that have not ported yet — are still linted, but only with
+// rules that need no types, so the async safety net does not cover them. They are
+// not silently skipped: this file matches every `.ts`/`.tsx` and every
+// `.js`/`.mjs`/`.cjs` under the repository. When a new TypeScript source
+// directory appears, give it a project group like the ones below and it joins
+// the type-aware set. The remaining CommonJS electron suites join it when
+// ticket #11 moves them into the TypeScript layer.
 //
 // Two mechanisms are not mixed: the renderer and Vite-config projects are
 // referenced by the root solution and could use `parserOptions.projectService`,
@@ -52,10 +55,17 @@ const typedProjectGroups = [
     },
   },
   {
-    files: ['vite.config.ts'],
+    files: ['vite.config.ts', 'vitest.config.ts'],
     languageOptions: {
       globals: globals.node,
       ...projectOptions(['./tsconfig.node.json']),
+    },
+  },
+  {
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      globals: globals.node,
+      ...projectOptions(['./tsconfig.tests.json']),
     },
   },
 ];

@@ -1,8 +1,10 @@
 # Development setup
 
-Prerequisites and every script that exists in this repository today. The code lives in
-[`electron/`](../../electron) (main process) and [`src/`](../../src) (renderer); the architecture
-is described in [the overview](../architecture/overview.md).
+Prerequisites and the scripts you use while working on the repository. The test commands are in
+[`tests/README.md`](../../tests/README.md), because the runner split needs more explanation than a
+script list. The code lives in [`electron/`](../../electron) (main process) and
+[`src/`](../../src) (renderer); the architecture is described in
+[the overview](../architecture/overview.md).
 
 ## Prerequisites
 
@@ -47,22 +49,13 @@ npm run start
 
 ## Checks
 
-One command runs the whole gate from a clean clone — install, format check, lint, typecheck, tests
-and build:
+The definition of done — the gate, what it proves and what CI runs — is in
+[commits and pull requests](../standards/commits-and-pull-requests.md). The commands are:
 
 ```bash
-npm run gate
+npm run gate      # npm ci, then every check below
+npm run checks    # every check below, without the reinstall
 ```
-
-When dependencies are already installed, run the same checks without reinstalling:
-
-```bash
-npm run checks
-```
-
-The gate is what CI runs: the full command on Linux, and typecheck plus tests on Windows, where path
-and casing behaviour differs. The configuration is
-[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
 
 Each part is available on its own. Run the compiler across every project:
 
@@ -70,8 +63,8 @@ Each part is available on its own. Run the compiler across every project:
 npm run typecheck
 ```
 
-`typecheck` runs `tsc -b` over the solution file (the app and Vite-config projects) and then
-`tsc -p tsconfig.electron.json --noEmit` for the main process, which is kept out of the
+`typecheck` runs `tsc -b` over the solution file (the app, Vite-config and test projects) and
+then `tsc -p tsconfig.electron.json --noEmit` for the main process, which is kept out of the
 solution because it emits CommonJS.
 
 Run the tests:
@@ -80,32 +73,13 @@ Run the tests:
 npm test
 ```
 
-`npm test` runs `test:electron` and then `test:renderer`. The two suites use different
-runners today:
+`npm test` runs two commands while the test migration is in flight: the main-process suites still
+on Node's built-in runner, then Vitest for both layers. The runner split, the per-suite commands,
+coverage and the known test gaps are documented in [`tests/README.md`](../../tests/README.md).
 
-| Suite                   | Runner                      | Target                                                                                     | Notes                                                                               |
-| ----------------------- | --------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `npm run test:electron` | Node's built-in `node:test` | checked-in `tests/electron/**/*.test.cjs`, which load the compiled `dist-electron/` output | runs `npm run build:main` first, so the suites always exercise current build output |
-| `npm run test:renderer` | Vitest                      | explicit `src/lib/*.test.ts` files                                                         | the three files are listed in the script rather than globbed                        |
-
-Two consequences worth knowing:
-
-- A bare `npx vitest run` is **not** how the renderer suite is run. Vitest's default glob
-  also collects the `node:test` `.cjs` files and reports them as "No test suite found"
-  failures. Those are not real failures; `npm run test:renderer` is.
-- `test:electron` depends on the compiled output, so a single electron test file is run
-  after building:
-
-```bash
-npm run build:main
-node --test tests/electron/weaveApplyService.test.cjs
-```
-
-A single renderer test file needs no build:
-
-```bash
-npx vitest run src/lib/markdownPreview.test.ts
-```
+The test commands build the main process first because the main-process suites import the compiled
+`dist-electron/` output, never the TypeScript sources; that build is the compiled-artifact check.
+A main-process suite run by hand therefore needs `npm run build:main` first.
 
 ## Lint and format
 
@@ -113,26 +87,12 @@ Lint the repository:
 
 ```bash
 npm run lint
+npm run lint:fix   # ESLint with its safe automatic fixes
 ```
 
-`lint` runs ESLint over every TypeScript and JavaScript file in the repository. The rule set is
-ESLint's recommended set, typescript-eslint's recommended set, the React hooks and React refresh
-plugins, and three type-aware async rules — `no-floating-promises`, `no-misused-promises` and
-`await-thenable` — which catch the failure this codebase has actually suffered: a promise that
-never settles and raises no error.
-
-The type-aware rules need a TypeScript program, so they apply where a project provides one:
-`src/` against `tsconfig.app.json`, `electron/` against `tsconfig.electron.json`, and
-`vite.config.ts` against `tsconfig.node.json`. Everything else — a future script, or the CommonJS
-electron test suites, which are not part of a TypeScript project yet — is still linted, but with
-rules that need no types, so the async safety net does not cover it. When a new TypeScript source
-directory appears, give it a project group in [`eslint.config.mjs`](../../eslint.config.mjs) and it
-joins the type-aware set. The electron suites join it when they move into the TypeScript layer.
-
-The command currently exits 0 with warnings: 20 `react-hooks/exhaustive-deps` and 8
-`react-refresh/only-export-components`. They are left visible rather than suppressed. The
-warnings-to-zero ratchet belongs with the coding standards, not with the change that introduced the
-linter, so treat a _new_ warning as a regression even though the command stays green.
+ESLint lints every TypeScript and JavaScript file. The rule set is in
+[`eslint.config.mjs`](../../eslint.config.mjs); the rules, the type-aware wiring and the warning
+policy are the [formatting and linting](../standards/formatting-and-linting.md) standard.
 
 Check or apply formatting:
 
@@ -141,14 +101,8 @@ npm run format:check
 npm run format
 ```
 
-Prettier owns formatting and no stylistic ESLint rule is enabled, so the two cannot contradict each
-other. One commit in this repository's history is a whole-repository Prettier run; its hash is
-listed in [`.git-blame-ignore-revs`](../../.git-blame-ignore-revs) and excluded from blame. To have
-`git blame` honour that file in your clone:
-
-```bash
-git config blame.ignoreRevsFile .git-blame-ignore-revs
-```
+Prettier owns formatting; the configuration and the blame-ignore arrangement are in the
+[formatting and linting](../standards/formatting-and-linting.md) standard.
 
 Build everything:
 
@@ -160,15 +114,10 @@ npm run build
 `build:main` (`tsc -p tsconfig.electron.json`, output in `dist-electron/`). The individual
 halves are available as `npm run build:renderer` and `npm run build:main`.
 
-`npm run gate` is the definition of green: it runs `npm ci`, then `npm run checks`, which is
-`format:check`, `lint`, `typecheck`, `npm test` and `build` in that order. CI enforces it on every
-push and pull request to `main`.
-
 ## Committing
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/). The type list, scopes
-and pull-request expectations are in [CONTRIBUTING.md](../../CONTRIBUTING.md); [AGENTS.md](../../AGENTS.md)
-carries the same rules for automated agents.
+Commit messages, pull requests and the gate are the
+[commits and pull requests](../standards/commits-and-pull-requests.md) standard.
 
 ## TypeScript project layout
 
@@ -178,7 +127,8 @@ The repository splits its TypeScript configuration the way Vite expects:
 | ------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `tsconfig.json`          | solution file only — no inputs, just references | —                                                                                                         |
 | `tsconfig.app.json`      | `src` (renderer)                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
-| `tsconfig.node.json`     | `vite.config.ts`                                | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
+| `tsconfig.node.json`     | `vite.config.ts`, `vitest.config.ts`            | `module: ESNext`, `moduleResolution: bundler`, `noEmit`                                                   |
+| `tsconfig.tests.json`    | `tests/**/*.ts` (the ported test suites)        | `module: ESNext`, `moduleResolution: bundler`, `noEmit`; Node types                                       |
 | `tsconfig.electron.json` | `electron` (main process)                       | `module: CommonJS`, `moduleResolution: Node`, `lib: ES2022` for `Error` `cause`, emits to `dist-electron` |
 
 The split exists to protect a specific failure. `vite.config.ts` is an ES module, and
@@ -199,10 +149,10 @@ CommonJS.
 | `electron/weaver/`                                         | planning graph, prompts, providers, schema, context, logging                                                                                                                                                                                                                              |
 | `src/`                                                     | renderer: components, hooks, state contexts, pure helpers, styles                                                                                                                                                                                                                         |
 | `src/lib/`                                                 | pure renderer helpers, with the renderer test files beside them                                                                                                                                                                                                                           |
-| `tests/electron/`                                          | `node:test` suites that load compiled output from `dist-electron/`                                                                                                                                                                                                                        |
+| `tests/electron/`                                          | test suites that load compiled output from `dist-electron/`: ported `.test.ts` suites run under Vitest, the remaining `.test.cjs` suites under `node:test`; the known gaps are named in [tests/README.md](../../tests/README.md)                                                          |
 | `dist/`                                                    | Vite renderer build output                                                                                                                                                                                                                                                                |
 | `dist-electron/`                                           | compiled main-process output                                                                                                                                                                                                                                                              |
 | `eslint.config.mjs`, `.prettierrc.json`, `.prettierignore` | lint and format configuration: the rules, and the files both tools skip                                                                                                                                                                                                                   |
 | `.github/`                                                 | CI workflow and the pull-request template                                                                                                                                                                                                                                                 |
 | `fixtures/`                                                | checked-in sample vaults for manual exercise: `mock-vault/` is the original image and `mock-vault_sample/` is a slightly older copy to open and test against, so the original stays untouched. See [fixtures/README.md](../../fixtures/README.md); neither is referenced by code or tests |
-| `docs/`                                                    | current documentation, plus the [archive](../archive/README.md)                                                                                                                                                                                                                           |
+| `docs/`                                                    | current documentation, plus the [archive](../archive/README.md) and the [coding standards](../standards/README.md)                                                                                                                                                                        |

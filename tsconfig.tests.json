@@ -1,0 +1,23 @@
+{
+  // The test layer. Vitest runs the tests; TypeScript checks them here so a test
+  // cannot drift out of type-checking. The main-process suites import the
+  // compiled CommonJS output in `dist-electron/` through `createRequire`, so
+  // this project needs the Node types and no module resolution of the dist
+  // output (which emits no declarations).
+  //
+  // The remaining `node:test` `.cjs` suites are JavaScript and outside this
+  // project until they finish porting (ticket #11).
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tests.tsbuildinfo",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["tests/**/*.ts"]
+}
