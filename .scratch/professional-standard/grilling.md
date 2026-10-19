@@ -5,9 +5,10 @@ Q27 and Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHu
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
 (#2–#22) with native blocking edges. All 21 are sub-issues of #1. **Closed: #2 (green baseline), #3
 (documentation rewrite), #6 (absorbed into #3), #5 (lint + format), #7 (layout), #8 (gate + CI +
-governance), #10 (Vitest batch 1), #9 (coding standards) and #11 (Vitest batch 2).** The newest
+governance), #10 (Vitest batch 1), #9 (coding standards), #11 (Vitest batch 2) and #12
+(characterization tests).** The newest
 tickets were closed on GitHub with their evidence comments. `main` carries **unpushed commits** —
-the rework through #10, #9 and their record is on the remote.
+the rework through #11, its record and the correction is on the remote.
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -392,10 +393,30 @@ The grilling frontier is otherwise **empty**. In order:
      `weavePlanPrompts.test.ts` (the module it actually tests) and the apply suite now uses
      `fs.mkdtemp`. Gate green from a clean install: 23 files / 189 tests, 0 lint errors with the
      unchanged 28 warnings, coverage 35.19% statements / 35.94% lines.
-   - **Frontier is now #12** (characterize the weave apply service) and **#13** (extract the pure
-     renderer logic), both unblocked by #11. #14 needs #12; #15 needs #13; #20 needs #15; #19 needs
-     #15; #21 needs #20. #4 (boundary-marker gap) remains unblocked but is a tracked product gap,
-     not rework: leave it until the rework is done.
+   - ~~#12 characterization~~ — **DONE** in `992db39`: the weave apply service is pinned at its
+     single public entry point by 83 tests, up from 21, with one `describe` per operation kind plus
+     reporting and dry run. Every kind is exercised end to end — insert (all five placements, the
+     empty-block fallback, each missing-anchor warning, the boundary-integrity failure), edit
+     (global replacement, CRLF normalisation, absent target text, broken pair), create (default card
+     document, occupied path, preserved card), rename (reference rewrite, missing source, occupied
+     destination, missing card document), move, delete (reference pruning, orphan warning, missing
+     note) and the four directory handlers — against files on disk, card JSON and the returned
+     `WeaveApplyResult`. The near-vacuous dry-run test is replaced by tests that can fail: ten
+     no-write cases compare full vault snapshots, eleven paired cases make a dry run report success for
+     an operation the real run provably refuses, two pairs pin the skipped vault-root guard and
+     non-empty-directory warning, and ten more prove the containment guard still runs first for every
+     handler. Mutation-checked against the compiled output: forcing the eight `if (dryRun)` early
+     returns off made 23 assertions fail, so the dry-run tests observe the early return rather than
+     restate it. `tests/README.md` drops the dry-run gap and the apply section of
+     `docs/architecture/weave-pipeline.md` records what the suite pins. Production behaviour is
+     untouched; dry run still validates containment only and that product gap stays on the roadmap.
+     Gate green from a clean install: 23 files / 251 tests, 0 lint errors with the unchanged 28
+     warnings, coverage 36.1% statements / 36.84% lines (from 35.19 / 35.94).
+   - **Frontier is now #13** (extract the pure renderer logic), **#14** (split the weave apply
+     service) and the two defects **#16** and **#17** (both were blocked by #12 and are now
+     unblocked). #15 needs #13; #19 and #20 need #15; #21 needs #20; #18 needs #14 and #15; #22
+     needs #14. #4 (boundary-marker gap) remains unblocked but is a tracked product gap, not rework:
+     leave it until the rework is done.
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -404,12 +425,19 @@ suites need `npm run build:main` first on a clean clone), reducing duplicated ru
 guides to pointers, and matching the error-message and path-wording rules to production code. For
 #11 it caught a suite named for a module that does not exist (`weavePromptBuilder` tests
 `weavePlanPrompts`), an apply-suite helper that did not use `fs.mkdtemp`, and duplicated test-local
-shapes; all were fixed before the commit, so no assertion was weakened and no test was lost. The
-commits above carry the corrections; the hashes are the final ones.
+shapes; all were fixed before the commit, so no assertion was weakened and no test was lost. For #12
+it caught the returned-failure `stopOnError` skip path being unpinned (the unknown-kind case now has
+a second operation after it), the hand-rolled contract mirrors (replaced by a type-only import of
+`electron/vault-contract.ts`, which compiles to an empty module so the runtime still loads
+`dist-electron/`), repeated case and pairing shapes (one shared case type and one dry-run/real-run
+helper), a retired create-note assertion (restored) and a dry-run validation case missing the
+insert handler's boundary check (added); the spec axis also caught an inaccurate sentence in
+`docs/architecture/weave-pipeline.md`, corrected before the commit. The commits above carry the
+corrections; the hashes are the final ones.
 
-**Branch state:** the newest commits are on `main` in this clone and **not pushed**: `590e25e`
-(#11), `4418435` (the record update for #11) and the correction that adds this sentence. Everything
-through #10, #9 and their record (`0db1391`) is on `origin/main`.
+**Branch state:** the newest commits are on `main` in this clone and **not pushed**: `992db39`
+(#12) and this record update. Everything through `b13af6b` (the correction to the #11 record) is on
+`origin/main`.
 
 ## 8. How to resume
 
@@ -426,8 +454,9 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The newest commits (#11, its record and this correction)
-are **not pushed**; the rework through #10, #9 and their record is on `origin/main`.
+the decisions are no longer only local. The newest commits (#12 `992db39` and this record update)
+are **not pushed**; the rework through #11, its record and the correction (`b13af6b`) is on
+`origin/main`.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -452,5 +481,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#4), and the unpushed state of the
-newest commits.
+Everything else is unchanged: the closed tickets, the frontier (#13, #14, #16 and #17), and the
+unpushed state of the newest commits.
