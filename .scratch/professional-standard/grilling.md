@@ -390,6 +390,9 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | B8 | Familiarity and next review feed a planned review-scheduling function using standard spaced-repetition algorithms. |
 | B2 | The `warning` severity stays error-only in practice; a non-blocking tier is tracked as a gap in the roadmap. |
 | B9 | Unknown card JSON keys keep being dropped; a new field must arrive with a migration. |
+| C1 | Weaver dry-run stays containment-only; the `dryRun` doc comment now states the actual behaviour, and the limitation stays on the roadmap. |
+| C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
+| C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
 Everything else is unchanged: the closed tickets, the frontier (#4, #5, #7), and the unpushed state of
 `main`.

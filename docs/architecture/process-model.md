@@ -250,9 +250,8 @@ return nothing — and the caller stores that value in context; `handleUpdateWea
 `App.tsx` is one example. `App.tsx` also loads `getWeaverSettings` once on mount and syncs
 `weaveModel` from `preferredModel`.
 
-> Open question: `createMainWindow()` uses fixed window dimensions and no code persists or
-> restores window size or position. Should window geometry be remembered across launches? The
-> code does not answer this; today the window opens at 1320 by 860 every time.
+The window opens at 1320 by 860 every time. No code persists or restores window size or position;
+geometry is fixed at creation and not remembered across launches.
 
 ## Build and module resolution
 

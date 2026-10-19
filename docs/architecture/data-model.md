@@ -248,11 +248,12 @@ The daily crashpad naming rule lives in the renderer: `useDailyCrashpadActions` 
 the file name (`.crashweaver/crashpads/<YYYY-MM-DD>.crashpad.json`), opening the existing one
 if `openCrashpad` returns a document and otherwise calling `createCrashpad` with that stamp.
 
-Crashpads have no rename or delete entry point today. `writeCrashpad` derives the file path from
-`document.id`, so changing the id would write a second file and leave the first in place, and no
-IPC channel removes a crashpad file. Renaming a crashpad — moving its file and carrying its
-`cards` and `deletedCards` across — and deleting one are intended for the final application; both
-are recorded as a known gap in [the roadmap](../roadmap.md).
+Crashpads have no rename, delete or create-by-name entry point today; the UI only creates the daily
+crashpad. `writeCrashpad` derives the file path from `document.id`, so changing the id would write a
+second file and leave the first in place, and no IPC channel removes a crashpad file. Renaming a
+crashpad — moving its file and carrying its `cards` and `deletedCards` across — deleting one, and
+creating one under a chosen name are intended for the final application; all three are recorded as
+a known gap in [the roadmap](../roadmap.md).
 
 ## Diagnostics
 

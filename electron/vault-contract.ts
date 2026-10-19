@@ -495,7 +495,7 @@ export interface WeaveApplyResult {
 }
 
 export interface WeaveApplyOptions {
-  /** If true, validate operations but don't write anything. Default false. */
+  /** If true, check that each target path resolves inside the vault and write nothing. Default false. */
   dryRun?: boolean;
   /** If true, stop executing on the first failure. Default true. */
   stopOnError?: boolean;

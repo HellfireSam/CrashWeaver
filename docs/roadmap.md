@@ -67,9 +67,10 @@ scope for the rework and are not started.
 
 Real limitations of the current code, recorded here rather than implied away in the documents:
 
-- Crashpads cannot be renamed or deleted through the app. The final application should support
-  both: a rename moves the crashpad file and carries its cards and deleted-card snapshots across,
-  and a delete removes the file.
+- Crashpads cannot be renamed, deleted, or created by name through the app; the daily crashpad is
+  the only creation path wired up. The final application should support all three: a rename moves
+  the file and carries its cards and deleted-card snapshots across, a delete removes the file, and
+  a control creates one under a chosen name.
 - Crashpad undo and redo are not scoped to a crashpad: the stacks survive switching crashpads, so an
   undo can replay entries against the wrong one.
 - Renaming or moving a directory rewrites no card references and no note paths, although renaming a

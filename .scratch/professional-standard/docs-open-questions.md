@@ -117,20 +117,40 @@ card field must arrive with a deliberate migration rather than relying on passth
 **Applied:** the callout in `docs/reference/card-schema.md` is replaced with the decision and its
 rationale.
 
+### C1 — Weaver dry run stays containment-only
+
+**Decision (owner):** follow the recommendation. Dry run's contract is that it checks vault
+containment and writes nothing; turning it into full pre-flight validation is apply-service work, not
+a documentation change.
+
+**Applied:** the callout in `docs/architecture/weave-pipeline.md` is replaced with the decision, and
+the `dryRun` doc comment in `electron/vault-contract.ts` now states the actual behaviour instead of
+"validate operations but don't write anything". The roadmap still records the limitation.
+
+### C2 — window geometry is fixed and not persisted
+
+**Decision (owner):** follow the recommendation. Document current behaviour rather than invent a
+persistence rule.
+
+**Applied:** the callout in `docs/architecture/process-model.md` is replaced with the statement that
+the window opens at 1320 by 860 every time and geometry is not remembered.
+
+### C3 — crashpad creation by name is intended
+
+**Decision (owner):** follow the recommendation. The daily crashpad is the only creation path today;
+a "new crashpad" control is intended alongside rename and delete.
+
+**Applied:** the callout in `docs/guides/using-crashweaver.md` is replaced with the statement; the
+roadmap's known-gap entry and `docs/architecture/data-model.md` now cover creating a crashpad under a
+chosen name alongside rename and delete.
+
 ---
 
-## Other recorded questions with no decision yet
+## Other recorded observations with no decision yet
 
 These are not blockers; the documents describe current behaviour and the roadmap lists the ones that
 are limitations.
 
-- **Weaver dry run** — should it become real pre-flight validation, or stay containment-only and
-  documented? (callout in `docs/architecture/weave-pipeline.md`; also a roadmap known gap)
-- **Window geometry** — should the main window remember its size and position? (callout in
-  `docs/architecture/process-model.md`)
-- **Named crashpad creation** — the UI has no control for creating a crashpad by name;
-  `handleCreateCrashpad` exists but no renderer call site consumes it. (callout in
-  `docs/guides/using-crashweaver.md`)
 - **Crashpad undo/redo scope** — the stacks are session-wide, so an undo after switching crashpads
   replays against the wrong one. Recorded as a known gap; recommendation is a per-crashpad stack.
 - **`requireStrictConfirmationForExistingCards`** is never read by the renderer; the delete gate uses

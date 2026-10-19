@@ -355,9 +355,9 @@ vault-root checks. Dry run therefore validates one thing only: that each target 
 is absent, whose boundary block is malformed, or whose destination is already occupied, and equally for `delete-directory` targeting the vault root, because the root guard sits after the early
 return. The test `dryRun: does not modify any files` in `tests/electron/weaveApplyService.test.cjs` confirms only the no-write property.
 
-> Open question: `WeaveApplyOptions.dryRun` is documented as "validate operations but don't write anything", yet the handlers short-circuit before every substantive check. Should dry run become a
-> full pre-flight validation (existence, target text, destination, boundary integrity) without writing? Recommendation: keep containment-only behaviour as the documented contract unless a caller
-> needs pre-flight validation, in which case move the checks ahead of the `dryRun` return.
+Dry run's contract is containment-only. It is not a pre-flight validator, and the option's doc
+comment says so; turning it into full validation belongs with the apply-service work tracked as a
+known gap in [the roadmap](../roadmap.md).
 
 Production never uses dry run: `weave:apply-plan` passes `dryRun: false`, so the real checks always run before a write.
 

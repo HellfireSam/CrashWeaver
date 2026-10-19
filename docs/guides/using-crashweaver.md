@@ -88,9 +88,10 @@ card store; a deleted card's snapshot embeds the full card in the crashpad file 
    `Loaded daily crashpad <YYYY-MM-DD>.` The sidebar's **Vault** tab shows a crashpad count; the
    crashpad files themselves are listed in the Explorer tree and open from there.
 
-> Open question: the UI has no control for creating a *named* crashpad — the daily crashpad is the
-> only creation path wired up, although `useCrashpadActions.handleCreateCrashpad` exists. Add a
-> "New crashpad" control, or is the daily crashpad the only intended entry point?
+The daily crashpad is the only creation path wired up today. A control for creating a crashpad by
+name is intended alongside crashpad rename and delete: `useCrashpadActions.handleCreateCrashpad`
+exists, but no renderer view calls it yet. See [the roadmap](../roadmap.md).
+
 ### Add and edit cards
 
 The header shows the crashpad's name, path, **Created**/**Updated** timestamps, a card count and

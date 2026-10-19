@@ -6,6 +6,8 @@
 #   ./scripts/vscode-web.sh --restart    restart the server
 #   ./scripts/vscode-web.sh --stop       stop the server
 #   ./scripts/vscode-web.sh --status     report state, do not change anything
+#   ./scripts/vscode-web.sh --sidecar    print the Windows command that publishes
+#                                        this port without recreating the container
 #
 # Environment overrides:
 #   VSCODE_WEB_PORT   port to listen on             (default 8080)
@@ -34,7 +36,17 @@ LOG="/var/log/code-server.log"
 # Resolve the repo root from this script's location so it works from any cwd.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-DIR="${VSCODE_WEB_DIR:-$REPO_ROOT}"
+# The folder to open: explicit override wins; otherwise the git repo this
+# script lives in; otherwise the conventional checkout path. The last fallback
+# matters when the script is backed up outside the repo (e.g. on the mounted
+# volume), where REPO_ROOT would otherwise point at the mount, not the code.
+if [ -n "${VSCODE_WEB_DIR:-}" ]; then
+    DIR="$VSCODE_WEB_DIR"
+elif [ -d "$REPO_ROOT/.git" ]; then
+    DIR="$REPO_ROOT"
+else
+    DIR="/root/CrashWeaver"
+fi
 
 # ----------------------------------------------------------------------------
 # helpers
@@ -256,32 +268,73 @@ print_access_hint() {
   login password : ${pw:-(not set in $CONFIG_YAML)}
   listening on   : ${HOST}:${PORT}
 
-Reaching it from your machine
-------------------------------
-The socat container is an egress hole, not a port publisher — it can only let
-you make *outbound* connections. Binding code-server to 0.0.0.0:${PORT} already
-exposes it on the docker network, so you do NOT need socat to reach it.
+Reaching it from Windows (Docker Desktop)
+----------------------------------------
+Only ports published with '-p' are visible to Windows. THIS container publishes
+just 3080 (the DSH proxy), so don't recreate it. Instead run a throwaway sidecar
+that publishes ${PORT} and forwards to this container's bridge IP.
 
-  A) port published to the host (preferred) — recreate THIS container with
-       -p ${PORT}:${PORT}
-     and browse http://localhost:${PORT}/
-     (binding to 0.0.0.0 is what makes this work; no socat involved)
+Generate the exact command with:  ${0##*/} --sidecar
 
-  B) no published port — use a single-hole forward through the socat image.
-     If the socat container runs with a command like TCP-LISTEN:... it eats
-     its argv, so override the entrypoint to force one exact forward:
+  docker rm -f vscode-forward
+  docker run -d --rm --name vscode-forward \\
+    -p ${PORT}:${PORT} \\
+    --entrypoint /usr/bin/socat \\
+    alpine/socat \\
+    TCP-LISTEN:${PORT},fork,reuseaddr TCP:<bridge-ip>:${PORT}
 
-       docker run --rm -it --network container:3c651abf86f2 \\
-         --entrypoint /usr/bin/socat alpine-socat
+Then browse http://localhost:${PORT}/
 
-     (replace "alpine-socat" with the image name/tag of your socat container;
-      --network container:<this-container> shares the netns, so 127.0.0.1:${PORT}
-      here is reachable. Add a second listen port if you also want SSH access.)
-
-  NOTE: socat alone does not help if the port it listens on is itself not
-  published to the host — in that case you need host-level forwarding
-  (ssh -L localhost:${PORT}:localhost:${PORT} user@host, or docker -p).
+Notes:
+  * '-p' CANNOT be combined with '--network container:<id>' — Docker rejects it
+    ("conflicting options: port publishing and the container type network mode").
+    So the sidecar uses the default bridge and targets this container's eth0 IP.
+  * That means code-server must bind 0.0.0.0 (the default here), not 127.0.0.1.
+  * '--entrypoint /usr/bin/socat' is REQUIRED: the image's ENTRYPOINT+CMD yield
+    "socat socat", which socat rejects.
 EOF
+}
+
+# Print the exact `docker run` to paste on Windows to publish the port.
+#
+# IMPORTANT: `-p` cannot be combined with `--network container:<id>` — Docker
+# rejects it ("conflicting options: port publishing and the container type
+# network mode") because publishing a port requires the container to own its
+# netns. So the sidecar runs on the default bridge instead and forwards to this
+# container's bridge IP, which requires code-server to bind 0.0.0.0.
+do_sidecar() {
+    local self bridge_ip host_port
+    self="$(cat /etc/hostname 2>/dev/null)"
+    [ -n "$self" ] || die "cannot determine this container's id (/etc/hostname unreadable)"
+
+    bridge_ip="$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1)"
+    [ -n "$bridge_ip" ] || die "cannot determine this container's bridge IP"
+
+    # Host side port is independent of the container side port; override with
+    # SIDECAR_HOST_PORT if 8080 is already taken on the Windows host.
+    host_port="${SIDECAR_HOST_PORT:-$PORT}"
+
+    # The sidecar reaches the bridge IP, so a loopback-only bind will not work.
+    if [ "$HOST" = "127.0.0.1" ]; then
+        printf 'WARNING: code-server is bound to 127.0.0.1, which the sidecar cannot reach.\n'
+        printf '         Start it bound to all interfaces first:\n'
+        printf '           %s --restart\n\n' "${0##*/}"
+    fi
+
+    printf 'Run this on Windows (PowerShell):\n\n'
+    printf 'docker rm -f vscode-forward 2>$null\n'
+    printf 'docker run -d --rm --name vscode-forward `\n'
+    printf '  -p %s:%s `\n' "$host_port" "$PORT"
+    printf '  --entrypoint /usr/bin/socat `\n'
+    printf '  alpine/socat `\n'
+    printf '  TCP-LISTEN:%s,fork,reuseaddr TCP:%s:%s\n\n' "$PORT" "$bridge_ip" "$PORT"
+    printf 'Then open http://localhost:%s/\n\n' "$host_port"
+    if [ "$host_port" != "$PORT" ]; then
+        printf 'NOTE: host port %s -> container port %s.\n\n' "$host_port" "$PORT"
+    fi
+    printf 'NOTE: backtick is PowerShell line continuation; in CMD use ^ instead.\n'
+    printf 'NOTE: the sidecar targets %s:%s (this container on the bridge network),\n' "$bridge_ip" "$PORT"
+    printf '      so it does NOT use --network container: — Docker forbids -p there.\n'
 }
 
 # ----------------------------------------------------------------------------
@@ -293,6 +346,7 @@ case "${1:-}" in
     --stop|stop)      ACTION="stop" ;;
     --restart|restart) ACTION="restart" ;;
     --status|status)  ACTION="status" ;;
+    --sidecar)        ACTION="sidecar" ;;
     -h|--help|help)
         sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
         exit 0
@@ -301,8 +355,9 @@ case "${1:-}" in
 esac
 
 case "$ACTION" in
-    status) do_status ;;
-    stop)   do_stop ;;
+    status)  do_status ;;
+    stop)    do_stop ;;
     restart) do_stop; echo; do_start ;;
-    start)  do_start ;;
+    start)   do_start ;;
+    sidecar) do_sidecar ;;
 esac
