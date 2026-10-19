@@ -348,17 +348,17 @@ The grilling frontier is otherwise **empty**. In order:
        entries are documented as open rather than guessed, and they do not block closing the ticket.
      - Gate on the committed revision: typecheck 0, build 0, 178/178 electron + 11/11 renderer.
        Documentation-only change.
-   - ~~#5 lint + format~~ — **DONE**: `93f8a1e` (ESLint 10 flat config, Prettier, and the
-     violations cleared) · `af377e7` (one formatting-only commit, listed in
-     `.git-blame-ignore-revs`) · `1bbe195` (docs + blame-ignore entry). ESLint exits 0 with 28
+   - ~~#5 lint + format~~ — **DONE**: `0a9111a` (ESLint 10 flat config, Prettier, and the
+     violations cleared) · `573b302` (one formatting-only commit, listed in
+     `.git-blame-ignore-revs`) · `7521af2` (docs + blame-ignore entry). ESLint exits 0 with 28
      recorded warnings. Typed async rules resolve against the right tsconfig per file group; a
      deliberate floating promise fails lint in both `src/` and `electron/`.
-   - ~~#7 layout~~ — **DONE** in `ab8c6c9`: fixtures under `fixtures/` (`mock-vault/` retained as the
+   - ~~#7 layout~~ — **DONE** in `8121683`: fixtures under `fixtures/` (`mock-vault/` retained as the
      live vault, `mock-vault_sample/` retained per the owner decision B6), template gallery deleted,
      empty `.vscode/settings.json` deleted, root `README.md` folded into `docs/README.md` (owner
      decision in this session: `AGENTS.md` and `CONTEXT.md` stay at the root). Every reference
      updated in the same commit.
-   - ~~#8 gate + CI + governance~~ — **DONE** in `a1e1bfb`: `npm run gate` (npm ci → format check →
+   - ~~#8 gate + CI + governance~~ — **DONE** in `b6dbcb5`: `npm run gate` (npm ci → format check →
      lint → typecheck → tests → build) and `npm run checks` (same, no reinstall); GitHub Actions with
      the full gate on Linux and typecheck+tests on Windows; Node 22 pinned via `.nvmrc` + `engines`;
      PR template asking for the gate command and result; Conventional Commits recorded in
@@ -403,7 +403,7 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | B3 | Boundary markers remain markdown comments; authors see them in edit mode; a visibility toggle is a future convenience. |
 | B4 | Card types stay free-form, with an in-app list of the types used in the selected vault planned. |
 | B5 | The legacy `fill_in_the_blanks` shape is **removed**; `qa_pairs` is the only shape. Implemented in `electron/cardStoreService.ts`. |
-| B6 | `mock-vault_sample/` is a deliberately retained pristine copy for user testing, not a duplicate to delete. Ticket #7 corrected. |
+| B6 | `mock-vault_sample/` is a deliberately retained working copy for user testing, not a duplicate to delete. Ticket #7 corrected; #7's move also found it is not byte-identical to `mock-vault/` (four files and `index.json` differ), so the docs call it a slightly older copy. |
 | B7 | The parser/mutator whitespace mismatch stays a documented known gap. |
 | B8 | Familiarity and next review feed a planned review-scheduling function using standard spaced-repetition algorithms. |
 | B2 | The `warning` severity stays error-only in practice; a non-blocking tier is tracked as a gap in the roadmap. |

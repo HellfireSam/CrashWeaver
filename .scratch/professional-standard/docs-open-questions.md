@@ -73,7 +73,7 @@ intended in-app used-types list; the roadmap records it as planned work.
 `electron/cardStoreService.ts`; the legacy migration is removed from `card-schema.md`,
 `card-insert-templates.md` and `data-model.md`. The full gate was run after the change.
 
-### B6 — `mock-vault_sample/` is a retained pristine copy
+### B6 — `mock-vault_sample/` is a retained working copy
 
 **Decision (owner):** `mock-vault_sample/` was created as a copy users can open and test against
 without ruining the original `mock-vault/` image. It is deliberately retained; only the template
@@ -81,7 +81,9 @@ gallery is furniture to remove.
 
 **Applied:** both documents that describe the sample directories now say this; ticket #7's scope was
 corrected (it previously said the duplicate sample vault would be deleted) and a comment records the
-change.
+change. Ticket #7 then moved both directories under `fixtures/` and found the copy is not
+byte-identical to the original (four files and `index.json` differ), so the current documentation
+calls it a "slightly older copy" rather than a pristine one.
 
 ### B7 — parser/mutator whitespace mismatch stays a documented gap
 
