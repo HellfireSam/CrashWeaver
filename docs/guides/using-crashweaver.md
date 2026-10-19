@@ -232,9 +232,10 @@ Everywhere else they are read-only: the card detail **Meta data** tab shows **Fa
 lines**, the **Card file** path and the number of **Linked references**; in the crashpad's
 **Metadata** preview tab the values are the ones currently in the editor.
 
-> Open question: familiarity is stored as a plain number with no range or scale enforced by the
-> editor, and nothing in the UI updates it from review. Constrain the field, or leave it as loose
-> scheduling state until the review loop exists?
+Familiarity and next review are the inputs to a planned review-scheduling function: the app will use
+them with a spaced-repetition algorithm to compute the next recommended review time. Nothing in the
+UI updates them from a review yet.
+
 ## 9. Errors and edge states
 
 The status bar below the editor carries status and error messages; the crashpad editor repeats them inline.

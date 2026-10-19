@@ -74,13 +74,10 @@ remainder. `electron/utils/paths.ts` exports only `toPosixPath`, a separator nor
 not a containment guard. The renderer adds `isPathInsideVault` in `src/lib/editorPaths.ts`,
 a string check that rejects drive-letter and leading `../` paths before the UI sees them.
 
-> Open question: the card store is configurable to any directory (`setCardStorePath` in
-> `settingsService` stores `path.resolve(cardStorePath)` with no vault check), so card
-> JSON can live outside the opened vault while the glossary says the app reads and writes
-> inside the vault and never outside. Should the card store be constrained to the vault,
-> or is it an intentional second storage root? Recommendation: treat it as an explicitly
-> configured second root and scope the glossary claim to notes; if that is wrong, add a
-> containment check in `setCardStorePath`.
+The card store is an explicitly configurable second storage root. `setCardStorePath` in
+`settingsService` resolves any directory it is given, so card JSON can live outside the opened
+vault; the vault rule is scoped to notes and boundaries, and the card store defaults to
+`<vault>/.crashweaver/cards`.
 
 ## Notes
 
@@ -136,9 +133,8 @@ returning `null` on `ENOENT` and rethrowing other fs errors; `cardDocumentExists
 filename rather than the file body — `coerceCardDocument(uid, …)` always sets `uid` to the
 value it is given — skips an unreadable file with a `console.warn`, and yields `[]` for a
 missing store directory. `coerceCardDocument` defaults missing `type`, `metadata`,
-`memory_tricks` and `referenced_in`, merges the legacy `fill_in_the_blanks` array into
-`qa_pairs`, drops reference entries without a `note_path`, clamps line numbers to at least
-`1`, and falls back to a supplied block of text when `raw_content` is blank.
+`memory_tricks` and `referenced_in`, drops reference entries without a `note_path`, clamps line
+numbers to at least `1`, and falls back to a supplied block of text when `raw_content` is blank.
 
 Writing is `writeCardDocument`, which validates the UID, ensures the directory exists,
 coerces the document and writes it with `writeJsonAtomically`. `createCardDocument`
@@ -252,12 +248,11 @@ The daily crashpad naming rule lives in the renderer: `useDailyCrashpadActions` 
 the file name (`.crashweaver/crashpads/<YYYY-MM-DD>.crashpad.json`), opening the existing one
 if `openCrashpad` returns a document and otherwise calling `createCrashpad` with that stamp.
 
-> Open question: there is no crashpad-level rename or delete entry point. `writeCrashpad`
-> derives the file path from `document.id`, so changing the ID would write a second file and
-> leave the first in place, and no IPC channel removes a crashpad file. Should renaming a
-> crashpad move its file and carry its `cards`/`deletedCards` across, and should deletion
-> remove the file? Recommendation: implement rename and delete in `crashpadService` with an
-> explicit move and unlink plus matching IPC channels, rather than relying on `writeCrashpad`.
+Crashpads have no rename or delete entry point today. `writeCrashpad` derives the file path from
+`document.id`, so changing the id would write a second file and leave the first in place, and no
+IPC channel removes a crashpad file. Renaming a crashpad — moving its file and carrying its
+`cards` and `deletedCards` across — and deleting one are intended for the final application; both
+are recorded as a known gap in [the roadmap](../roadmap.md).
 
 ## Diagnostics
 

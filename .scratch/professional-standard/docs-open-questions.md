@@ -1,191 +1,163 @@
-# Documentation rewrite: open questions
+# Documentation rewrite: open questions and owner decisions
 
-Intent gaps found while rewriting the documentation from scratch (issue #3). The rewrite is
-grounded in code, so every claim about **mechanism** is verifiable. This file records the
-places where a **product rule or intention** could not be derived from the code, and therefore
-has to come from the owner rather than from a guess.
+The documentation was rewritten from scratch in issue #3. Because the rewrite is grounded in code,
+every claim about **mechanism** is verifiable; this file records the places where a **product rule or
+intention** could not be derived from the code. Each item was put to the owner with a recommendation.
 
-Rules applied while collecting these:
-
-- No normative claim ships unverified. Where an answer is missing, the document either omits
-  the claim or carries an `> Open question:` callout.
-- Nothing here blocks the structural rewrite. Unanswered items stay open and visible rather
-  than being silently invented.
-
-Status: **awaiting owner answers**. Split into decisions that change wording (A) and items
-recommended for confirmation (B).
+Status: **the owner answered on 2026-10-11.** Ten items are resolved and reflected in the documents;
+one was not answered and one asked for an explanation, and both are still marked in place with
+`> Open question:`. The remaining recorded questions have no decision yet and are listed at the end.
 
 ---
 
-## A. Decisions needed
+## Resolved decisions
 
-### A1. Does the vault-boundary rule cover the card store?
+### A1 — the card store is a configurable second storage root
 
-`CONTEXT.md` defines the Vault as "the folder the user opens as their knowledge base. The app
-reads and writes inside it and never outside." But the card store is configurable to any
-directory: `electron/settingsService.ts`'s `setCardStorePath` stores `path.resolve(cardStorePath)`
-with no vault check, and settings plus the API key live under Electron's `userData`, outside the
-vault. Does the rule cover the card store, or only notes and boundaries?
+**Decision (owner):** follow the recommendation. The vault rule covers notes and their boundaries;
+the card store defaults inside the vault but can be configured elsewhere, and the app's own settings
+file lives outside it.
 
-**Recommendation.** Keep the configurable card store, and scope the glossary claim to note
-content and boundaries: the card store defaults to `<vault>/.crashweaver/cards` but is an
-explicitly configurable second storage root.
+**Applied:** `CONTEXT.md`'s Vault definition is scoped; the callouts in
+`docs/architecture/overview.md` and `docs/architecture/data-model.md` are replaced with factual
+statements.
 
-**Affects.** `CONTEXT.md` (Vault), `docs/architecture/overview.md`, `docs/architecture/data-model.md`.
+### A2 — request logs and the embedding cache are outside the approval gate
 
-### A2. Are Weaver request logs outside the approval gate?
+**Decision (owner):** follow the recommendation. Weaver request logs and the embedding cache are
+Weaver-owned diagnostics and caches; the gate's guarantee covers notes, boundaries and card
+payloads.
 
-`CONTEXT.md` says of the approval gate that "nothing is written before it", but planning writes on
-disk: Weaver request logs under `<vault>/.crashweaver/weaver-request-logs` and an embedding cache at
-`<vault>/.crashweaver/embeddings.json`. Are those outside the gate's scope?
+**Applied:** `CONTEXT.md`'s Approval gate definition is scoped; the callout in
+`docs/architecture/overview.md` is replaced with a factual statement.
 
-**Recommendation.** Treat request logs and the embedding cache as Weaver-owned diagnostics, and scope
-the gate's claim to notes, boundaries and card payloads.
+### A3 — the roadmap is indicative, not ground truth
 
-**Affects.** `CONTEXT.md` (Approval gate), `docs/architecture/overview.md`, `docs/architecture/weave-pipeline.md`.
+**Decision (owner):** the roadmap should act as an indicative note of the development steps taken,
+and must not be treated as ground truth.
 
-### A3. Is the roadmap right?
+**Applied:** `docs/roadmap.md` is reframed: the introduction says the code is the only authority and
+wins where the two disagree, "Where the project is" becomes "Development steps so far" (steps
+"reached" rather than verified completions), and the future work is under "Planned next".
 
-The only current status record was `Project Timeline.md`, which contradicts itself (Stage 6
-appears as both complete and planned). `docs/roadmap.md` is therefore derived from the rework
-spec that scoped this rewrite, not from the old timeline: Stages 1-6 complete, Stage 7
-card-level scheduling and review, Stage 8 hardening and release preparation.
+### B1 — crashpad rename and delete are known gaps for the final application
 
-**Recommendation.** Confirm or correct that framing, including whether later stages keep their
-names.
+**Decision (owner):** record as a known gap; the final application should be able to perform both.
 
-**Affects.** `docs/roadmap.md`.
+**Applied:** the callout in `docs/architecture/data-model.md` is replaced with the statement and a
+pointer to the roadmap; the roadmap's known-gap entry now says the final application should support
+a rename that carries the crashpad's contents and a delete that removes the file.
 
----
+### B3 — boundary markers stay markdown comments
 
-## B. Recommended for confirmation
+**Decision (owner):** the boundary markers should remain markdown comments. A view that toggles
+their visibility would be a nice future option; users are expected to see them in edit mode so they
+can insert a pair where necessary.
 
-These have a clear recommendation, which is what the documents currently state. Confirm, or say
-which to change.
+**Applied:** the callout in `docs/reference/boundary-format.md` is replaced with the decision; a
+"boundary-marker visibility toggle" item is added to the roadmap's planned work.
 
-### B1. Crashpads have no rename or delete
+### B4 — card types stay free-form
 
-`electron/crashpadService.ts`'s `writeCrashpad` derives the file path from `document.id`, so
-changing the id would write a second file and leave the first, and no IPC channel removes a
-crashpad file. **Recommendation:** record as a known gap; the app does not offer the capability
-today and the docs do not imply it does.
+**Decision (owner):** keep `type` free-form, and retain a list of the types currently used in the
+selected vault inside the application so the user can reuse them.
 
-**Affects.** `docs/architecture/data-model.md`, `docs/roadmap.md`.
+**Applied:** `docs/reference/card-schema.md` and `docs/reference/card-insert-templates.md` state the
+intended in-app used-types list; the roadmap records it as planned work.
 
-### B2. The `warning` diagnostic severity is never produced
+### B5 — the `fill_in_the_blanks` shape is removed
 
-`CardParseDiagnostic.severity` is declared `'warning' | 'error'`, but no producer emits
-`'warning'`, and the duplicate-UID case reuses the `mismatched-boundary-uid` error code.
-**Recommendation:** document the type as error-only in practice and track a non-blocking tier as
-a gap.
+**Decision (owner):** remove the legacy shape; `qa_pairs` is the only shape.
 
-**Affects.** `docs/reference/boundary-format.md`.
+**Applied:** `toLegacyFillQaPairs` and its call are removed from
+`electron/cardStoreService.ts`; the legacy migration is removed from `card-schema.md`,
+`card-insert-templates.md` and `data-model.md`. The full gate was run after the change.
 
-### B3. Are boundary markers visible syntax or author-invisible?
+### B6 — `mock-vault_sample/` is a retained pristine copy
 
-The `%%...%%` marker form is not interpreted anywhere: no comment stripping, no renderer
-awareness. **Recommendation:** document current behaviour — markers are plain text, visible in
-the editor and any markdown preview — and leave invisibility as a possible future change.
+**Decision (owner):** `mock-vault_sample/` was created as a copy users can open and test against
+without ruining the original `mock-vault/` image. It is deliberately retained; only the template
+gallery is furniture to remove.
 
-**Affects.** `docs/reference/boundary-format.md`, `docs/guides/using-crashweaver.md`.
+**Applied:** both documents that describe the sample directories now say this; ticket #7's scope was
+corrected (it previously said the duplicate sample vault would be deleted) and a comment records the
+change.
 
-### B4. Should `type` become a controlled vocabulary?
+### B7 — parser/mutator whitespace mismatch stays a documented gap
 
-No code enumerates card types: `CardDocument.type` is `string[]`, the crashpad labels it
-"Tags (comma-separated)", and tags steer Weaver retrieval.
-**Recommendation:** keep `type` free-form and do not publish a taxonomy.
+**Decision (owner):** follow the recommendation — document current behaviour as a known gap and
+track tightening as a code change.
 
-**Affects.** `docs/reference/card-schema.md`, `docs/reference/card-insert-templates.md`.
+**Applied:** already stated in `docs/reference/boundary-format.md` and the roadmap's known gaps. No
+code change.
 
-### B5. Is the legacy `fill_in_the_blanks` shape still intended input?
+### B8 — familiarity and next review feed a future review scheduler
 
-`coerceCardDocument` folds a legacy `{ sentence, answers }` shape into `qa_pairs`.
-**Recommendation:** document it as accepted legacy input only, and keep the current `qa_pairs`
-shape canonical.
+**Decision (owner):** this is a future function in which users review notes based on their
+familiarity and popular knowledge-review algorithms, to calculate the next recommended review time.
 
-**Affects.** `docs/reference/card-schema.md`.
-
-### B6. `mock-vault/` and `mock-vault_sample/` are manual sample vaults
-
-No code, test or tooling references either directory. **Recommendation:** document them as
-checked-in sample vaults for manual exercise only. (`mock-vault_sample/` is to be deleted and
-`mock-vault/` is to move under `fixtures/` by a separate layout ticket.)
-
-**Affects.** `docs/guides/development-setup.md`, `docs/architecture/overview.md`.
-
-### B7. The parser and the boundary mutators disagree about marker whitespace
-
-`electron/cardParser.ts`'s `START_BOUNDARY_PATTERN` accepts `\s+` between `%%CW_CARD_START` and
-`uid:`, so `%%CW_CARD_START  uid:x%%` parses. The mutators in
-`electron/services/cardBoundaryService.ts` compare against the canonical single-spaced marker
-with strict equality, so such a line is never stripped or renamed.
-**Recommendation:** document current behaviour as a known gap (the roadmap already lists it) and
-track tightening the parser or normalising the mutator matching as a code change.
-
-**Affects.** `docs/reference/boundary-format.md`, `docs/roadmap.md`.
-
-### B8. `familiarity` and `next_review` have no declared scale or format
-
-The store enforces no bound on `CardMetadata.familiarity` (any number passes, including `NaN`)
-and no format on `next_review` (any string passes; only the crashpad editor placeholder says
-"ISO date or blank"). **Recommendation:** state only what the code stores, and declare the
-intended range and ISO-8601 format when Stage 7 specifies the review loop.
-
-**Affects.** `docs/reference/card-schema.md`, `docs/roadmap.md`.
-
-### B9. Unknown card JSON keys are dropped silently
-
-`coerceCardDocument` returns a fresh object literal, so unknown keys in a hand-edited card file
-are discarded on read and on write. **Recommendation:** keep the drop — it clears stale legacy
-keys — and treat any new field as requiring a migration path rather than relying on passthrough.
-
-**Affects.** `docs/reference/card-schema.md`.
+**Applied:** the callouts in `docs/reference/card-schema.md` and `docs/guides/using-crashweaver.md`
+are replaced with the intended function; the roadmap's "Card-level scheduling and review" entry
+describes it.
 
 ---
 
-## C. Noted and documented as current behaviour
+## Still open
 
-Observations that came out of the rewrite and the adversarial verification. Each is a real fact about
-the code, recorded here rather than turned into an invented rule. The recommendation for all of them
-is to keep documenting current behaviour; none needs a product decision before this ticket closes.
-The two that are missing capability rather than description are listed in the roadmap's known gaps.
+### B2 — is the `warning` diagnostic severity meant to exist? (not answered)
 
-- **Directory rename and move rewrite no card references or note paths**, while note rename and move
-  do (`applyRenameDirectory` versus `applyRenameNote`).
-- **`weaveTraceCompactor` has no production caller** — the graph truncates the trace inline and only
-  the module's own test uses the compactor.
-- **The `safety-error` category is declared but never raised**; vault-escape failures surface as
-  ordinary validation errors.
-- **The request-logs directory setter has no UI caller** — the bridge exposes it, Settings does not.
-- **A comment in `buildWeaveContextSnapshot` anticipates embedding full note content on tool reads**,
-  but nothing updates the embedding cache after the initial title/tag proxy.
-- **Window geometry is not persisted**; `createMainWindow` uses fixed literals.
-- **`webPreferences` sets only `preload`, `contextIsolation` and `nodeIntegration`** — no `sandbox`
-  or `webSecurity` option is set. (Security review is out of scope for this rework.)
-- **Some contract types never cross the bridge** (`WeaveModelProvider`, `WeaverKeyStatus`,
-  `CardSyncSummary`), and `getWeaverKeyStatus` has no channel; `WeaverSettings.configured` is the
-  renderer-facing API-key surface.
-- **The settings split is per-Vault for the card store and image directories, global for crashpad
-  delete preferences and Weaver settings** — a code fact, now stated in the process model.
-- **Editor font size, vault alias and tab/view state are in memory only** and do not survive a
+`CardParseDiagnostic.severity` is declared `'warning' | 'error'`, but no producer emits `'warning'`,
+and duplicate-UID pairs reuse the `mismatched-boundary-uid` error code. Should a non-blocking tier
+exist, with its own code for duplicates? **Recommendation:** document the type as error-only in
+practice and track a non-blocking tier as a gap. The callout remains in
+`docs/reference/boundary-format.md`.
+
+### B9 — should unknown card JSON keys be preserved? (explanation requested)
+
+The owner asked what this means. In plain terms:
+
+`coerceCardDocument` in `electron/cardStoreService.ts` rebuilds a card from the fields it knows. Any
+other key in a card's JSON file is **discarded when the card is read**, and therefore gone from the
+next write. Today that is invisible in normal use — the app writes only known fields — but it means
+that if someone hand-edits a card file to add a field the app does not know about, that field
+silently disappears the next time the card is saved. It is lossy for hand-edits and for any future
+field that ships before a migration path.
+
+**Recommendation:** keep dropping unknown keys, because it also clears stale keys, and treat any new
+field as needing a migration path rather than relying on passthrough. The alternative is to preserve
+unrecognised keys on write, which keeps hand-edits intact but lets malformed or obsolete data
+survive indefinitely.
+
+The callout remains in `docs/reference/card-schema.md` until this is decided.
+
+---
+
+## Other recorded questions with no decision yet
+
+These are not blockers; the documents describe current behaviour and the roadmap lists the ones that
+are limitations.
+
+- **Weaver dry run** — should it become real pre-flight validation, or stay containment-only and
+  documented? (callout in `docs/architecture/weave-pipeline.md`; also a roadmap known gap)
+- **Window geometry** — should the main window remember its size and position? (callout in
+  `docs/architecture/process-model.md`)
+- **Named crashpad creation** — the UI has no control for creating a crashpad by name;
+  `handleCreateCrashpad` exists but no renderer call site consumes it. (callout in
+  `docs/guides/using-crashweaver.md`)
+- **Crashpad undo/redo scope** — the stacks are session-wide, so an undo after switching crashpads
+  replays against the wrong one. Recorded as a known gap; recommendation is a per-crashpad stack.
+- **`requireStrictConfirmationForExistingCards`** is never read by the renderer; the delete gate uses
+  the new-cards preference for every card.
+- **Default editor draft** pre-fills `Inbox/Stage-2-scratch.md` and `# Stage 2 Scratch Note`, which
+  reads as leftover scratch content rather than a blank note.
+- **Vault alias, editor font size, tabs and view state are in memory only** and do not survive a
   restart.
-- **No UI creates a named crashpad.** `useCrashpadActions` exposes `handleCreateCrashpad`, but no
-  renderer call site consumes it; the only creation path is the daily crashpad button.
-- **Crashpad undo and redo are not scoped to a crashpad.** The stacks live in `UIContext` and are
-  cleared only on vault load and on crashpad creation, so an undo after switching crashpads replays
-  entries against the currently active one. Listed as a known gap in the roadmap.
-- **`requireStrictConfirmationForExistingCards` is never read by the renderer.** The delete gate uses
-  `requireConfirmationForNewCards` for every card, so the stricter preference is inert.
-- **The empty editor draft is pre-filled** with the path `Inbox/Stage-2-scratch.md` and the body
-  `# Stage 2 Scratch Note`, which reads as leftover scratch content rather than a blank note.
-- **`"No operations selected to apply."` is unreachable from the panel**, because the apply control is
-  disabled when nothing is selected; it is defensive only.
-
----
-
-## Resolved without the owner
-
-- **Index-level `ReviewMetadata`.** `docs/architecture/data-model.md` flagged that scheduling
-  state exists both in `CardMetadata` (card file, read by the UI) and in each index entry's
-  `ReviewMetadata` (never read). This was already decided: the note-level copy is **kept
-  deliberately** for the planned review loop. The documents state it as reserved, not as a defect.
+- **`"No operations selected to apply."`** is unreachable from the panel; it is defensive only.
+- **`weaveTraceCompactor`** has no production caller; the graph truncates the trace inline.
+- **`safety-error`** is declared but never raised; vault-escape failures surface as ordinary
+  validation errors.
+- **The request-logs directory setter** has no UI caller.
+- **Some contract types never cross the bridge** (`WeaveModelProvider`, `WeaverKeyStatus`,
+  `CardSyncSummary`); `WeaverSettings.configured` is the renderer-facing API-key surface.
+- **Settings split** — per-Vault for the card store and image directories, global for crashpad delete
+  preferences and Weaver settings.

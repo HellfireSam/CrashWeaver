@@ -370,3 +370,26 @@ changes. It does **not** survive loss of this workspace or a fresh clone elsewhe
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
 the decisions are no longer only local. The six rework commits so far are **not pushed**: `main` is
 ahead of `origin/main` and no rework commit has been pushed.
+
+## 9. Post-implementation owner decisions (2026-10-11)
+
+After #3 closed, the owner answered the rewrite's open questions. The full record with what changed
+for each lives in `.scratch/professional-standard/docs-open-questions.md`; the decisions in brief:
+
+| Item | Decision |
+| --- | --- |
+| A1 | The card store is an explicitly configurable second storage root; the vault rule covers notes and boundaries only. `CONTEXT.md` scoped accordingly. |
+| A2 | Weaver request logs and the embedding cache are Weaver-owned diagnostics, outside the approval gate; the gate covers notes, boundaries and card payloads. `CONTEXT.md` scoped accordingly. |
+| A3 | The roadmap is **indicative**, not ground truth: it records the development steps, and the code wins where they disagree. Reframed. |
+| B1 | Crashpad rename and delete are known gaps that the final application should support. |
+| B3 | Boundary markers remain markdown comments; authors see them in edit mode; a visibility toggle is a future convenience. |
+| B4 | Card types stay free-form, with an in-app list of the types used in the selected vault planned. |
+| B5 | The legacy `fill_in_the_blanks` shape is **removed**; `qa_pairs` is the only shape. Implemented in `electron/cardStoreService.ts`. |
+| B6 | `mock-vault_sample/` is a deliberately retained pristine copy for user testing, not a duplicate to delete. Ticket #7 corrected. |
+| B7 | The parser/mutator whitespace mismatch stays a documented known gap. |
+| B8 | Familiarity and next review feed a planned review-scheduling function using standard spaced-repetition algorithms. |
+| B2 | **Not answered** — the unused `warning` severity remains an open callout. |
+| B9 | **Explanation requested** — unknown-key dropping; the plain-language explanation and recommendation are in the open-questions record, pending a decision. |
+
+Everything else is unchanged: the closed tickets, the frontier (#4, #5, #7), and the unpushed state of
+`main`.

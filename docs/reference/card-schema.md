@@ -55,7 +55,7 @@ the field is absent or wrongly typed on disk.
 | `metadata.next_review` | `string \| null` | yes | The date the card becomes due for review. | `null`. Any string is accepted verbatim — the store never parses, validates or reformats it, and an empty string stays empty on disk. The editor turns a blank input into `null`. |
 | `memory_tricks` | `CardMemoryTricks` | yes | The card's mnemonic aids. | The defaults below; a non-object is replaced wholesale. |
 | `memory_tricks.memory_technique` | `string` | yes | One technique phrase or keyword for the card. | `''`. Non-strings become `''`. |
-| `memory_tricks.qa_pairs` | `CardQaPair[]` | yes | Question and answer prompts. The legacy `fill_in_the_blanks` migration described below folds a `{ sentence, answers }` entry in here, with `sentence` becoming the question. | `[]`. A non-array becomes `[]`; entries that are not objects are dropped; `q` and `a` are forced to strings, and an entry with both sides empty is dropped. |
+| `memory_tricks.qa_pairs` | `CardQaPair[]` | yes | Question and answer prompts. | `[]`. A non-array becomes `[]`; entries that are not objects are dropped; `q` and `a` are forced to strings, and an entry with both sides empty is dropped. |
 | `memory_tricks.qa_pairs[].q` | `string` | yes | A prompt. | `''`. |
 | `memory_tricks.qa_pairs[].a` | `string` | yes | The answer to the prompt. | `''`. |
 | `referenced_in` | `CardNoteReference[]` | yes | The card's References: every note span where the card appears. A card holds many. | `[]`. A non-array becomes `[]`. |
@@ -63,19 +63,10 @@ the field is absent or wrongly typed on disk.
 | `referenced_in[].start_line` | `number` | yes | 1-based line number of the `%%CW_CARD_START%%` marker. | `1`. A number is truncated and clamped to at least 1, except a non-finite one, which passes through unchanged; a non-number becomes 1. A JSON file on disk cannot carry a non-finite number. |
 | `referenced_in[].end_line` | `number` | yes | 1-based line number of the matching `%%CW_CARD_END%%` marker. | `1`, normalised the same way as `start_line`. |
 
-One legacy field is read but never written. `memory_tricks.fill_in_the_blanks` is not part of
-`CardMemoryTricks`; `toLegacyFillQaPairs` in `electron/cardStoreService.ts` accepts an array of
-`{ sentence, answers }` objects and appends them to `qa_pairs` after the native pairs, mapping
-`sentence` to `q` and the `answers` array joined with newlines to `a`. The next write of that card
-drops the legacy key.
-
-> Open question: `familiarity` has no documented scale. Is it an unbounded counter or a bounded
-> level? Recommendation: state the intended range in scheduling documentation, since the store
-> enforces no bound.
-
-> Open question: `next_review` has no format contract. The editor placeholder says "ISO date or
-> blank", but the store accepts any string. Recommendation: declare an ISO-8601 date format when
-> the review loop is specified, and validate it then.
+`familiarity` and `next_review` are the inputs to a planned review-scheduling function: the user
+reviews notes, and the app uses each card's familiarity together with a standard spaced-repetition
+algorithm to compute the next recommended review time. The store enforces no range or format today;
+the field meanings above are the contract until that function lands.
 
 ## Parsed and storage shapes around the card
 
@@ -194,12 +185,12 @@ removes the file and reports `false` when it was already absent.
 
 Unknown and missing fields. `coerceCardDocument` constructs a new object from the known fields, so
 unknown keys — top-level, inside `metadata`, or inside `memory_tricks` — are dropped on both read
-and write, including a legacy `memory_tricks.fill_in_the_blanks` whose contents survive only by
-being migrated into `qa_pairs`. A read can therefore return a document that differs from the file
-on disk, and the next write persists the reduced form.
+and write. A read can therefore return a document that differs from the file on disk, and the next
+write persists the reduced form.
 
 > Open question: dropping unknown fields is silent and lossy for hand-edited card JSON. Should the
-> store preserve unrecognised keys or keep dropping them? Recommendation: keep the drop, which also clears stale legacy keys, and treat new fields as needing a migration.
+> store preserve unrecognised keys or keep dropping them? Recommendation: keep the drop, which also
+> clears stale keys, and treat new fields as needing a migration path.
 
 ## Field-level compatibility rules the code enforces
 

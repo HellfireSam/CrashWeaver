@@ -127,12 +127,11 @@ inclusive line numbers; for example `electron/weaver/weaveContextService.ts` sli
 - **Inline mentions.** A marker embedded mid-line is ignored silently. If the trimmed line *begins*
   with the marker text, the invalid-marker diagnostic fires instead, so `%%CW_CARD_START uid:x%% extra`
   is reported rather than accepted.
-- **Marker visibility.** No code strips, hides or styles markers before the text is displayed, and the
-  `%%` delimiters have no meaning of their own anywhere in the codebase.
-
-> Open question: nothing in the codebase treats the `%%` delimiters as comments, and no editor view
-> hides marker lines. Should markers be author-invisible syntax in a rendered note, or are they
-> intentionally plain text that the user sees and edits?
+- **Marker visibility.** The marker form is a markdown comment, and it is intended to stay one. No
+  code strips, hides or styles markers before the text is displayed, so they are plain text in the
+  editor and in the rendered preview. Authors are expected to see them in edit mode so they can
+  place a pair where it belongs; a future view mode may toggle their visibility (see
+  [the roadmap](../roadmap.md)).
 
 ## Mutation operations
 

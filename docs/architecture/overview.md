@@ -118,13 +118,9 @@ A crashpad file is an authoring document, not a second card store. `CrashpadDocu
 the snapshot so the card can be restored, and `electron/vaultService.ts`'s `renameCard` keeps
 note boundaries and crashpad entries pointing at the same UID.
 
-> Open question: the glossary says the app reads and writes inside the vault and never outside
-> it, yet the card store can be pointed at any directory the user picks
-> (`electron/settingsService.ts`'s `setCardStorePath` resolves an arbitrary path, and settings
-> and the API key live in `userData`). Should the card store be constrained to the vault, or is
-> the glossary statement about note content only? Recommendation: document the card store as an
-> explicitly configurable surface that defaults inside the vault, and treat only notes and
-> boundaries as vault-bound.
+The glossary's vault rule is scoped to notes and boundaries. The card store defaults to
+`<vault>/.crashweaver/cards` but can be pointed at any directory, and the app's own settings and
+API key live under Electron's `userData`, outside the vault.
 
 [Data model](./data-model.md) covers the schemas, the boundary grammar, references and
 diagnostics in full; [Boundary format](../reference/boundary-format.md) is the format
@@ -182,10 +178,9 @@ The apply service is the only executor of a plan's operations, which is what mak
 real gate: the renderer chooses which operations to send, and `applyWeaveOperations` is the only
 place where a plan becomes writes to notes, boundaries or card documents.
 
-> Open question: the glossary states that nothing is written before the approval gate, but planning
-> does write on disk — Weaver request logs and an embedding cache under `.crashweaver/`. Are those
-> intended to be outside the gate's scope? Recommendation: treat them as Weaver-owned diagnostics
-> and caches, and keep the gate's claim scoped to notes, boundaries and card payloads.
+Planning is not entirely write-free on disk: it can write Weaver request logs and an embedding
+cache under `.crashweaver/`. Those are Weaver-owned diagnostics and caches, outside the approval
+gate's guarantee, which covers notes, boundaries and card payloads.
 
 [The weave pipeline](./weave-pipeline.md) covers retrieval and budgets, the ReAct loop, plan
 schema validation, the diff UI and per-kind apply semantics in full.
@@ -200,7 +195,7 @@ schema validation, the diff UI and per-kind apply semantics in full.
 | `tests/electron/` | `node:test` suites for the main-process services and the Weaver, loaded from the compiled `dist-electron/` output |
 | `dist/` | Vite's renderer build output, loaded by the window in production (git-ignored) |
 | `dist-electron/` | `tsc`'s CommonJS build of `electron/`, referenced by `package.json`'s `main` (git-ignored) |
-| `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | Checked-in sample material for exercising the app manually: `mock-vault/` is the sample vault, `mock-vault_sample/` is a duplicate copy of it, and `template-mock-gallery/` is a template gallery. None of them is referenced by code or tests |
+| `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | Checked-in sample material for exercising the app manually: `mock-vault/` is the original sample vault, `mock-vault_sample/` is a copy to open and test against so the original stays untouched, and `template-mock-gallery/` is a template gallery. None of them is referenced by code or tests |
 
 The two halves meet at one file: `electron/vault-contract.ts` declares the request, document and
 result types for notes, cards, crashpads, weave requests, plans and apply results. Both the main

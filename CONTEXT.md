@@ -11,7 +11,7 @@ Architecture lives in [`docs/architecture/`](./docs/architecture/overview.md).
 | --- | --- |
 | **Crash Card** | The core unit. Holds a piece of knowledge to remember, its categorisation, its mnemonic aids, and its review state. Short form in prose: "card". |
 | **Note** | A markdown file in the vault. Holds prose and, where cards are placed, the boundaries marking which text belongs to which card — never a card's full payload. |
-| **Vault** | The folder the user opens as their knowledge base. The app reads and writes inside it and never outside. |
+| **Vault** | The folder the user opens as their knowledge base. Notes and their boundaries stay inside it; the card store lives inside it by default but can be configured elsewhere. |
 | **Card store** | The folder holding the full payload of every card, one file per card. |
 | **UID** | A card's unique identifier — the only thing linking a note's boundaries to a card's payload. |
 | **UID boundary** | The paired start/end markers delimiting the span of a note attributed to one card. |
@@ -22,7 +22,7 @@ Architecture lives in [`docs/architecture/`](./docs/architecture/overview.md).
 | **weave** | One run of the Weaver, ending in one plan. |
 | **Weave plan** | The ordered set of proposed operations a weave produces, reviewed by the user before anything is written. |
 | **Weave operation** | One proposed change within a plan. |
-| **Approval gate** | The point where the user accepts or rejects a plan. Nothing is written before it. |
+| **Approval gate** | The point where the user accepts or rejects a plan. No note, boundary or card payload is written before it. |
 | **Guided insert** | A weave kind that adds one specific card to a note. |
 | **Intelligent weave** | A weave kind that restructures notes and folders. |
 | **Weave strength** | How much autonomy a weave is granted (light / standard / go ham). Changes autonomy only, never model routing. |

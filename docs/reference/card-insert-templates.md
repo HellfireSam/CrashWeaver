@@ -18,6 +18,9 @@ pick the words you would search for. Tags are not decorative — `extractNoteSea
 `card.type` into the Weaver's note-search tokens and `buildQueryEmbedding` includes them in the
 embedding query.
 
+The intended direction is to keep `type` free-form and, inside the application, list the types
+already used in the selected vault so they can be reused instead of retyped.
+
 The template names below are labels chosen for this catalog, not reserved values: no parser, sync or
 insert behaviour branches on them, and the archived catalog's "Template A–F" families are names too.
 
@@ -80,8 +83,7 @@ put the stopping condition at the end, and let the mnemonic compress the step na
 
 Use when recall should be driven by prompts rather than by reading prose: `memory_tricks.qa_pairs`
 does the work, so keep each `q` answerable from memory and each `a` to one fact, with `raw_content` as
-a short orientation block. A legacy `fill_in_the_blanks` array is folded into `qa_pairs` by
-`coerceCardDocument`; new cards should write `qa_pairs` directly.
+a short orientation block. Cards write `qa_pairs` directly.
 
 ```json
 {

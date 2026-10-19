@@ -135,5 +135,5 @@ CommonJS.
 | `tests/electron/` | `node:test` suites that load compiled output from `dist-electron/` |
 | `dist/` | Vite renderer build output |
 | `dist-electron/` | compiled main-process output |
-| `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | checked-in sample material for manual exercise: `mock-vault/` is the sample vault, `mock-vault_sample/` is a duplicate copy of it, and `template-mock-gallery/` is a template gallery; none of them is referenced by code or tests |
+| `mock-vault/`, `mock-vault_sample/`, `template-mock-gallery/` | checked-in sample material for manual exercise: `mock-vault/` is the original sample vault, `mock-vault_sample/` is a copy to test against so the original stays untouched, and `template-mock-gallery/` is a template gallery; none of them is referenced by code or tests |
 | `docs/` | current documentation, plus the [archive](../archive/README.md) |
