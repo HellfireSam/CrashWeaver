@@ -36,11 +36,20 @@ only; everything superseded lives in [the archive](./archive/README.md).
 
 - [Roadmap](./roadmap.md)
 
+## Standards
+
+The rules for changing the repository, one file per concern:
+
+- [Coding standards](./standards/README.md) — the index and how the standards relate to the tooling
+- [Naming](./standards/naming.md) — the glossary's words, the Weaver/weave rule and code conventions
+- [Module structure](./standards/module-structure.md) — where code lives, dependency direction, seams and exports
+- [Testing](./standards/testing.md) — the runner, suite layout, coverage, and refactoring discipline
+- [Formatting and linting](./standards/formatting-and-linting.md) — Prettier, ESLint and the strict TypeScript setup
+- [Commits and pull requests](./standards/commits-and-pull-requests.md) — the gate, Conventional Commits and PR expectations
+
 ## Contributing
 
-- [CONTRIBUTING.md](../CONTRIBUTING.md) — setup, the gate, commit convention and pull requests
-
-Coding standards are not written yet.
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — setup, and the entry point into the standards
 
 ## For agents
 

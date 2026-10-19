@@ -4,7 +4,9 @@
 
 ## Gate
 
-The gate is the evidence, not the claim. Run it from a clean clone:
+The gate is the evidence, not the claim; what it proves and what it runs is defined in
+[the commits and pull requests standard](https://github.com/HellfireSam/CrashWeaver/blob/main/docs/standards/commits-and-pull-requests.md). Run it
+from a clean clone:
 
 ```bash
 npm run gate

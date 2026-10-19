@@ -1,22 +1,22 @@
 ## Working in this repository
 
-Node 22 LTS is pinned in `.nvmrc` and `engines`; run `nvm use` before installing.
+The rules for changing this repository are the coding standards, one file per concern. Read the
+one that matches your change; this file points at them and does not restate them.
 
-The gate is one command, and it owns the install step:
+| Concern                   | Standard                                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| Naming                    | [`docs/standards/naming.md`](./docs/standards/naming.md)                                       |
+| Module structure          | [`docs/standards/module-structure.md`](./docs/standards/module-structure.md)                   |
+| Testing                   | [`docs/standards/testing.md`](./docs/standards/testing.md)                                     |
+| Formatting and linting    | [`docs/standards/formatting-and-linting.md`](./docs/standards/formatting-and-linting.md)       |
+| Commits and pull requests | [`docs/standards/commits-and-pull-requests.md`](./docs/standards/commits-and-pull-requests.md) |
 
-```bash
-npm run gate      # npm ci + format check + lint + typecheck + tests + build
-npm run checks    # the same checks without the reinstall
-```
+The definition of done and every contribution rule are in those standards; the setup commands and
+every script are in [`docs/guides/development-setup.md`](./docs/guides/development-setup.md).
 
-A change is not ready until `npm run gate` is green. Lint currently reports warnings without
-failing them; do not add new ones. Formatting is Prettier's job, so do not hand-format: run
-`npm run format`. The one formatting-only commit is listed in `.git-blame-ignore-revs`; run
-`git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone.
-
-Commits are [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject`,
-imperative and lowercase, with a body explaining why. See [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-for the type list and the pull-request expectations.
+The domain vocabulary is [`CONTEXT.md`](./CONTEXT.md); the architecture is in
+[`docs/architecture/`](./docs/architecture/overview.md); the documentation index is
+[`docs/README.md`](./docs/README.md).
 
 ## Agent skills
 
