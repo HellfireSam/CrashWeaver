@@ -4,9 +4,10 @@
 Q27 and Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHub issue
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
 (#2–#22) with native blocking edges. All 21 are sub-issues of #1. **Closed: #2 (green baseline), #3
-(documentation rewrite), #6 (absorbed into #3), #5 (lint + format), #7 (layout) and #8 (gate + CI +
-governance).** The three new tickets were closed on GitHub with their evidence comments. `main` is
-seven commits ahead of `origin/main` and **unpushed** — pushing is what first runs CI.
+(documentation rewrite), #6 (absorbed into #3), #5 (lint + format), #7 (layout), #8 (gate + CI +
+governance), #10 (Vitest batch 1) and #9 (coding standards).** The newest tickets were closed on
+GitHub with their evidence comments. `main` is **two commits ahead of `origin/main` and unpushed** —
+everything through #8 is on the remote.
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -364,13 +365,35 @@ The grilling frontier is otherwise **empty**. In order:
      the full gate on Linux and typecheck+tests on Windows; Node 22 pinned via `.nvmrc` + `engines`;
      PR template asking for the gate command and result; Conventional Commits recorded in
      `CONTRIBUTING.md` with an `AGENTS.md` pointer. Gate verified green end to end (39s).
-   - **Frontier is now #9** (coding standards; its blockers #5 and #8 are done) and **#10** (Vitest
-     batch 1; blocker #8 is done). #4 (boundary-marker gap) also remains unblocked but is a tracked
-     product gap, not rework: leave it until the rework is done.
+   - ~~#10 Vitest batch 1~~ — **DONE** in `3c001d5`: `vitest.config.ts` is the one config and
+     `include`s only the suites it can execute, so the twenty phantom "No test suite found"
+     failures are gone (a bare `npx vitest run` is 9 files / 34 tests green). Coverage is reported
+     by the v8 provider with no threshold (gate total 11.86% at the time of writing); the six
+     vault/card suites were ported to TypeScript `.test.ts` files that still import the compiled
+     `dist-electron/` output through `createRequire`; the known gaps are named by module in
+     `tests/README.md`. `tsconfig.tests.json` joined the typecheck solution and the typed ESLint
+     programs. Scripts: `test:node` (remaining `node:test`) + `test:vitest`, chained by
+     `npm test`. Gate verified green.
+   - ~~#9 coding standards~~ — **DONE** in `c630d79`: five standards in `docs/standards/` (naming,
+     module structure, testing, formatting and linting, commits and pull requests) plus an index;
+     the Weaver/weave rule is recorded as a naming standard, with the known violations listed
+     against #19/#20/#21. `AGENTS.md` and `CONTRIBUTING.md` are reduced to setup plus pointers; the
+     development guide, docs index, PR template and `tests/README.md` point at the standards
+     instead of restating them. Gate verified green.
+   - **Frontier is now #11** (port the remaining electron tests; its blocker #10 is done). #12
+     (characterization) needs #11; #13 needs #11; #14 needs #12; #15 needs #13; #20 needs #15; #19
+     needs #15; #21 needs #20. #4 (boundary-marker gap) remains unblocked but is a tracked product
+     gap, not rework: leave it until the rework is done.
 
-**Branch state:** the work is committed on `main` in this clone and **not pushed**. Five commits sit
-above `origin/main`: three for #5, one for #7, one for #8. Everything before them (#2, #3) is already
-on `origin/main`.
+Both tickets went through the two-axis `/code-review` before being recorded. Its findings were
+corrected first: the commit subjects and types were brought under the new commit standard, the
+"bare `npx vitest run` is green" claim became accurate (the ported suites need `npm run build:main`
+first on a clean clone), duplicated rule homes in the guides were reduced to pointers, and the
+error-message and path-wording rules were changed to match production code. The commits above were
+rewritten to carry the corrections; the hashes are the final ones.
+
+**Branch state:** the two newest commits are on `main` in this clone and **not pushed**: `3c001d5`
+(#10) and `c630d79` (#9). Everything through #8 is on `origin/main`.
 
 ## 8. How to resume
 
@@ -387,8 +410,8 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The six rework commits so far are **not pushed**: `main` is
-ahead of `origin/main` and no rework commit has been pushed.
+the decisions are no longer only local. The two newest commits (#10, #9) are **not pushed**; the
+rework through #8 is on `origin/main`.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -413,5 +436,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#4, #5, #7), and the unpushed state of
-`main`.
+Everything else is unchanged: the closed tickets, the frontier (#4), and the unpushed state of the two
+newest commits.
