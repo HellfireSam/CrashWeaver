@@ -4,8 +4,9 @@
 Q27 and Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHub issue
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
 (#2–#22) with native blocking edges. All 21 are sub-issues of #1. **Closed: #2 (green baseline), #3
-(documentation rewrite), #6 (absorbed into #3), and — on this branch, pending close — #5 (lint +
-format), #7 (layout) and #8 (gate + CI + governance).**
+(documentation rewrite), #6 (absorbed into #3), #5 (lint + format), #7 (layout) and #8 (gate + CI +
+governance).** The three new tickets were closed on GitHub with their evidence comments. `main` is
+seven commits ahead of `origin/main` and **unpushed** — pushing is what first runs CI.
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
