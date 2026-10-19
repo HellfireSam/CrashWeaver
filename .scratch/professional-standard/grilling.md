@@ -5,8 +5,8 @@ Q27 and Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHu
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
 (#2–#22) with native blocking edges. All 21 are sub-issues of #1. **Closed: #2 (green baseline), #3
 (documentation rewrite), #6 (absorbed into #3), #5 (lint + format), #7 (layout), #8 (gate + CI +
-governance), #10 (Vitest batch 1), #9 (coding standards), #11 (Vitest batch 2) and #12
-(characterization tests).** The newest
+governance), #10 (Vitest batch 1), #9 (coding standards), #11 (Vitest batch 2), #12
+(characterization tests) and #13 (pure renderer logic extraction).** The newest
 tickets were closed on GitHub with their evidence comments. `main` carries **unpushed commits** —
 the rework through #11, its record and the correction is on the remote.
 Resume by reading this file — it is the authoritative record of what was decided and why.
@@ -412,11 +412,30 @@ The grilling frontier is otherwise **empty**. In order:
      untouched; dry run still validates containment only and that product gap stays on the roadmap.
      Gate green from a clean install: 23 files / 251 tests, 0 lint errors with the unchanged 28
      warnings, coverage 36.1% statements / 36.84% lines (from 35.19 / 35.94).
-   - **Frontier is now #13** (extract the pure renderer logic), **#14** (split the weave apply
-     service) and the two defects **#16** and **#17** (both were blocked by #12 and are now
-     unblocked). #15 needs #13; #19 and #20 need #15; #21 needs #20; #18 needs #14 and #15; #22
-     needs #14. #4 (boundary-marker gap) remains unblocked but is a tracked product gap, not rework:
-     leave it until the rework is done.
+   - ~~#13 extract and unit-test the pure renderer logic~~ — **DONE** in `ad5852d`: the pure logic
+     of the largest renderer module now lives in two tested `src/lib/` modules, so the #15 split
+     has a seam that is already pinned. `src/lib/cardProjection.ts` projects the active surface's
+     visible cards and the crashpad's cards from the raw renderer state — 19 tests covering the
+     note, vault, card-file and crashpad surfaces, the surface and scope selection rules,
+     linked-card payloads, Reference preference and fallback, a missing card store, crashpad
+     entries whose card has left the catalog, crashpad cards projected while another surface is
+     active, plus `selectFocusedCard` and `selectDefaultWeaveCardUid`. `src/lib/layout.ts` gains
+     `computeLayoutStyle`, the shell grid's custom properties, with the splitter and widget-rail
+     widths taken from the `LAYOUT` constants — 4 tests. `App.tsx` consumes both: seven local memo
+     blocks, the default-card helper and the inline style object are gone, and a focus change no
+     longer re-projects or re-sorts a card list. The old draft-path fallback in the note projection
+     was unreachable — the card record's `filePath` is required and parsed cards only exist with an
+     open note document — and is dropped, so no rendered output changes. No new test seam: the
+     suites test the extracted modules' own exported behaviour, and `App.tsx` still has no tests.
+     Both modules are at 100% statements, branches, functions and lines; `tests/README.md` drops
+     the covered gap, and the card-schema reference and process-model architecture document
+     describe the new modules. Gate green from a clean install on Linux: 25 files / 274 tests,
+     0 lint errors with the unchanged 28 warnings, coverage 36.86% statements / 37.57% lines
+     (from 36.1 / 36.84).
+   - **Frontier is now #14** (split the weave apply service), **#15** (split the largest renderer
+     module, unblocked by #13), and the two defects **#16** and **#17**. #19 and #20 need #15; #21
+     needs #20; #18 needs #14 and #15; #22 needs #14. #4 (boundary-marker gap) remains unblocked
+     but is a tracked product gap, not rework: leave it until the rework is done.
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -432,11 +451,23 @@ a second operation after it), the hand-rolled contract mirrors (replaced by a ty
 `dist-electron/`), repeated case and pairing shapes (one shared case type and one dry-run/real-run
 helper), a retired create-note assertion (restored) and a dry-run validation case missing the
 insert handler's boundary check (added); the spec axis also caught an inaccurate sentence in
-`docs/architecture/weave-pipeline.md`, corrected before the commit. The commits above carry the
-corrections; the hashes are the final ones.
+`docs/architecture/weave-pipeline.md`, corrected before the commit. For #13 it caught an over-long
+commit subject, two exports nothing imports (`CardProjection`, `LayoutStyleInput`), the catalog
+fields threading positionally through the projection helpers (now one `CardCatalogSource`), a
+card-file projection that sorted the whole catalog to keep one card (it filters first), a hardcoded
+widget-rail width beside the `LAYOUT` constants, a stale "no React" sentence in the one architecture
+paragraph the change rewrote, and tests that bundled several behaviours under one name (split); the
+spec axis then caught the focused-card state sitting inside the projection memo, so a focus click
+re-projected and re-sorted both card lists — focus and the default Weave card are now selectors over
+the projection, restoring the old memo granularity. A second spec pass then found the projection
+suite exercised only fallback cards and that `tests/README.md` over-claimed `cards.ts` coverage;
+linked-card payloads, a missing card store and the Reference fallback are now asserted, and the
+README narrows its claim. The spec axis verified all four acceptance criteria and agreed the
+draft-path fallback is unreachable. The commits above carry the corrections; the hashes are the
+final ones.
 
-**Branch state:** the newest commits are on `main` in this clone and **not pushed**: `992db39`
-(#12) and this record update. Everything through `b13af6b` (the correction to the #11 record) is on
+**Branch state:** the newest commits are on `main` in this clone and **not pushed**: `ad5852d`
+(#13) and this record update. Everything through `b13af6b` (the correction to the #11 record) is on
 `origin/main`.
 
 ## 8. How to resume
@@ -454,7 +485,7 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The newest commits (#12 `992db39` and this record update)
+the decisions are no longer only local. The newest commits (#13 `ad5852d` and this record update)
 are **not pushed**; the rework through #11, its record and the correction (`b13af6b`) is on
 `origin/main`.
 
@@ -481,5 +512,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#13, #14, #16 and #17), and the
+Everything else is unchanged: the closed tickets, the frontier (#14, #15, #16 and #17), and the
 unpushed state of the newest commits.
