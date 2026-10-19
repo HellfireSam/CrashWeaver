@@ -5,9 +5,9 @@ Q27 and Q30–Q32 are resolved and the glossary is confirmed. The spec is [GitHu
 #1](https://github.com/HellfireSam/CrashWeaver/issues/1) (`ready-for-agent`), broken into 21 tickets
 (#2–#22) with native blocking edges. All 21 are sub-issues of #1. **Closed: #2 (green baseline), #3
 (documentation rewrite), #6 (absorbed into #3), #5 (lint + format), #7 (layout), #8 (gate + CI +
-governance), #10 (Vitest batch 1) and #9 (coding standards).** The newest tickets were closed on
-GitHub with their evidence comments. `main` is **two commits ahead of `origin/main` and unpushed** —
-everything through #8 is on the remote.
+governance), #10 (Vitest batch 1), #9 (coding standards) and #11 (Vitest batch 2).** The newest
+tickets were closed on GitHub with their evidence comments. `main` is **five commits ahead of
+`origin/main` and unpushed** — everything through #8 is on the remote.
 Resume by reading this file — it is the authoritative record of what was decided and why.
 
 - **Repo:** `/root/CrashWeaver` (clone of `github.com/HellfireSam/CrashWeaver`). Moved here from
@@ -380,20 +380,36 @@ The grilling frontier is otherwise **empty**. In order:
      against #19/#20/#21. `AGENTS.md` and `CONTRIBUTING.md` are reduced to setup plus pointers; the
      development guide, docs index, PR template and `tests/README.md` point at the standards
      instead of restating them. Gate verified green.
-   - **Frontier is now #11** (port the remaining electron tests; its blocker #10 is done). #12
-     (characterization) needs #11; #13 needs #11; #14 needs #12; #15 needs #13; #20 needs #15; #19
-     needs #15; #21 needs #20. #4 (boundary-marker gap) remains unblocked but is a tracked product
-     gap, not rework: leave it until the rework is done.
+   - ~~#11 Vitest batch 2~~ — **DONE** in `590e25e`: all twenty main-process suites are `.test.ts`
+     files under Vitest, so `npm test` is one command (`npm run build:main && vitest run --coverage`)
+     with one configuration and one report. The fourteen remaining `node:test` suites moved over
+     test-for-test and assertion-for-assertion — 155 tests and 393 assertions, still loading the
+     compiled `dist-electron/` output through `createRequire`, so the compiled-artifact check
+     survives. `test:node`/`test:vitest`, the ESLint `.cjs` exception and the migration notes in
+     `vitest.config.ts`/`tsconfig.tests.json` are deleted; the testing standard, development guide,
+     architecture documents and `tests/README.md` describe the single runner. The ported suites also
+     took the port as the moment to obey the standards: `weavePromptBuilder.test.cjs` became
+     `weavePlanPrompts.test.ts` (the module it actually tests) and the apply suite now uses
+     `fs.mkdtemp`. Gate green from a clean install: 23 files / 189 tests, 0 lint errors with the
+     unchanged 28 warnings, coverage 35.19% statements / 35.94% lines.
+   - **Frontier is now #12** (characterize the weave apply service) and **#13** (extract the pure
+     renderer logic), both unblocked by #11. #14 needs #12; #15 needs #13; #20 needs #15; #19 needs
+     #15; #21 needs #20. #4 (boundary-marker gap) remains unblocked but is a tracked product gap,
+     not rework: leave it until the rework is done.
 
-Both tickets went through the two-axis `/code-review` before being recorded. Its findings were
-corrected first: the commit subjects and types were brought under the new commit standard, the
-"bare `npx vitest run` is green" claim became accurate (the ported suites need `npm run build:main`
-first on a clean clone), duplicated rule homes in the guides were reduced to pointers, and the
-error-message and path-wording rules were changed to match production code. The commits above were
-rewritten to carry the corrections; the hashes are the final ones.
+Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
+findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
+under the commit standard, making the "bare `npx vitest run` is green" claim accurate (the ported
+suites need `npm run build:main` first on a clean clone), reducing duplicated rule homes in the
+guides to pointers, and matching the error-message and path-wording rules to production code. For
+#11 it caught a suite named for a module that does not exist (`weavePromptBuilder` tests
+`weavePlanPrompts`), an apply-suite helper that did not use `fs.mkdtemp`, and duplicated test-local
+shapes; all were fixed before the commit, so no assertion was weakened and no test was lost. The
+commits above carry the corrections; the hashes are the final ones.
 
-**Branch state:** the two newest commits are on `main` in this clone and **not pushed**: `3c001d5`
-(#10) and `c630d79` (#9). Everything through #8 is on `origin/main`.
+**Branch state:** the five newest commits are on `main` in this clone and **not pushed**: `3c001d5`
+(#10), `c630d79` (#9), `0db1391` (the previous record), `590e25e` (#11) and the record update that
+adds this sentence. Everything through #8 is on `origin/main`.
 
 ## 8. How to resume
 
@@ -410,8 +426,8 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The two newest commits (#10, #9) are **not pushed**; the
-rework through #8 is on `origin/main`.
+the decisions are no longer only local. The five newest commits (#10, #9, their record, #11 and its
+record) are **not pushed**; the rework through #8 is on `origin/main`.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -436,5 +452,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#4), and the unpushed state of the two
+Everything else is unchanged: the closed tickets, the frontier (#4), and the unpushed state of the five
 newest commits.
