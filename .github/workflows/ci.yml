@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# The workflow only reads the repository; no step needs to write back.
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Full gate (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The gate command owns the install step, so a clean runner and a clean
+      # clone run exactly what CONTRIBUTING.md tells a contributor to run.
+      - name: Run the gate
+        run: npm run gate
+
+  checks-windows:
+    name: Typecheck and tests (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Windows runs the part of the gate where path and casing behaviour
+      # differs; lint and build stay on the canonical Linux platform.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test

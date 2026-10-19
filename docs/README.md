@@ -36,9 +36,11 @@ only; everything superseded lives in [the archive](./archive/README.md).
 
 - [Roadmap](./roadmap.md)
 
-## Not yet written
+## Contributing
 
-- Coding standards and contribution guidance.
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — setup, the gate, commit convention and pull requests
+
+Coding standards are not written yet.
 
 ## For agents
 

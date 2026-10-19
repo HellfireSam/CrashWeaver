@@ -10,17 +10,19 @@
     "dev:main": "tsc -p tsconfig.electron.json --watch",
     "dev:electron": "wait-on tcp:5173 dist-electron/main.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
     "test": "npm run test:electron && npm run test:renderer",
-    "test:electron": "npm run build:main && node --test tests/electron/**/*.test.cjs",
+    "test:electron": "npm run build:main && node --test \"tests/electron/**/*.test.cjs\"",
     "test:renderer": "vitest run src/lib/markdownPreview.test.ts src/lib/editorPaths.test.ts src/lib/crashpadStatus.test.ts",
     "typecheck": "tsc -b && tsc -p tsconfig.electron.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.electron.json",
     "build": "npm run typecheck && npm run build:renderer && npm run build:main",
     "start": "npm run build && electron .",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "gate": "npm ci && npm run checks",
+    "checks": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@types/diff": "^7.0.2",
@@ -56,5 +58,8 @@
     "vite": "^6.3.5",
     "vitest": "^4.1.7",
     "wait-on": "^8.0.3"
+  },
+  "engines": {
+    "node": ">=22.13.0 <23"
   }
 }

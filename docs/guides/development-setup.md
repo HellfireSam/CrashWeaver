@@ -6,10 +6,10 @@ is described in [the overview](../architecture/overview.md).
 
 ## Prerequisites
 
-- **Node.js and npm.** The dependency set is built against Node 22: `@types/node` is major
-  22 and Electron 35 bundles Node 22.x. The repository does **not** pin a Node version yet
-  — there is no `.nvmrc` and no `engines` field in `package.json` — so install Node 22 LTS
-  to match the types and the runtime the app ships with.
+- **Node 22 LTS and npm.** The version is pinned twice: `.nvmrc` names it for `nvm`, and
+  `package.json` declares `engines: { "node": ">=22.13.0 <23" }`. The floor is 22.13 because ESLint
+  10 requires it. Electron 35 bundles Node 22.x, so the test runtime and the shipped runtime match.
+  Run `nvm use` before installing.
 - **A desktop session** for running the app window. The test suites do not need one: they
   run under plain Node and Vitest. In a headless container Electron may fail to start with
   a missing shared library such as `libnss3`; that is environmental and does not affect the
@@ -47,7 +47,24 @@ npm run start
 
 ## Checks
 
-Run the compiler across every project:
+One command runs the whole gate from a clean clone — install, format check, lint, typecheck, tests
+and build:
+
+```bash
+npm run gate
+```
+
+When dependencies are already installed, run the same checks without reinstalling:
+
+```bash
+npm run checks
+```
+
+The gate is what CI runs: the full command on Linux, and typecheck plus tests on Windows, where path
+and casing behaviour differs. The configuration is
+[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+
+Each part is available on its own. Run the compiler across every project:
 
 ```bash
 npm run typecheck
@@ -138,9 +155,15 @@ npm run build
 `build:main` (`tsc -p tsconfig.electron.json`, output in `dist-electron/`). The individual
 halves are available as `npm run build:renderer` and `npm run build:main`.
 
-A one-command gate is not in place yet. Until it is, "green" means `npm run lint`,
-`npm run format:check`, `npm run typecheck`, `npm test` and `npm run build` all pass. (The gate and
-its CI wiring are ticket #8.)
+`npm run gate` is the definition of green: it runs `npm ci`, then `npm run checks`, which is
+`format:check`, `lint`, `typecheck`, `npm test` and `build` in that order. CI enforces it on every
+push and pull request to `main`.
+
+## Committing
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/). The type list, scopes
+and pull-request expectations are in [CONTRIBUTING.md](../../CONTRIBUTING.md); [AGENTS.md](../../AGENTS.md)
+carries the same rules for automated agents.
 
 ## TypeScript project layout
 
@@ -175,5 +198,6 @@ CommonJS.
 | `dist/`                                                    | Vite renderer build output                                                                                                                                                                                                                                                                |
 | `dist-electron/`                                           | compiled main-process output                                                                                                                                                                                                                                                              |
 | `eslint.config.mjs`, `.prettierrc.json`, `.prettierignore` | lint and format configuration: the rules, and the files both tools skip                                                                                                                                                                                                                   |
+| `.github/`                                                 | CI workflow and the pull-request template                                                                                                                                                                                                                                                 |
 | `fixtures/`                                                | checked-in sample vaults for manual exercise: `mock-vault/` is the original image and `mock-vault_sample/` is a slightly older copy to open and test against, so the original stays untouched. See [fixtures/README.md](../../fixtures/README.md); neither is referenced by code or tests |
 | `docs/`                                                    | current documentation, plus the [archive](../archive/README.md)                                                                                                                                                                                                                           |
