@@ -56,10 +56,6 @@ it where a ticket does.
   schema, prompts and context retrieval have suites; the service facade that sequences them and
   owns session history and request logging (`weaverSessionHistory.ts`, `weaveRequestLogger.ts`)
   does not.
-- **The dry run is effectively untested.** `tests/electron/weaveApplyService.test.ts` asserts
-  that a dry run writes nothing, which the early return guarantees; it cannot detect that dry
-  run skips the validation the real run performs. Ticket #12 rewrites it to assert the actual
-  behaviour.
 - **No end-to-end test.** Nothing launches the Electron app, opens a real window, drives the UI
   or exercises the release build. The suites run under plain Node; a desktop session is needed
   only to run the app by hand.

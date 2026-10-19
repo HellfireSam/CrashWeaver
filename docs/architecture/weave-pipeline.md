@@ -353,7 +353,7 @@ internal-directory catalogues.
 selection lookup, the destination-free checks, and the directory existence and
 vault-root checks. Dry run therefore validates one thing only: that each target path resolves inside the vault. It reports `ok: true` for an operation whose note does not exist, whose `targetText`
 is absent, whose boundary block is malformed, or whose destination is already occupied, and equally for `delete-directory` targeting the vault root, because the root guard sits after the early
-return. The test `dryRun: does not modify any files` in `tests/electron/weaveApplyService.test.ts` confirms only the no-write property.
+return. `tests/electron/weaveApplyService.test.ts` pins that contract: a dry run writes nothing for every operation kind; it reports success for an operation the real run refuses on one of those skipped checks (a missing note, absent `targetText`, a malformed boundary block, an occupied destination, a missing directory source); it skips the vault-root guard and the non-empty-directory warning; and it still rejects a target path that escapes the vault, because containment is checked before the early return. Each case is paired with the same operation run for real, whose error proves the operation genuinely requires the validation the dry run skipped.
 
 Dry run's contract is containment-only. It is not a pre-flight validator, and the option's doc
 comment says so; turning it into full validation belongs with the apply-service work tracked as a
