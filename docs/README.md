@@ -21,6 +21,10 @@ only; everything superseded lives in [the archive](./archive/README.md).
 - [Process model and IPC](./architecture/process-model.md) — main, preload, renderer, the shared contract
 - [The weave pipeline](./architecture/weave-pipeline.md) — retrieval, planning, approval, apply
 
+## Decisions
+
+- [ADR-0001: keep the two reference-mutation directions separate](./adr/0001-separate-reference-mutation-directions.md)
+
 ## Reference
 
 - [Card schema](./reference/card-schema.md)

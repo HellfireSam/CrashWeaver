@@ -188,6 +188,25 @@ the note from every card that still references it but no longer contains its UID
 `skipped` action instead, when the note produced any diagnostic of severity `error`
 (`hasBlockingDiagnostics`) — a malformed note never silently erases references.
 
+### Two mutation directions
+
+A card and a note are kept in step in two directions, and they are deliberately not
+interchangeable ([ADR-0001](../adr/0001-separate-reference-mutation-directions.md)). Each reads a
+different side of the Reference and writes a different side:
+
+| Direction   | Trigger                                                   | Reads                                     | Writes                                                                                                                  | Prunes                                                     |
+| ----------- | --------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| note → card | Weaver `rename-note`, `move-note`, `delete-note`          | the note's text, parsed for boundary UIDs | card JSON `referenced_in` — a rename rewrites the note path, a delete removes the note's entries — then reports orphans | `referenced_in` entries naming the deleted note            |
+| card → note | card rename, delete or restore from the crashpad/UI paths | one card's `referenced_in`                | each referenced note's boundary lines, then re-syncs that note to the card store                                        | that card's `%%CW_CARD_START/END%%` pairs from those notes |
+
+The note-to-card handlers live in `electron/weaver/weaveApplyPathHandlers.ts`; the card-to-note
+services are `renameCardBoundariesAcrossReferences` and
+`removeCardBoundariesAcrossReferences` in `electron/services/cardReferenceMutationService.ts`.
+Neither side rewrites what the other owns: the weaver handlers never touch note prose, and the
+services never rewrite `referenced_in`. Substituting one for the other is not a tidy-up — the swap
+would strip boundaries from unrelated notes and drop reference pruning, which is why the two paths
+stayed separate.
+
 ### Orphaned cards
 
 A card is orphaned when every reference it held has been removed. No code path deletes a
