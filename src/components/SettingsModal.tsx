@@ -7,7 +7,7 @@ import type {
 } from '../../electron/vault-contract';
 import { formatCardRebuildSummary } from '../lib/cards';
 
-type SettingsModalProps = {
+export type SettingsModalProps = {
   activeNote: VaultNoteDocument | null;
   editorFontSize: number;
   isOpen: boolean;

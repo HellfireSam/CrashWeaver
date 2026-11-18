@@ -48,7 +48,10 @@ it where a ticket does.
 - **Renderer UI layer.** `src/App.tsx`, `src/components/**`, `src/hooks/**` and `src/state/**`
   have no tests; only the pure helpers in `src/lib/` are covered. The pure logic extracted from
   the largest module is tested — `src/lib/cardProjection.ts` (the rendered card surface) and
-  `src/lib/layout.ts` (the shell layout style) — and the remaining module split is #15.
+  `src/lib/layout.ts` (the shell layout style). The remaining split landed as
+  `src/components/EditorSurface.tsx` and `src/hooks/useWeaverController.ts` (#15); it added no
+  test seam, so the components and hooks are still untested, and no open ticket currently owns
+  adding renderer component tests.
 - **Untested pure renderer helpers.** `src/lib/cards.ts`, `src/lib/crashpadHistory.ts`,
   `src/lib/errorUtils.ts`, `src/lib/explorerTree.ts` and `src/lib/stateUtils.ts` have no test
   files of their own; only the `cards.ts` mapping functions are exercised, indirectly through the

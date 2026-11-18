@@ -228,7 +228,8 @@ note card and calls `createFallbackCard` when no card file is linked. `src/lib/c
 builds the rendered card surface from these functions and the renderer state: the note-scope
 cards from the active note's `parsedCards`, the vault-scope cards from the `listCards` catalog,
 and the crashpad cards from the active crashpad's entries filtered against the catalog. `App.tsx`
-renders the projection's visible cards, focused card and default Weave card.
+projects the visible and focused cards and derives the default Weave card;
+`src/components/EditorSurface.tsx` renders them.
 
 Display. `src/components/CardsWorkspace.tsx` renders the `CardDetailTab` views `content`,
 `memory-technique`, `qna` and `metadata` from a `CardViewRecord`. `CardMetadataPanel` shows

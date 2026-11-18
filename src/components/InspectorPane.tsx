@@ -15,7 +15,7 @@ import { formatCardSyncSummary, formatFocusWindow } from '../lib/cards';
 import { WeaverProposalPanel } from './WeaverProposalPanel';
 import type { WeaverSessionSummary, WeaverSessionDetail } from './WeaverSessionHistory';
 
-type InspectorPaneProps = {
+export type InspectorPaneProps = {
   activeCrashpad: CrashpadDocument | null;
   activeNote: VaultNoteDocument | null;
   focusedCard: CardViewRecord | null;

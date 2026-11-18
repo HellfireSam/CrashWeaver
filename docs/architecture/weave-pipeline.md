@@ -10,7 +10,7 @@ operations at the approval gate, so apply is a separate module that planning nev
 
 ## Entry: what starts a weave
 
-A weave starts in the renderer. `InspectorPane` hosts `WeaverProposalPanel`, which owns the composer controls; its callbacks reach `handleGenerateWeavePlan` in `App.tsx`, which builds the request
+A weave starts in the renderer. `InspectorPane` hosts `WeaverProposalPanel`, which owns the composer controls; its callbacks reach `handleGenerateWeavePlan` in `src/hooks/useWeaverController.ts`, which builds the request
 and calls `window.crashWeaver.generateWeavePlan(...)`.
 
 **Request shape.** Every `WeavePlanRequest` requires `rootPath`, `kind`, `intent`, `cardUid`, `activeCrashpadId`, and `activeCrashpadPath`, and accepts optional `preferredModel`,
@@ -28,17 +28,17 @@ retrieval budgets; `resolveDefaultMaxOperations` into an operation cap; `getStre
 
 **Permissions and insertion intent.** The optional permissions also widen retrieval: `resolveRetrievalBudget` treats `editContent || createNote` as "expanded", and prompt layer 7 prints each as
 `ALLOWED` or `FORBIDDEN` with a constraint line. Intent is carried by `intent` plus `selectedText` and `activeNotePath`: intent feeds token extraction and the embedding query, while `selectedText`
-drives `after-selection` / `replace-selection` placements and the excerpt window in `WeaveContextToolRuntime.readNoteSlice`; `App.tsx` reads it from the editor textarea.
+drives `after-selection` / `replace-selection` placements and the excerpt window in `WeaveContextToolRuntime.readNoteSlice`; `useWeaverController` reads it from the editor textarea.
 
 **IPC path.**
 
-| Step           | Location                     | Symbol                                                                             |
-| -------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| Renderer call  | `src/App.tsx`                | `handleGenerateWeavePlan` → `window.crashWeaver.generateWeavePlan`                 |
-| Preload bridge | `electron/preload.ts`        | `generateWeavePlan` → `invoke('weave:generate-plan', request)`                     |
-| Main handler   | `electron/main.ts`           | `ipcMain.handle('weave:generate-plan')` → `generateWeavePlan(request, onProgress)` |
-| Progress push  | `electron/main.ts` → preload | `event.sender.send('weave:plan-progress', …)` → `onWeavePlanProgress`              |
-| Apply call     | `src/App.tsx`                | `handleApplyWeaveOperations` → `applyWeavePlan`                                    |
+| Step           | Location                           | Symbol                                                                             |
+| -------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| Renderer call  | `src/hooks/useWeaverController.ts` | `handleGenerateWeavePlan` → `window.crashWeaver.generateWeavePlan`                 |
+| Preload bridge | `electron/preload.ts`              | `generateWeavePlan` → `invoke('weave:generate-plan', request)`                     |
+| Main handler   | `electron/main.ts`                 | `ipcMain.handle('weave:generate-plan')` → `generateWeavePlan(request, onProgress)` |
+| Progress push  | `electron/main.ts` → preload       | `event.sender.send('weave:plan-progress', …)` → `onWeavePlanProgress`              |
+| Apply call     | `src/hooks/useWeaverController.ts` | `handleApplyWeaveOperations` → `applyWeavePlan`                                    |
 
 `weaveService.generateWeavePlan` is the service layer: read settings, `validateWeavePlanRequest`, `assertVaultRoot`, resolve the request-log directory, attach embedding options when an OpenRouter
 key exists, `buildWeaveContextSnapshot`, delegate to the active provider's `generatePlan`, then validate the result. Provider selection happens once in `initializeWeaveProvider`:
@@ -264,7 +264,7 @@ tests but is not called by the planning loop — the graph does its own inline 8
 `session-start` plus the last `graph-complete`, and sorts newest first. `getWeaverSession` returns a `WeaverSessionDetail` with the summary, full request, `budget-resolved` payload, the plan (from
 `plan-final`, falling back to `node-validate-success`), and `steps` built by `buildSteps` from the node events. `deleteWeaverSession` unlinks one file; `clearWeaverSessions` unlinks all and
 returns the count. `weaveService.ts` wraps these as `listSessions`, `getSession`, `deleteSession`, and `clearSessions` after resolving the log directory, and `electron/main.ts` maps them to the
-`weave:list-sessions`, `weave:get-session`, `weave:delete-session`, and `weave:clear-sessions` channels. `App.tsx` fetches the list on vault open and after each completed plan; the history view
+`weave:list-sessions`, `weave:get-session`, `weave:delete-session`, and `weave:clear-sessions` channels. `useWeaverController` fetches the list on vault open and after each completed plan; the history view
 can re-run a past session by restoring its request parameters into the composer.
 
 ## The approval gate
@@ -362,7 +362,7 @@ For insert and edit, boundary integrity runs after the prospective content is as
 `operationIndex`, `kind`, `targetPath`, `ok`, and optional `error`, `warning`, `affectedPaths`; warnings are also collected into the aggregate array. With `stopOnError` true (the default, and what
 production passes) the first failure stops the loop and every remaining operation is reported with `Skipped due to previous failure.`, so the user sees the whole plan accounted for. With
 `stopOnError: false` later operations can still succeed. The returned `WeaveApplyResult` carries `results`, `appliedCount`, `failedCount`, `allOk` (`failedCount === 0`), and `warnings`. The panel
-badges applied operations and shows a success or partial banner listing each failure's kind, path, and error; on full success `App.tsx` re-indexes the vault and refreshes the card, crashpad, and
+badges applied operations and shows a success or partial banner listing each failure's kind, path, and error; on full success `useWeaverController` re-indexes the vault and refreshes the card, crashpad, and
 internal-directory catalogues.
 
 **What dry run does and does not validate.** Every handler, directly or through the move-to-rename delegation, checks `dryRun` immediately after `assertWithinVault` and returns

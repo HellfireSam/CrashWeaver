@@ -124,23 +124,34 @@ same contract types; the member names match the object exposed in `electron/prel
 
 A rename on one side, or a payload change in the contract, is therefore caught by the compiler
 only where the annotated type and the cast disagree; nothing validates the channel names beyond
-both literals being spelled the same. Errors surface by rejection: `App.tsx` normalises Weaver
+both literals being spelled the same. Errors surface by rejection: `useWeaverController` normalises Weaver
 errors by stripping Electron's wrapper with a regex matching
 `Error invoking remote method '<channel>': Error: <message>`.
 
 ## Renderer architecture
 
-### App.tsx
+### The renderer composition root
 
-`src/App.tsx` is the root component and the largest renderer file. It destructures all four state
-contexts, keeps `useRef` handles for DOM nodes and current-value mirrors, projects the card
-surface through the pure `projectCards` in `src/lib/cardProjection.ts`, computes the shell layout
-style with `computeLayoutStyle` in `src/lib/layout.ts`, calls the hook layer, and renders the
-shell: the widget rail, sidebar, splitter layout, editor tab strip and
-view-mode bar, the markdown, cards or Crashpad surface, the Inspector pane, the confirm dialog
-for destructive Weave operations, and the settings modal. It is also where a Weaver request is
-assembled (`handleGenerateWeavePlan`), a plan is applied (`handleApplyWeaveOperations`), and the
-external-change subscription lives.
+`src/App.tsx` is the composition root, not the largest renderer file any more. It destructures the
+vault, editor and UI contexts, keeps `useRef` handles for DOM nodes and current-value mirrors,
+projects the
+card surface through the pure `projectCards` in `src/lib/cardProjection.ts`, computes the shell
+layout style with `computeLayoutStyle` in `src/lib/layout.ts`, calls the hook layer, and composes
+the three shell pieces:
+
+- `src/components/AppChrome.tsx` — the floating window utility strip, the widget rail and the
+  layout grid the surfaces sit in.
+- `src/components/EditorSurface.tsx` — the editor tab strip, view-mode and card-scope controls,
+  the source, preview, cards and Crashpad surfaces, and the status bar.
+- `src/hooks/useWeaverController.ts` — the Weaver controller: composer state and its effects,
+  provider health, plan generation, apply with the destructive-operation confirmation gate,
+  session history and Weaver settings writes. `App.tsx` spreads the controller's `inspectorProps`
+  and `settingsProps` into `InspectorPane` and `SettingsModal`, so those components' prop
+  interfaces did not change.
+
+The root still owns the editor, vault and card hooks shared between the surfaces, the
+external-change subscription, and the state projections both `EditorSurface` and `InspectorPane`
+need.
 
 ### The four state contexts
 
@@ -167,8 +178,11 @@ document.
 `useStoredScrollSync` and `useHorizontalWheelScroll`; Crashpad work in `useCrashpadActions`,
 `useCrashpadCardEditor`, `useCrashpadCardMutationActions`, `useCrashpadHistoryActions` and
 `useDailyCrashpadActions`; cards in `useCardDetailState` and `useCardRenameActions`; UI in
-`useAppUiInteractions`, `useSidebarActions` and `usePaneLayout`. Most take their dependencies as
-an options object and return callbacks; `App.tsx` supplies the context setters.
+`useAppUiInteractions`, `useSidebarActions` and `usePaneLayout`; the Weaver controller in
+`useWeaverController`. Most take their dependencies as an options object and return callbacks;
+`App.tsx` supplies the context setters. The Weaver controller is the exception: it reads the state
+contexts itself and takes only the catalogue refreshes, the active-editor flag, the focused
+Crashpad card and the editor ref from the root.
 
 `src/components/` holds the renderer components: `AppSidebar` (explorer and Vault info tabs, built with
 `buildExplorerTree` and the virtualised `ExplorerTree`), the authoring and inspection surfaces
@@ -249,7 +263,7 @@ returned by `vault:open` and `vault:update-index`, and through `card-store:get-c
 `weave:update-settings`, `weave:set-preferred-model`, `weave:set-api-key` and
 `weave:clear-api-key`. The settings writes return the refreshed state — the two API-key channels
 return nothing — and the caller stores that value in context; `handleUpdateWeaverSettings` in
-`App.tsx` is one example. `App.tsx` also loads `getWeaverSettings` once on mount and syncs
+`src/hooks/useWeaverController.ts` is one example. The controller also loads `getWeaverSettings` once on mount and syncs
 `weaveModel` from `preferredModel`.
 
 The window opens at 1320 by 860 every time. No code persists or restores window size or position;

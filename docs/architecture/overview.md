@@ -136,7 +136,7 @@ operations that the user reviews before anything is written. End to end:
    which persists through the bridge to `electron/vaultService.ts`'s `createCard` / `saveCard`
    and then `electron/cardStoreService.ts`'s `writeCardDocument`. A card must be focused and the
    crashpad active before the Weaver panel will generate anything.
-2. **Ask for a weave.** `src/App.tsx`'s `handleGenerateWeavePlan` builds a `WeavePlanRequest` —
+2. **Ask for a weave.** `src/hooks/useWeaverController.ts`'s `handleGenerateWeavePlan` builds a `WeavePlanRequest` —
    root path, preferred model, intent text, the focused card's UID, the active note and selected
    text, and the crashpad identity — and calls `window.crashWeaver.generateWeavePlan`. The
    request is a guided insert (with edit-content and create-note permissions) or an intelligent
@@ -165,7 +165,7 @@ operations that the user reviews before anything is written. End to end:
    kinds — delete, rename and move for notes and directories — additionally route through
    `src/components/WeaverConfirmDialog.tsx`'s `isDestructiveOperation` gate before an apply can
    start.
-5. **Apply writes the accepted operations.** `src/App.tsx`'s `handleApplyWeaveOperations` calls
+5. **Apply writes the accepted operations.** `src/hooks/useWeaverController.ts`'s `handleApplyWeaveOperations` calls
    `window.crashWeaver.applyWeavePlan`, whose `weave:apply-plan` handler in `electron/main.ts`
    resolves the card store and calls `electron/weaver/weaveApplyService.ts`'s
    `applyWeaveOperations(rootPath, cardStorePath, operations, { dryRun: false, stopOnError: true })`.
