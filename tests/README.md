@@ -23,13 +23,14 @@ npx vitest run tests/electron/weaveApplyService.test.ts
 npx vitest run src/lib/markdownPreview.test.ts
 ```
 
-Vitest's `include` lists every suite in the repository: the renderer suites beside the pure modules
-they cover, and the main-process suites in `tests/electron/`.
+Vitest's `include` lists every suite in the repository: the renderer suites beside the modules they
+cover — the pure helpers in `src/lib/` and the first component suite beside
+`src/components/WeaverCardChip.tsx` — and the main-process suites in `tests/electron/`.
 
-| Layer    | Files                      |
-| -------- | -------------------------- |
-| renderer | `src/lib/*.test.ts`        |
-| main     | `tests/electron/*.test.ts` |
+| Layer    | Files                                            |
+| -------- | ------------------------------------------------ |
+| renderer | `src/lib/*.test.ts`, `src/components/*.test.tsx` |
+| main     | `tests/electron/*.test.ts`                       |
 
 ## Known test gaps
 
@@ -53,13 +54,15 @@ it where a ticket does.
   the `event.sender.send` and `webContents.send` calls — is not observable in a Node test, and a
   wrong _declared_ key selection at a call site still compiles; no test can see a channel the code
   never passes.
-- **Renderer UI layer.** `src/App.tsx`, `src/components/**`, `src/hooks/**` and `src/state/**`
-  have no tests; only the pure helpers in `src/lib/` are covered. The pure logic extracted from
-  the largest module is tested — `src/lib/cardProjection.ts` (the rendered card surface) and
-  `src/lib/layout.ts` (the shell layout style). The remaining split landed as
-  `src/components/EditorSurface.tsx` and `src/hooks/useWeaverController.ts` (#15); it added no
-  test seam, so the components and hooks are still untested, and no open ticket currently owns
-  adding renderer component tests.
+- **Renderer UI layer.** `src/App.tsx`, `src/hooks/**`, `src/state/**` and most of
+  `src/components/**` have no tests; only the pure helpers in `src/lib/` are covered.
+  `src/components/WeaverCardChip.test.tsx` is the first renderer component test: it runs under
+  jsdom (`// @vitest-environment jsdom`) and asserts the card chip's rendered title, because CSS
+  line clamping is not unit-testable (#23). The pure logic extracted from the largest module is
+  tested — `src/lib/cardProjection.ts` (the rendered card surface) and `src/lib/layout.ts` (the
+  shell layout style). The remaining split landed as `src/components/EditorSurface.tsx` and
+  `src/hooks/useWeaverController.ts` (#15); it added no test seam, so the rest of the components
+  and hooks stay untested, and no open ticket currently owns adding more renderer component tests.
 - **Untested pure renderer helpers.** `src/lib/cards.ts`, `src/lib/crashpadHistory.ts`,
   `src/lib/errorUtils.ts`, `src/lib/explorerTree.ts` and `src/lib/stateUtils.ts` have no test
   files of their own; only the `cards.ts` mapping functions are exercised, indirectly through the

@@ -6,6 +6,7 @@ import type {
   WeaverProviderHealth,
   WeaveStrength,
 } from '../../electron/vault-contract';
+import { WeaverCardChip } from './WeaverCardChip';
 import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
 import { traceToLiveEntries } from './WeaverProgressFeed';
 import {
@@ -1152,17 +1153,7 @@ export function WeaverProposalPanel({
 
         {cardUid ? (
           <div className="weaverCardScope">
-            <span
-              className={`weaverCardChip${evaluatingCardUid === cardUid ? ' evaluating' : ''}`}
-              title={cardUid}
-            >
-              {evaluatingCardUid === cardUid ? (
-                <span className="weaverCardChipPulse" />
-              ) : (
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-subtle)' }}>1</span>
-              )}
-              <span>{cardUid.slice(-8)}</span>
-            </span>
+            <WeaverCardChip cardUid={cardUid} isEvaluating={evaluatingCardUid === cardUid} />
           </div>
         ) : null}
 

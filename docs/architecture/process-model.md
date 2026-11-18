@@ -229,17 +229,19 @@ Crashpad card and the editor ref from the root.
 `src/components/` holds the renderer components: `AppSidebar` (explorer and Vault info tabs, built with
 `buildExplorerTree` and the virtualised `ExplorerTree`), the authoring and inspection surfaces
 `CardsWorkspace`, `CrashpadWorkspace`, `CardMetadataPanel` and `InspectorPane`, `SettingsModal`,
-and the Weaver surfaces `WeaverProposalPanel`, `WeaverProgressFeed`, `WeaverOperationItem`,
-`WeaverDiffPreview`, `WeaverUnifiedDiffModal`, `WeaverConfirmDialog` and `WeaverSessionHistory`.
-A few components call `window.crashWeaver` directly rather than going through `App.tsx`:
-`WeaverProposalPanel` uses `isStubWeaverProvider`, `listWeaverModels` and `onWeavePlanProgress`,
-`WeaverSessionHistory` uses `getWeaverSession`, and `WeaverUnifiedDiffModal` uses `readNote`.
+and the Weaver surfaces `WeaverProposalPanel`, `WeaverCardChip`, `WeaverProgressFeed`,
+`WeaverOperationItem`, `WeaverDiffPreview`, `WeaverUnifiedDiffModal`, `WeaverConfirmDialog` and
+`WeaverSessionHistory`. A few components call `window.crashWeaver` directly rather than going
+through `App.tsx`: `WeaverProposalPanel` uses `isStubWeaverProvider`, `listWeaverModels` and
+`onWeavePlanProgress`, `WeaverSessionHistory` uses `getWeaverSession`, and
+`WeaverUnifiedDiffModal` uses `readNote`.
 
 `src/lib/` holds the pure helpers — `cardProjection.ts`, `cards.ts`, `crashpadHistory.ts`,
 `crashpadStatus.ts`, `editorPaths.ts`, `errorUtils.ts`, `explorerTree.ts`, `layout.ts`,
 `markdownPreview.ts`, `stateUtils.ts` — with no React state and no IPC. Vitest suites sit beside
 `cardProjection.ts`, `crashpadStatus.ts`, `editorPaths.ts`, `layout.ts` and
-`markdownPreview.ts`.
+`markdownPreview.ts`; `src/components/WeaverCardChip.test.tsx` is the first component suite and
+runs under jsdom, asserting the rendered title because CSS clamping is not unit-testable.
 
 ### Error boundaries
 

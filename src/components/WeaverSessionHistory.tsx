@@ -316,7 +316,7 @@ export function WeaverSessionHistory({
                   : '❌'}
             </span>
             <span className="weaverSessionDetailKind">
-              {getRequestKindLabel(sessionDetail.requestKind)} · {sessionDetail.cardUid.slice(-8)}
+              {getRequestKindLabel(sessionDetail.requestKind)} · {sessionDetail.cardUid}
             </span>
           </div>
 
@@ -537,7 +537,7 @@ export function WeaverSessionHistory({
                     {getRequestKindLabel(session.requestKind)}
                   </span>
                   <span className="weaverSessionRowCard" title={session.cardUid}>
-                    {session.cardUid.slice(-8)}
+                    {session.cardUid}
                   </span>
                   <span className="weaverSessionRowIntent" title={session.intent}>
                     {truncateIntent(session.intent)}

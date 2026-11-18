@@ -323,22 +323,17 @@
 
 .weaverCardScope {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.22rem;
   padding: 0.3rem 0.55rem;
   border-bottom: 1px solid var(--border-soft);
   background: var(--weaver-header-bg, #1a1e27);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.weaverCardScope::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
 }
 
 .weaverCardChip {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.2rem;
   padding: 0.1rem 0.38rem;
   border-radius: 0.3rem;
@@ -347,9 +342,27 @@
   font-size: 0.67rem;
   font-family: var(--font-mono);
   color: var(--text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
+  max-width: 100%;
+  min-width: 0;
   cursor: default;
+}
+
+.weaverCardChipBadge {
+  font-size: 0.6rem;
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+
+/* The title wraps to three lines and clamps after that; the chip's `title`
+   attribute keeps the complete UID, so the clamp never hides it. */
+.weaverCardChipTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  min-width: 0;
 }
 
 .weaverCardChip.evaluating {
@@ -367,6 +380,7 @@
 .weaverCardChipPulse {
   width: 0.36rem;
   height: 0.36rem;
+  flex-shrink: 0;
   border-radius: 999px;
   background: var(--accent);
   animation: weaverChipPulse 1.1s ease-in-out infinite;
@@ -1636,7 +1650,12 @@
   font-family: var(--font-mono);
   color: var(--text-muted);
   white-space: nowrap;
-  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  /* The card column is `auto` in the row grid; the cap keeps a long title from
+     squeezing the intent column, and the row height stays one line. */
+  max-width: 9rem;
 }
 
 .weaverSessionRowIntent {
@@ -1723,7 +1742,7 @@
 
 .weaverSessionDetailStatus {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.45rem;
 }
 
@@ -1731,6 +1750,8 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-primary);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .weaverSessionDetailIntent {
