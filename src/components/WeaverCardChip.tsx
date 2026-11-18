@@ -20,6 +20,7 @@ export function WeaverCardChip({ cardUid, isEvaluating }: WeaverCardChipProps) {
       {isEvaluating ? (
         <span className="weaverCardChipPulse" />
       ) : (
+        // The scope row holds exactly one focused card, so the count is one.
         <span className="weaverCardChipBadge">1</span>
       )}
       <span className="weaverCardChipTitle">{cardUid}</span>

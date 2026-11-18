@@ -10,9 +10,10 @@ import { WeaverCardChip } from './WeaverCardChip';
   true;
 
 /**
- * A card title that is its own UID: UIDs may contain spaces, so this is a valid
- * card title of exactly 100 characters. Rendering it through the chip is the
- * regression test for the old `cardUid.slice(-8)`.
+ * A 100-character spaced card title — the shape #24 will allow. The chip must
+ * render whatever title the data carries, because a title is the card's UID.
+ * Rendering it through the chip is the regression test for the old
+ * `cardUid.slice(-8)`.
  */
 const LONG_CARD_TITLE =
   'Three-way handshake over a flaky TCP link with retries and timeouts, packet loss and slow start here';
@@ -20,14 +21,27 @@ const LONG_CARD_TITLE =
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
+/** Renders one chip and returns its container. */
 function renderChip(cardUid: string): HTMLDivElement {
-  container = document.createElement('div');
-  document.body.appendChild(container);
-  root = createRoot(container);
+  const nextContainer = document.createElement('div');
+  document.body.appendChild(nextContainer);
+  const nextRoot = createRoot(nextContainer);
+  root = nextRoot;
+  container = nextContainer;
   act(() => {
-    root!.render(<WeaverCardChip cardUid={cardUid} isEvaluating={false} />);
+    nextRoot.render(<WeaverCardChip cardUid={cardUid} isEvaluating={false} />);
   });
-  return container;
+  return nextContainer;
+}
+
+/** The title span is the element the clamp applies to. */
+function renderedTitle(rendered: HTMLDivElement): string | null | undefined {
+  return rendered.querySelector('.weaverCardChipTitle')?.textContent;
+}
+
+/** The chip is the element that carries the full-title tooltip. */
+function chipTooltip(rendered: HTMLDivElement): string | null | undefined {
+  return rendered.querySelector('.weaverCardChip')?.getAttribute('title');
 }
 
 afterEach(() => {
@@ -40,18 +54,15 @@ afterEach(() => {
 });
 
 describe('WeaverCardChip', () => {
-  it('shows the complete card title and keeps it in the title tooltip', () => {
-    const rendered = renderChip(LONG_CARD_TITLE);
-    const chip = rendered.querySelector('.weaverCardChip');
+  it('renders the complete long card title', () => {
+    expect(renderedTitle(renderChip(LONG_CARD_TITLE))).toBe(LONG_CARD_TITLE);
+  });
 
-    expect(rendered.querySelector('.weaverCardChipTitle')?.textContent).toBe(LONG_CARD_TITLE);
-    expect(chip?.getAttribute('title')).toBe(LONG_CARD_TITLE);
+  it('keeps the complete card title in the chip tooltip', () => {
+    expect(chipTooltip(renderChip(LONG_CARD_TITLE))).toBe(LONG_CARD_TITLE);
   });
 
   it('renders a short card title unchanged', () => {
-    const rendered = renderChip('TCP handshake');
-
-    expect(rendered.querySelector('.weaverCardChipTitle')?.textContent).toBe('TCP handshake');
-    expect(rendered.querySelector('.weaverCardChip')?.getAttribute('title')).toBe('TCP handshake');
+    expect(renderedTitle(renderChip('TCP handshake'))).toBe('TCP handshake');
   });
 });
