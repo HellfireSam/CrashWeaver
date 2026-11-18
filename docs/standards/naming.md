@@ -38,7 +38,9 @@ infrastructure, so it is `WeaverProviderName`, not `WeaveProviderName`.
 
 ### IPC channel names
 
-Channel names are `<area>:<name>`, lower-case and kebab-cased inside each part:
+Channel names are `<area>:<name>`, lower-case and kebab-cased inside each part. Every channel is
+declared once in `electron/ipcChannels.ts`; call sites read the declaration rather than spelling the
+name again:
 
 - **Request/response channels** are `<area>:<imperative-verb>`, for example `vault:read-note`,
   `card-store:save-card`, `weave:generate-plan`. The verb is what the main process does.
@@ -50,9 +52,9 @@ Channel names are `<area>:<name>`, lower-case and kebab-cased inside each part:
 
 Known violations of the rule are tracked, not silently tolerated:
 
-| Violation                                                                                                                                 | Ticket   |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels) | #20, #21 |
+| Violation                                                                                                                                 | Ticket |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels) | #21    |
 
 ## Code conventions
 

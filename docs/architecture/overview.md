@@ -54,10 +54,12 @@ into the renderer.
 
 **Preload bridge.** `electron/preload.ts` runs with `contextBridge` and exposes exactly one
 global, `crashWeaver`, via `contextBridge.exposeInMainWorld`. Each method is a thin wrapper over
-`ipcRenderer.invoke` on a named channel (`vault:open`, `card-store:save-card`,
-`weave:generate-plan`, `weave:apply-plan`, and so on). Two push channels are bridged as
-subscriptions returning unsubscribe functions: `weave:plan-progress` for live Weaver progress, and
-`vault:external-change` for files changed underneath the app.
+`ipcRenderer.invoke` on a channel from `electron/ipcChannels.ts`, the single declaration of every
+channel name (`vault:open`, `card-store:save-card`, `weave:generate-plan`, `weave:apply-plan`, and
+so on). Two push channels are bridged as subscriptions returning unsubscribe functions:
+`weave:plan-progress` for live Weaver progress, and `vault:external-change` for files changed
+underneath the app. The preload also exports `CrashWeaverBridge`, the `typeof` its exposed object,
+and the renderer's `Window.crashWeaver` type is derived from it rather than restated.
 
 **Renderer.** `src/` is a React application. It has no filesystem access and no Node built-ins:
 when it needs the vault it calls `window.crashWeaver.*`, whose shape is declared in
@@ -190,7 +192,7 @@ schema validation, the diff UI and per-kind apply semantics in full.
 
 | Path                                                  | Contents                                                                                                                                                                                                                                                                                                       |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `electron/`                                           | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the shared contract (`vault-contract.ts`), and the vault services: cards, notes, boundaries, crashpads, settings, index                                                                                                                     |
+| `electron/`                                           | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the IPC channel declaration (`ipcChannels.ts`), the shared contract (`vault-contract.ts`), and the vault services: cards, notes, boundaries, crashpads, settings, index                                                                     |
 | `electron/weaver/`                                    | The Weaver: service facade, context retrieval, ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging and session history                                                                                                                                                     |
 | `src/`                                                | The renderer: `App.tsx`, `components/`, `hooks/`, `state/` contexts, and `lib/` helpers                                                                                                                                                                                                                        |
 | `tests/electron/`                                     | Test suites for the main-process services and the Weaver, run under Vitest against the compiled `dist-electron/` output                                                                                                                                                                                        |
@@ -198,12 +200,12 @@ schema validation, the diff UI and per-kind apply semantics in full.
 | `dist-electron/`                                      | `tsc`'s CommonJS build of `electron/`, referenced by `package.json`'s `main` (git-ignored)                                                                                                                                                                                                                     |
 | `fixtures/mock-vault/`, `fixtures/mock-vault_sample/` | Checked-in sample material for exercising the app manually: `mock-vault/` is the original sample vault, and `mock-vault_sample/` is a slightly older copy to open and test against so the original stays untouched. See [fixtures/README.md](../../fixtures/README.md). Neither is referenced by code or tests |
 
-The two halves meet at one file: `electron/vault-contract.ts` declares the request, document and
-result types for notes, cards, crashpads, weave requests, plans and apply results. Both the main
-process services and the renderer import from it (the renderer only as types), and the preload
-bridge's signatures are drawn from the same declarations. That file is the reason a change to a
-payload shape surfaces as a type error on both sides of the process boundary. The renderer's
-window global is re-declared against it in `src/vite-env.d.ts`.
+The two halves meet at two files. `electron/vault-contract.ts` declares the request, document and
+result types for notes, cards, crashpads, weave requests, plans and apply results; both the main
+process services and the renderer import from it (the renderer only as types), so a payload change
+surfaces as a type error on both sides of the process boundary. `electron/ipcChannels.ts` declares
+every channel name once and both processes read it, so the two sides cannot disagree on a channel.
+The renderer's window global is derived from the preload implementation in `src/vite-env.d.ts`.
 
 The main-process tests run against the compiled JavaScript in `dist-electron/`. The vault suite
 (`tests/electron/vaultService.test.ts`) exercises real behaviour against temporary vaults: card

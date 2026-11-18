@@ -42,9 +42,10 @@ it where a ticket does.
   creation and lifecycle, the native folder pickers, the vault watcher wiring and the
   `crashweaver-local` protocol handler have no test. Ticket #20 centralises the channel contract
   and #21 adds handler coverage.
-- **Preload bridge — `electron/preload.ts`.** Nothing asserts that the exposed
-  `window.crashWeaver` members match the main-process handlers, or that the channel literals on
-  the two sides agree. A rename on one side is still a silent runtime hang. Tickets #20 and #21.
+- **Preload bridge — `electron/preload.ts`.** The channel names now come from the single
+  declaration in `electron/ipcChannels.ts`, and the renderer's bridge type is derived from the
+  preload, so a renamed channel or member is a compile error (#20). Nothing yet asserts at runtime
+  that every exposed member has a registered main-process handler, or vice versa; ticket #21.
 - **Renderer UI layer.** `src/App.tsx`, `src/components/**`, `src/hooks/**` and `src/state/**`
   have no tests; only the pure helpers in `src/lib/` are covered. The pure logic extracted from
   the largest module is tested — `src/lib/cardProjection.ts` (the rendered card surface) and

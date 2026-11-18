@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron';
+import { IPC_CHANNELS } from './ipcChannels';
 import { removeNoteReferencesFromCardStore, syncNoteToCardStore } from './cardSyncService';
 import {
   checkWeaveProvider,
@@ -88,7 +89,7 @@ function flushWatcherNotifications() {
 
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
-      win.webContents.send('vault:external-change', paths);
+      win.webContents.send(IPC_CHANNELS.events.vaultExternalChange, paths);
     }
   }
 }
@@ -270,7 +271,7 @@ function registerLocalAssetProtocol() {
   });
 }
 
-ipcMain.handle('vault:select-folder', async () => {
+ipcMain.handle(IPC_CHANNELS.vault.selectFolder, async () => {
   const result = await dialog.showOpenDialog({
     title: 'Select Your Obsidian Vault',
     properties: ['openDirectory', 'createDirectory'],
@@ -283,18 +284,18 @@ ipcMain.handle('vault:select-folder', async () => {
   return result.filePaths[0];
 });
 
-ipcMain.handle('vault:open', async (_event, rootPath: string) => {
+ipcMain.handle(IPC_CHANNELS.vault.open, async (_event, rootPath: string) => {
   const vault = await openVault(rootPath);
   await enqueueWatchVault(rootPath);
   return vault;
 });
 
-ipcMain.handle('vault:read-note', async (_event, rootPath: string, filePath: string) =>
+ipcMain.handle(IPC_CHANNELS.vault.readNote, async (_event, rootPath: string, filePath: string) =>
   readNote(rootPath, filePath),
 );
 
 ipcMain.handle(
-  'vault:write-note',
+  IPC_CHANNELS.vault.writeNote,
   async (_event, rootPath: string, input: { filePath: string; content: string }) => {
     const result = await writeNote(rootPath, input);
     await enqueueWatchVault(rootPath);
@@ -302,17 +303,17 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('vault:update-index', async (_event, rootPath: string) => {
+ipcMain.handle(IPC_CHANNELS.vault.updateIndex, async (_event, rootPath: string) => {
   const vault = await updateIndex(rootPath);
   await enqueueWatchVault(rootPath);
   return vault;
 });
 
-ipcMain.handle('vault:list-internal-directories', async (_event, rootPath: string) =>
+ipcMain.handle(IPC_CHANNELS.vault.listInternalDirectories, async (_event, rootPath: string) =>
   listInternalDirectories(rootPath),
 );
 
-ipcMain.handle('card-store:select-folder', async (_event, rootPath: string) => {
+ipcMain.handle(IPC_CHANNELS.cardStore.selectFolder, async (_event, rootPath: string) => {
   const config = await getVaultCardStore(rootPath);
   const result = await dialog.showOpenDialog({
     title: 'Select Crash Card Store',
@@ -327,7 +328,7 @@ ipcMain.handle('card-store:select-folder', async (_event, rootPath: string) => {
   return result.filePaths[0];
 });
 
-ipcMain.handle('vault:select-image-directories', async (_event, rootPath: string) => {
+ipcMain.handle(IPC_CHANNELS.vault.selectImageDirectories, async (_event, rootPath: string) => {
   const imageDirectories = await getVaultImageDirectories(rootPath);
   const result = await dialog.showOpenDialog({
     title: 'Select Image Directories',
@@ -342,34 +343,37 @@ ipcMain.handle('vault:select-image-directories', async (_event, rootPath: string
   return result.filePaths;
 });
 
-ipcMain.handle('card-store:get-config', async (_event, rootPath: string) =>
+ipcMain.handle(IPC_CHANNELS.cardStore.getConfig, async (_event, rootPath: string) =>
   getVaultCardStore(rootPath),
 );
 
-ipcMain.handle('card-store:list-cards', async (_event, rootPath: string) => listCards(rootPath));
+ipcMain.handle(IPC_CHANNELS.cardStore.listCards, async (_event, rootPath: string) =>
+  listCards(rootPath),
+);
 
-ipcMain.handle('card-store:create-card', async (_event, rootPath: string, uid: string) =>
+ipcMain.handle(IPC_CHANNELS.cardStore.createCard, async (_event, rootPath: string, uid: string) =>
   createCard(rootPath, uid),
 );
 
-ipcMain.handle('card-store:save-card', async (_event, rootPath: string, card: CardDocument) =>
-  saveCard(rootPath, card),
+ipcMain.handle(
+  IPC_CHANNELS.cardStore.saveCard,
+  async (_event, rootPath: string, card: CardDocument) => saveCard(rootPath, card),
 );
 
 ipcMain.handle(
-  'card-store:rename-card',
+  IPC_CHANNELS.cardStore.renameCard,
   async (_event, rootPath: string, previousUid: string, card: CardDocument) =>
     renameCard(rootPath, previousUid, card),
 );
 
 ipcMain.handle(
-  'card-store:delete-card',
+  IPC_CHANNELS.cardStore.deleteCard,
   async (_event, rootPath: string, uid: string, options: CardDeleteOptions) =>
     deleteCard(rootPath, uid, options),
 );
 
 ipcMain.handle(
-  'card-store:restore-card',
+  IPC_CHANNELS.cardStore.restoreCard,
   async (
     _event,
     rootPath: string,
@@ -378,14 +382,17 @@ ipcMain.handle(
   ) => restoreDeletedCard(rootPath, snapshot, options),
 );
 
-ipcMain.handle('card-store:set-path', async (_event, rootPath: string, cardStorePath: string) => {
-  const vault = await updateVaultCardStore(rootPath, cardStorePath);
-  await enqueueWatchVault(rootPath);
-  return vault;
-});
+ipcMain.handle(
+  IPC_CHANNELS.cardStore.setPath,
+  async (_event, rootPath: string, cardStorePath: string) => {
+    const vault = await updateVaultCardStore(rootPath, cardStorePath);
+    await enqueueWatchVault(rootPath);
+    return vault;
+  },
+);
 
 ipcMain.handle(
-  'vault:set-image-directories',
+  IPC_CHANNELS.vault.setImageDirectories,
   async (_event, rootPath: string, imageDirectories: string[]) => {
     const vault = await updateVaultImageDirectories(rootPath, imageDirectories);
     await enqueueWatchVault(rootPath);
@@ -393,33 +400,36 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('crashpad:list', async (_event, rootPath: string) => listVaultCrashpads(rootPath));
+ipcMain.handle(IPC_CHANNELS.crashpad.list, async (_event, rootPath: string) =>
+  listVaultCrashpads(rootPath),
+);
 
-ipcMain.handle('crashpad:open', async (_event, rootPath: string, crashpadId: string) =>
+ipcMain.handle(IPC_CHANNELS.crashpad.open, async (_event, rootPath: string, crashpadId: string) =>
   openCrashpad(rootPath, crashpadId),
 );
 
-ipcMain.handle('crashpad:create', async (_event, rootPath: string, name: string) =>
+ipcMain.handle(IPC_CHANNELS.crashpad.create, async (_event, rootPath: string, name: string) =>
   createVaultCrashpad(rootPath, name),
 );
 
-ipcMain.handle('crashpad:save', async (_event, rootPath: string, crashpad: CrashpadDocument) =>
-  saveCrashpad(rootPath, crashpad),
+ipcMain.handle(
+  IPC_CHANNELS.crashpad.save,
+  async (_event, rootPath: string, crashpad: CrashpadDocument) => saveCrashpad(rootPath, crashpad),
 );
 
-ipcMain.handle('weave:generate-plan', async (event, request: WeavePlanRequest) => {
+ipcMain.handle(IPC_CHANNELS.weave.generatePlan, async (event, request: WeavePlanRequest) => {
   const onProgress = (progressEvent: unknown) => {
-    event.sender.send('weave:plan-progress', progressEvent);
+    event.sender.send(IPC_CHANNELS.events.weavePlanProgress, progressEvent);
   };
   return generateWeavePlan(request, onProgress);
 });
 
-ipcMain.handle('weave:health-check', async () => checkWeaveProvider());
-ipcMain.handle('weave:list-models', async () => listWeaveModels());
-ipcMain.handle('weave:is-stub-provider', async () => isStubProviderActive());
+ipcMain.handle(IPC_CHANNELS.weave.healthCheck, async () => checkWeaveProvider());
+ipcMain.handle(IPC_CHANNELS.weave.listModels, async () => listWeaveModels());
+ipcMain.handle(IPC_CHANNELS.weave.isStubProvider, async () => isStubProviderActive());
 
 ipcMain.handle(
-  'weave:apply-plan',
+  IPC_CHANNELS.weave.applyPlan,
   async (_event, rootPath: string, operations: WeavePlanOperation[]) => {
     const config = await getVaultCardStore(rootPath);
     const cardStorePath = config.cardStorePath;
@@ -433,48 +443,56 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('weave:get-settings', async () => getWeaverSettings());
+ipcMain.handle(IPC_CHANNELS.weave.getSettings, async () => getWeaverSettings());
 
-ipcMain.handle('weave:update-settings', async (_event, updates: Partial<WeaverSettings>) =>
-  updateWeaverSettings(updates),
+ipcMain.handle(
+  IPC_CHANNELS.weave.updateSettings,
+  async (_event, updates: Partial<WeaverSettings>) => updateWeaverSettings(updates),
 );
 
-ipcMain.handle('weave:set-preferred-model', async (_event, preferredModel: string | null) =>
-  setWeaverPreferredModel(preferredModel),
+ipcMain.handle(
+  IPC_CHANNELS.weave.setPreferredModel,
+  async (_event, preferredModel: string | null) => setWeaverPreferredModel(preferredModel),
 );
 
-ipcMain.handle('weave:get-request-logs-directory', async () =>
+ipcMain.handle(IPC_CHANNELS.weave.getRequestLogsDirectory, async () =>
   getConfiguredWeaverRequestLogsDirectory(),
 );
 
-ipcMain.handle('weave:set-request-logs-directory', async (_event, directoryPath: string | null) =>
-  setConfiguredWeaverRequestLogsDirectory(directoryPath),
+ipcMain.handle(
+  IPC_CHANNELS.weave.setRequestLogsDirectory,
+  async (_event, directoryPath: string | null) =>
+    setConfiguredWeaverRequestLogsDirectory(directoryPath),
 );
 
-ipcMain.handle('weave:set-api-key', async (_event, key: string) => setWeaveApiKey(key));
+ipcMain.handle(IPC_CHANNELS.weave.setApiKey, async (_event, key: string) => setWeaveApiKey(key));
 
-ipcMain.handle('weave:clear-api-key', async () => clearWeaveApiKey());
+ipcMain.handle(IPC_CHANNELS.weave.clearApiKey, async () => clearWeaveApiKey());
 
-ipcMain.handle('weave:list-sessions', async (_event, rootPath?: string) => listSessions(rootPath));
-
-ipcMain.handle('weave:get-session', async (_event, sessionId: string, rootPath?: string) =>
-  getSession(sessionId, rootPath),
+ipcMain.handle(IPC_CHANNELS.weave.listSessions, async (_event, rootPath?: string) =>
+  listSessions(rootPath),
 );
 
-ipcMain.handle('weave:delete-session', async (_event, sessionId: string, rootPath?: string) =>
-  deleteSession(sessionId, rootPath),
+ipcMain.handle(
+  IPC_CHANNELS.weave.getSession,
+  async (_event, sessionId: string, rootPath?: string) => getSession(sessionId, rootPath),
 );
 
-ipcMain.handle('weave:clear-sessions', async (_event, rootPath?: string) =>
+ipcMain.handle(
+  IPC_CHANNELS.weave.deleteSession,
+  async (_event, sessionId: string, rootPath?: string) => deleteSession(sessionId, rootPath),
+);
+
+ipcMain.handle(IPC_CHANNELS.weave.clearSessions, async (_event, rootPath?: string) =>
   clearSessions(rootPath),
 );
 
-ipcMain.handle('crashpad:get-delete-preferences', async (_event, rootPath: string) =>
+ipcMain.handle(IPC_CHANNELS.crashpad.getDeletePreferences, async (_event, rootPath: string) =>
   getVaultCrashpadDeletePreferences(rootPath),
 );
 
 ipcMain.handle(
-  'crashpad:set-delete-preferences',
+  IPC_CHANNELS.crashpad.setDeletePreferences,
   async (_event, rootPath: string, preferences: CrashpadDeletePreferences) =>
     updateVaultCrashpadDeletePreferences(rootPath, preferences),
 );

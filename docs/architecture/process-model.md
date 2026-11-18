@@ -39,13 +39,15 @@ two paths.
 
 ### Preload
 
-`electron/preload.ts` calls `contextBridge.exposeInMainWorld('crashWeaver', {...})` once with an
-object whose members are request/response wrappers, each a single
-`ipcRenderer.invoke('<area>:<verb>', ...)` call, cast to a contract type where the payload is a
-contract shape. Two further members subscribe to push events: `onWeavePlanProgress` and
-`onVaultExternalChange` attach an `ipcRenderer.on` listener, adapt the Electron event argument
-away, and return an unsubscribe closure that calls `ipcRenderer.removeListener`. The preload
-script imports only `electron` and, as types, the shared contract.
+`electron/preload.ts` builds one object, `crashWeaverBridge`, and calls
+`contextBridge.exposeInMainWorld('crashWeaver', crashWeaverBridge)` once with it. Its members are
+request/response wrappers, each a single `ipcRenderer.invoke(IPC_CHANNELS.<area>.<name>, ...)` call
+cast to a contract type where the payload is a contract shape. Two further members subscribe to
+push events: `onWeavePlanProgress` and `onVaultExternalChange` attach an `ipcRenderer.on` listener,
+adapt the Electron event argument away, and return an unsubscribe closure that calls
+`ipcRenderer.removeListener`. The preload script imports `electron` and the channel declaration at
+runtime, and the shared contract only as types; it also exports `CrashWeaverBridge`, which is
+`typeof crashWeaverBridge`.
 
 ### Renderer
 
@@ -61,7 +63,8 @@ its own, every export is an `interface` or a `type`, and every import site on bo
 `import type`. It adds no runtime dependency to the Vite bundle, though `tsc` still emits an empty
 `dist-electron/vault-contract.js` because the file is in the electron project's include set; both
 TypeScript projects compile the same file. The contract holds shapes, not behaviour and not
-channel names:
+channel names — the channel names have their own declaration in `electron/ipcChannels.ts`. The
+table groups the shapes by what they describe:
 
 | Group                                | Representative exports                                                                                                                                                                                                           | Who uses it                                                             |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -82,9 +85,20 @@ what is on the wire.
 
 ## The IPC model
 
+### The channel declaration
+
+`electron/ipcChannels.ts` declares every request/response and event channel exactly once. The
+names are built by a small `channel(area, name)` helper into literal types, grouped by area
+(`vault`, `cardStore`, `crashpad`, `weave`, and an `events` group for the two push channels). It
+is the only home for a channel string: `electron/main.ts` registers with
+`ipcMain.handle(IPC_CHANNELS.<area>.<name>, handler)` and `electron/preload.ts` invokes and
+subscribes with the same values, so a renamed channel is one edit and the two sides cannot spell
+it differently. The declaration imports nothing and is not part of the shared type contract,
+which stays type-only.
+
 ### Request and response
 
-The request/response channels are registered as `ipcMain.handle('<area>:<verb>', handler)`
+The request/response channels are registered as `ipcMain.handle(IPC_CHANNELS.<area>.<name>, handler)`
 calls at module scope in `electron/main.ts`, so they exist before `app.whenReady()` resolves.
 Each handler returns a value or a promise of one, which becomes the resolved value of the
 matching `ipcRenderer.invoke` in the renderer; a thrown error rejects that promise.
@@ -105,6 +119,8 @@ before returning, so the watcher reflects the current root and Card store path.
 
 ### Push channels
 
+The two push channels are declared in the same place, under `IPC_CHANNELS.events`.
+
 | Channel                 | Sent from                                                                 | Trigger                                                                        |
 | ----------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | `weave:plan-progress`   | the `weave:generate-plan` handler, via `event.sender.send`                | The callback that handler passes into `generateWeavePlan(request, onProgress)` |
@@ -112,20 +128,22 @@ before returning, so the watcher reflects the current root and Card store path.
 
 ### Typing across the boundary
 
-The channel name and the payload types are written down more than once, and the two sides are
-coupled only by convention. `electron/main.ts` repeats each channel literal in its
-`ipcMain.handle` call and annotates parameters inline (`rootPath: string`,
-`card: CardDocument`); there is no handler map and no shared channel-constant module.
-`electron/preload.ts` repeats the same literal in `ipcRenderer.invoke` and asserts the result
-with `as Promise<T>`, where `T` is imported from the contract — `ipcRenderer.invoke` returns
-`Promise<any>`, so the cast is a declaration, not a runtime check. `src/vite-env.d.ts` declares
-`Window.crashWeaver` by hand, listing its members with their signatures and importing the
-same contract types; the member names match the object exposed in `electron/preload.ts`.
+The channel names are typed, not repeated: both sides read `electron/ipcChannels.ts`, so a channel
+cannot be renamed on one side only. The payload types remain contract declarations.
+`electron/main.ts` annotates each handler's parameters inline (`rootPath: string`,
+`card: CardDocument`); `electron/preload.ts` asserts each result with `as Promise<T>`, where `T` is
+imported from the contract — `ipcRenderer.invoke` returns `Promise<any>`, so the cast is a
+declaration, not a runtime check.
 
-A rename on one side, or a payload change in the contract, is therefore caught by the compiler
-only where the annotated type and the cast disagree; nothing validates the channel names beyond
-both literals being spelled the same. Errors surface by rejection: `useWeaverController` normalises Weaver
-errors by stripping Electron's wrapper with a regex matching
+The renderer's view of the bridge is not written by hand either. `electron/preload.ts` exports
+`CrashWeaverBridge = typeof crashWeaverBridge`, and `src/vite-env.d.ts` imports that type and
+declares `Window.crashWeaver` from it. Renaming a member of the exposed object, or changing its
+signature, is therefore a compile error in the renderer; a payload change is caught by the contract
+type on both sides; and a channel rename is a single edit in the declaration.
+
+What the compiler still cannot see is whether a channel has a registered handler on the main side;
+that runtime check is ticket #21. Errors surface by rejection: `useWeaverController` normalises
+Weaver errors by stripping Electron's wrapper with a regex matching
 `Error invoking remote method '<channel>': Error: <message>`.
 
 ## Renderer architecture

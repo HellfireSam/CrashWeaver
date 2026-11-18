@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { IPC_CHANNELS } from './ipcChannels';
 import type {
   CardDeleteOptions,
   CardDeleteResult,
@@ -24,40 +25,51 @@ import type {
   VaultWriteNoteResult,
 } from './vault-contract';
 
-contextBridge.exposeInMainWorld('crashWeaver', {
-  selectVaultFolder: () => ipcRenderer.invoke('vault:select-folder') as Promise<string | null>,
+const crashWeaverBridge = {
+  selectVaultFolder: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.vault.selectFolder) as Promise<string | null>,
   openVault: (rootPath: string) =>
-    ipcRenderer.invoke('vault:open', rootPath) as Promise<VaultDescriptor>,
+    ipcRenderer.invoke(IPC_CHANNELS.vault.open, rootPath) as Promise<VaultDescriptor>,
   listInternalDirectories: (rootPath: string) =>
-    ipcRenderer.invoke('vault:list-internal-directories', rootPath) as Promise<string[]>,
+    ipcRenderer.invoke(IPC_CHANNELS.vault.listInternalDirectories, rootPath) as Promise<string[]>,
   readNote: (rootPath: string, filePath: string) =>
-    ipcRenderer.invoke('vault:read-note', rootPath, filePath) as Promise<VaultNoteDocument>,
+    ipcRenderer.invoke(
+      IPC_CHANNELS.vault.readNote,
+      rootPath,
+      filePath,
+    ) as Promise<VaultNoteDocument>,
   writeNote: (rootPath: string, input: VaultWriteNoteInput) =>
-    ipcRenderer.invoke('vault:write-note', rootPath, input) as Promise<VaultWriteNoteResult>,
+    ipcRenderer.invoke(
+      IPC_CHANNELS.vault.writeNote,
+      rootPath,
+      input,
+    ) as Promise<VaultWriteNoteResult>,
   updateIndex: (rootPath: string) =>
-    ipcRenderer.invoke('vault:update-index', rootPath) as Promise<VaultDescriptor>,
+    ipcRenderer.invoke(IPC_CHANNELS.vault.updateIndex, rootPath) as Promise<VaultDescriptor>,
   selectCardStoreFolder: (rootPath: string) =>
-    ipcRenderer.invoke('card-store:select-folder', rootPath) as Promise<string | null>,
+    ipcRenderer.invoke(IPC_CHANNELS.cardStore.selectFolder, rootPath) as Promise<string | null>,
   selectImageDirectories: (rootPath: string) =>
-    ipcRenderer.invoke('vault:select-image-directories', rootPath) as Promise<string[] | null>,
+    ipcRenderer.invoke(IPC_CHANNELS.vault.selectImageDirectories, rootPath) as Promise<
+      string[] | null
+    >,
   getCardStoreConfig: (rootPath: string) =>
-    ipcRenderer.invoke('card-store:get-config', rootPath) as Promise<CardStoreConfig>,
+    ipcRenderer.invoke(IPC_CHANNELS.cardStore.getConfig, rootPath) as Promise<CardStoreConfig>,
   listCards: (rootPath: string) =>
-    ipcRenderer.invoke('card-store:list-cards', rootPath) as Promise<CardDocument[]>,
+    ipcRenderer.invoke(IPC_CHANNELS.cardStore.listCards, rootPath) as Promise<CardDocument[]>,
   createCard: (rootPath: string, uid: string) =>
-    ipcRenderer.invoke('card-store:create-card', rootPath, uid) as Promise<CardDocument>,
+    ipcRenderer.invoke(IPC_CHANNELS.cardStore.createCard, rootPath, uid) as Promise<CardDocument>,
   saveCard: (rootPath: string, card: CardDocument) =>
-    ipcRenderer.invoke('card-store:save-card', rootPath, card) as Promise<CardDocument>,
+    ipcRenderer.invoke(IPC_CHANNELS.cardStore.saveCard, rootPath, card) as Promise<CardDocument>,
   renameCard: (rootPath: string, previousUid: string, card: CardDocument) =>
     ipcRenderer.invoke(
-      'card-store:rename-card',
+      IPC_CHANNELS.cardStore.renameCard,
       rootPath,
       previousUid,
       card,
     ) as Promise<CardRenameResult>,
   deleteCard: (rootPath: string, uid: string, options: CardDeleteOptions) =>
     ipcRenderer.invoke(
-      'card-store:delete-card',
+      IPC_CHANNELS.cardStore.deleteCard,
       rootPath,
       uid,
       options,
@@ -68,81 +80,117 @@ contextBridge.exposeInMainWorld('crashWeaver', {
     options: CardRestoreOptions,
   ) =>
     ipcRenderer.invoke(
-      'card-store:restore-card',
+      IPC_CHANNELS.cardStore.restoreCard,
       rootPath,
       snapshot,
       options,
     ) as Promise<CardRestoreResult>,
   setCardStorePath: (rootPath: string, cardStorePath: string) =>
-    ipcRenderer.invoke('card-store:set-path', rootPath, cardStorePath) as Promise<VaultDescriptor>,
+    ipcRenderer.invoke(
+      IPC_CHANNELS.cardStore.setPath,
+      rootPath,
+      cardStorePath,
+    ) as Promise<VaultDescriptor>,
   setImageDirectories: (rootPath: string, imageDirectories: string[]) =>
     ipcRenderer.invoke(
-      'vault:set-image-directories',
+      IPC_CHANNELS.vault.setImageDirectories,
       rootPath,
       imageDirectories,
     ) as Promise<VaultDescriptor>,
   listCrashpads: (rootPath: string) =>
-    ipcRenderer.invoke('crashpad:list', rootPath) as Promise<CrashpadSummary[]>,
+    ipcRenderer.invoke(IPC_CHANNELS.crashpad.list, rootPath) as Promise<CrashpadSummary[]>,
   openCrashpad: (rootPath: string, crashpadId: string) =>
-    ipcRenderer.invoke('crashpad:open', rootPath, crashpadId) as Promise<CrashpadDocument | null>,
+    ipcRenderer.invoke(
+      IPC_CHANNELS.crashpad.open,
+      rootPath,
+      crashpadId,
+    ) as Promise<CrashpadDocument | null>,
   createCrashpad: (rootPath: string, name: string) =>
-    ipcRenderer.invoke('crashpad:create', rootPath, name) as Promise<CrashpadDocument>,
+    ipcRenderer.invoke(IPC_CHANNELS.crashpad.create, rootPath, name) as Promise<CrashpadDocument>,
   saveCrashpad: (rootPath: string, crashpad: CrashpadDocument) =>
-    ipcRenderer.invoke('crashpad:save', rootPath, crashpad) as Promise<CrashpadDocument>,
+    ipcRenderer.invoke(IPC_CHANNELS.crashpad.save, rootPath, crashpad) as Promise<CrashpadDocument>,
   getCrashpadDeletePreferences: (rootPath: string) =>
     ipcRenderer.invoke(
-      'crashpad:get-delete-preferences',
+      IPC_CHANNELS.crashpad.getDeletePreferences,
       rootPath,
     ) as Promise<CrashpadDeletePreferences>,
   setCrashpadDeletePreferences: (rootPath: string, preferences: CrashpadDeletePreferences) =>
     ipcRenderer.invoke(
-      'crashpad:set-delete-preferences',
+      IPC_CHANNELS.crashpad.setDeletePreferences,
       rootPath,
       preferences,
     ) as Promise<CrashpadDeletePreferences>,
   generateWeavePlan: (request: WeavePlanRequest) =>
-    ipcRenderer.invoke('weave:generate-plan', request) as Promise<WeavePlanResult>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.generatePlan, request) as Promise<WeavePlanResult>,
   checkWeaveProvider: () =>
-    ipcRenderer.invoke('weave:health-check') as Promise<WeaverProviderHealth>,
-  isStubWeaverProvider: () => ipcRenderer.invoke('weave:is-stub-provider') as Promise<boolean>,
-  listWeaveModels: () => ipcRenderer.invoke('weave:list-models') as Promise<WeaveModelInfo[]>,
-  getWeaverSettings: () => ipcRenderer.invoke('weave:get-settings') as Promise<WeaverSettings>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.healthCheck) as Promise<WeaverProviderHealth>,
+  isStubWeaverProvider: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.weave.isStubProvider) as Promise<boolean>,
+  listWeaveModels: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.weave.listModels) as Promise<WeaveModelInfo[]>,
+  getWeaverSettings: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.weave.getSettings) as Promise<WeaverSettings>,
   updateWeaverSettings: (updates: Partial<WeaverSettings>) =>
-    ipcRenderer.invoke('weave:update-settings', updates) as Promise<WeaverSettings>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.updateSettings, updates) as Promise<WeaverSettings>,
   setWeaverPreferredModel: (preferredModel: string | null) =>
-    ipcRenderer.invoke('weave:set-preferred-model', preferredModel) as Promise<WeaverSettings>,
+    ipcRenderer.invoke(
+      IPC_CHANNELS.weave.setPreferredModel,
+      preferredModel,
+    ) as Promise<WeaverSettings>,
   getWeaverRequestLogsDirectory: () =>
-    ipcRenderer.invoke('weave:get-request-logs-directory') as Promise<string | null>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.getRequestLogsDirectory) as Promise<string | null>,
   setWeaverRequestLogsDirectory: (directoryPath: string | null) =>
-    ipcRenderer.invoke('weave:set-request-logs-directory', directoryPath) as Promise<string | null>,
-  setWeaverApiKey: (key: string) => ipcRenderer.invoke('weave:set-api-key', key) as Promise<void>,
-  clearWeaverApiKey: () => ipcRenderer.invoke('weave:clear-api-key') as Promise<void>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.setRequestLogsDirectory, directoryPath) as Promise<
+      string | null
+    >,
+  setWeaverApiKey: (key: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.weave.setApiKey, key) as Promise<void>,
+  clearWeaverApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.weave.clearApiKey) as Promise<void>,
 
   // Weaver progress events (push-based, not invoke)
   onWeavePlanProgress: (callback: (event: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, data: unknown) => callback(data);
-    ipcRenderer.on('weave:plan-progress', handler);
+    ipcRenderer.on(IPC_CHANNELS.events.weavePlanProgress, handler);
     // Return unsubscribe function
-    return () => ipcRenderer.removeListener('weave:plan-progress', handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.events.weavePlanProgress, handler);
+    };
   },
 
   // Weaver session history
   listWeaverSessions: (rootPath?: string) =>
-    ipcRenderer.invoke('weave:list-sessions', rootPath) as Promise<unknown[]>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.listSessions, rootPath) as Promise<unknown[]>,
   getWeaverSession: (sessionId: string, rootPath?: string) =>
-    ipcRenderer.invoke('weave:get-session', sessionId, rootPath) as Promise<unknown | null>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.getSession, sessionId, rootPath) as Promise<
+      unknown | null
+    >,
   deleteWeaverSession: (sessionId: string, rootPath?: string) =>
-    ipcRenderer.invoke('weave:delete-session', sessionId, rootPath) as Promise<boolean>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.deleteSession, sessionId, rootPath) as Promise<boolean>,
   clearWeaverSessions: (rootPath?: string) =>
-    ipcRenderer.invoke('weave:clear-sessions', rootPath) as Promise<number>,
+    ipcRenderer.invoke(IPC_CHANNELS.weave.clearSessions, rootPath) as Promise<number>,
   /** Apply a list of Weaver plan operations to the vault. Returns per-operation results. */
   applyWeavePlan: (rootPath: string, operations: WeavePlanOperation[]) =>
-    ipcRenderer.invoke('weave:apply-plan', rootPath, operations) as Promise<WeaveApplyResult>,
+    ipcRenderer.invoke(
+      IPC_CHANNELS.weave.applyPlan,
+      rootPath,
+      operations,
+    ) as Promise<WeaveApplyResult>,
 
   // Vault external-change events (push-based, not invoke)
   onVaultExternalChange: (callback: (changedPaths: string[]) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, paths: string[]) => callback(paths);
-    ipcRenderer.on('vault:external-change', handler);
-    return () => ipcRenderer.removeListener('vault:external-change', handler);
+    ipcRenderer.on(IPC_CHANNELS.events.vaultExternalChange, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.events.vaultExternalChange, handler);
+    };
   },
-});
+};
+
+contextBridge.exposeInMainWorld('crashWeaver', crashWeaverBridge);
+
+/**
+ * The renderer's view of the preload bridge. Derived from the exposed object
+ * itself, so a renamed or re-signatured member is a compile error in the
+ * renderer instead of a hand-written copy that can drift.
+ */
+export type CrashWeaverBridge = typeof crashWeaverBridge;

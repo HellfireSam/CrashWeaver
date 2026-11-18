@@ -13,10 +13,12 @@ split is enforced, not merely conventional.
   `electron/` is `import type` from `electron/vault-contract.ts`. It has no `node:` built-ins and
   no `electron` import; every privileged act goes through `window.crashWeaver`, and nothing else in
   the renderer may reach the main process.
-- **The main process (`electron/`) never imports from `src/`.** Anything both sides need belongs
-  in `electron/vault-contract.ts`.
-- **The preload bridge (`electron/preload.ts`) forwards and nothing else.** It imports `electron`
-  and the contract, exposes one global, and holds no behaviour.
+- **The main process (`electron/`) never imports from `src/`.** Shared types belong in
+  `electron/vault-contract.ts`; the IPC channel names belong in `electron/ipcChannels.ts`.
+- **The preload bridge (`electron/preload.ts`) forwards and nothing else.** It imports `electron`,
+  the channel declaration and the contract, exposes one global, and holds no behaviour. It exports
+  `CrashWeaverBridge` (`typeof` the exposed object), which `src/vite-env.d.ts` uses to type
+  `Window.crashWeaver`; the renderer holds no second copy of the bridge's shape.
 - **`electron/vault-contract.ts` is the shared type surface.** It has no imports of its own, every
   export is an `interface` or a `type`, and both sides import it with `import type` only. It adds
   no runtime dependency to the renderer bundle.
@@ -29,6 +31,7 @@ filesystem handles stay on the main side.
 | Location                         | What belongs there                                                                                                                                                                                         |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `electron/main.ts`               | The composition root: window lifecycle, native dialogs, `ipcMain` registration, the vault watcher, the `crashweaver-local` protocol, and the calls that wire services together. No domain logic.           |
+| `electron/ipcChannels.ts`        | The IPC channel declaration: every channel name once, read by both `main.ts` registrations and `preload.ts` invocations. No behaviour and no imports.                                                      |
 | `electron/<name>Service.ts`      | A domain service: the exported behaviour for one domain noun (`vaultService`, `cardStoreService`, `cardSyncService`, `crashpadService`, `settingsService`).                                                |
 | `electron/cardParser.ts`         | The boundary grammar: pure parsing and formatting of notes and UID boundaries.                                                                                                                             |
 | `electron/services/`             | Filesystem mutation services with explicit inputs — boundary lines, references, restore, the vault index. No `electron` import; they take paths and content and return results.                            |
