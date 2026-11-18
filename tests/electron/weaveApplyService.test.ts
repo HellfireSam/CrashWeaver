@@ -840,6 +840,37 @@ describe('weaveApplyService', () => {
       ]);
     });
 
+    it('fails and leaves the note and its card references untouched when a boundary pair is broken', async () => {
+      const uid = 'CW-BROKEN';
+      const noteContent = [
+        '# Broken',
+        '',
+        formatCardStartBoundary(uid),
+        'body without an end boundary',
+        '',
+      ].join('\n');
+      const vault = await setupTestVault({ 'notes/broken.md': noteContent });
+      const cardReferences = [{ note_path: 'notes/broken.md', start_line: 3, end_line: 5 }];
+      await writeCard(vault, makeCard(uid, cardReferences));
+
+      const result = await applyOperations(vault, [
+        makeOperation('rename-note', 'notes/renamed.md', {
+          fromPath: 'notes/broken.md',
+          toPath: 'notes/renamed.md',
+          renameReason: 'Better name',
+        }),
+      ]);
+
+      expect(result.allOk).toBe(false);
+      expect(result.results[0].error).toContain(
+        'Boundary integrity check failed for notes/broken.md',
+      );
+      expect(result.results[0].error).toContain('[unmatched-start-boundary]');
+      expect(await pathExists(absolutePath(vault, 'notes/broken.md'))).toBe(true);
+      expect(await pathExists(absolutePath(vault, 'notes/renamed.md'))).toBe(false);
+      expect((await readCard(vault, uid)).referenced_in).toEqual(cardReferences);
+    });
+
     it('renames the note even when a boundary UID has no card document', async () => {
       const noteContent = [
         '# No Card',
@@ -1021,6 +1052,35 @@ describe('weaveApplyService', () => {
 
       expect(result.allOk).toBe(false);
       expect(result.results[0].error).toContain('Note not found');
+    });
+
+    it('fails and leaves the note and its card references untouched when a boundary pair is broken', async () => {
+      const uid = 'CW-BROKEN';
+      const noteContent = [
+        '# Broken',
+        '',
+        formatCardStartBoundary(uid),
+        'body without an end boundary',
+        '',
+      ].join('\n');
+      const vault = await setupTestVault({ 'notes/broken.md': noteContent });
+      const cardReferences = [
+        { note_path: 'notes/broken.md', start_line: 3, end_line: 5 },
+        { note_path: 'notes/other.md', start_line: 1, end_line: 2 },
+      ];
+      await writeCard(vault, makeCard(uid, cardReferences));
+
+      const result = await applyOperations(vault, [
+        makeOperation('delete-note', 'notes/broken.md', { deleteReason: 'No longer needed' }),
+      ]);
+
+      expect(result.allOk).toBe(false);
+      expect(result.results[0].error).toContain(
+        'Boundary integrity check failed for notes/broken.md',
+      );
+      expect(result.results[0].error).toContain('[unmatched-start-boundary]');
+      expect(await pathExists(absolutePath(vault, 'notes/broken.md'))).toBe(true);
+      expect((await readCard(vault, uid)).referenced_in).toEqual(cardReferences);
     });
 
     it('deletes the note even when a boundary card document is missing', async () => {

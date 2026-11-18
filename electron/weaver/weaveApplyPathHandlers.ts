@@ -20,7 +20,7 @@ import {
   type WeaveApplyContext,
   type WeaveApplyHandlerResult,
 } from './weaveApplyHandlerContract';
-import { assertNoteExists, assertWithinVault } from './weaveApplyGuards';
+import { assertNoteExists, assertWithinVault, verifyBoundaryIntegrity } from './weaveApplyGuards';
 
 // The card-to-note mutation services in `services/` are deliberately not imported
 // here. They look like the obvious de-duplication of the note-to-card delete and
@@ -55,6 +55,12 @@ async function renameNoteAtPath(
 
   await assertNoteExists(fromAbsolute);
 
+  // Read and verify the source before touching the destination, so a malformed
+  // note is reported instead of moved. The other path mutations need the note
+  // content anyway, so integrity is checked on the content this handler reads.
+  const noteContent = await fs.readFile(fromAbsolute, 'utf8');
+  verifyBoundaryIntegrity(noteContent, payload.fromPath);
+
   // Check that target doesn't already exist
   try {
     await fs.stat(toAbsolute);
@@ -66,8 +72,7 @@ async function renameNoteAtPath(
   // Create target directory if needed
   await fs.mkdir(path.dirname(toAbsolute), { recursive: true });
 
-  // Read the note content before moving (needed for card UID extraction)
-  const noteContent = await fs.readFile(fromAbsolute, 'utf8');
+  // Card UIDs are extracted from the content read before the rename.
   const parsedNote = parseCrashCardsFromNote(payload.fromPath, noteContent);
   const cardUidsInNote = parsedNote.cards.map((c) => c.uid);
 
@@ -145,6 +150,11 @@ export async function applyDeleteNote(
   } catch {
     throw new Error(`Cannot read note for boundary removal: ${targetPath}`);
   }
+
+  // The note is about to be removed, so a malformed boundary must be reported
+  // before any reference is pruned; otherwise the malformed note would be
+  // deleted without ever telling the user what was wrong with it.
+  verifyBoundaryIntegrity(noteContent, targetPath);
 
   const parsedNote = parseCrashCardsFromNote(targetPath, noteContent);
   const cardUids = parsedNote.cards.map((c) => c.uid);

@@ -196,9 +196,11 @@ Apply touches markers as follows. The dispatch map and reporting loop live in
 - `applyEditNoteContent` replaces the target text and then runs the same integrity check before
   writing; the test `edit-note-content: fails when edit would break boundary integrity` pins the
   rejection of a replacement that would remove one marker of a pair.
-- `applyRenameNote` and `applyDeleteNote` in the path-mutation handlers re-parse the note with
-  `parseCrashCardsFromNote` to find the card UIDs it contains, then update or orphan the
-  corresponding card JSON references.
+- `applyRenameNote` and `applyDeleteNote` in the path-mutation handlers first verify the existing
+  note's boundary integrity with `verifyBoundaryIntegrity`, then re-parse it with
+  `parseCrashCardsFromNote` to find the card UIDs it contains and update or orphan the corresponding
+  card JSON references. A malformed note is reported and left untouched instead of being moved or
+  removed.
 
 The ordering of retrieval, planning, the Approval gate and apply is specified in
 [The weave pipeline](../architecture/weave-pipeline.md).

@@ -63,6 +63,5 @@ it where a ticket does.
 - **No packaging or signing check.** Out of scope for the rework (GitHub issue #1), and not
   started.
 
-Two gaps are product behaviour rather than missing harness work and are tracked on their own
-tickets: a weave plan that omits a UID boundary marker is accepted (#4), and boundary-integrity
-verification is not run on note delete or rename (#17).
+One gap is product behaviour rather than missing harness work and is tracked on its own ticket: a
+weave plan that omits a UID boundary marker is accepted (#4).

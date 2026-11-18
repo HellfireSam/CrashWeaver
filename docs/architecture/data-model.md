@@ -275,7 +275,8 @@ count for a single sync.
 
 Diagnostics are not only reporting: an error-severity diagnostic suppresses reference pruning
 for that note, and `verifyBoundaryIntegrity` in `electron/weaver/weaveApplyGuards.ts`
-re-parses content before a weave write and throws if any error-severity diagnostic remains.
+re-parses a note's content before a weave operation writes, moves or removes it and throws if any
+error-severity diagnostic is present.
 
 ## Path safety and failure handling
 

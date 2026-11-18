@@ -76,7 +76,6 @@ Real limitations of the current code, recorded here rather than implied away in 
 - Renaming or moving a directory rewrites no card references and no note paths, although renaming a
   note does.
 - Weaver dry-run reports success without running the validation the real apply runs.
-- Boundary-integrity verification is not called on note delete or rename.
 - The parser accepts interior whitespace in a boundary marker that the mutation services cannot
   match, and a Weaver-supplied block can place such a pair: it parses, but it is never stripped or
   UID-renamed afterwards.
