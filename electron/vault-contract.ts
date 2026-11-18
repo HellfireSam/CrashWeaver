@@ -110,7 +110,7 @@ export interface CardRenameResult {
   updatedCrashpads: number;
 }
 
-export type CardParseDiagnosticCode =
+type CardParseDiagnosticCode =
   | 'invalid-start-boundary'
   | 'invalid-end-boundary'
   | 'nested-start-boundary'
@@ -250,7 +250,7 @@ export type WeaveErrorCategory =
   | 'schema-error'
   | 'safety-error';
 
-export type WeaveProviderName = 'stub' | 'openrouter';
+type WeaveProviderName = 'stub' | 'openrouter';
 
 export type WeaveInsertPlacement =
   'append-to-note' | 'prepend-to-note' | 'after-heading' | 'before-heading' | 'after-selection';
@@ -330,12 +330,12 @@ interface WeavePlanRequestBase {
   maxOperations?: number;
 }
 
-export interface GuidedInsertWeavePlanRequest extends WeavePlanRequestBase {
+interface GuidedInsertWeavePlanRequest extends WeavePlanRequestBase {
   kind: 'guided-insert';
   permissions: GuidedInsertPermissions;
 }
 
-export interface IntelligentWeavePlanRequest extends WeavePlanRequestBase {
+interface IntelligentWeavePlanRequest extends WeavePlanRequestBase {
   kind: 'intelligent';
   strength: WeaveStrength;
 }
@@ -394,12 +394,12 @@ interface WeavePlanBase {
   referencedCards: string[];
 }
 
-export interface GuidedInsertWeavePlan extends WeavePlanBase {
+interface GuidedInsertWeavePlan extends WeavePlanBase {
   kind: 'guided-insert';
   permissions: GuidedInsertPermissions;
 }
 
-export interface IntelligentWeavePlan extends WeavePlanBase {
+interface IntelligentWeavePlan extends WeavePlanBase {
   kind: 'intelligent';
   strength: WeaveStrength;
 }
