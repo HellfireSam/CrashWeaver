@@ -432,10 +432,30 @@ The grilling frontier is otherwise **empty**. In order:
      describe the new modules. Gate green from a clean install on Linux: 25 files / 274 tests,
      0 lint errors with the unchanged 28 warnings, coverage 36.86% statements / 37.57% lines
      (from 36.1 / 36.84).
-   - **Frontier is now #14** (split the weave apply service), **#15** (split the largest renderer
-     module, unblocked by #13), and the two defects **#16** and **#17**. #19 and #20 need #15; #21
-     needs #20; #18 needs #14 and #15; #22 needs #14. #4 (boundary-marker gap) remains unblocked
-     but is a tracked product gap, not rework: leave it until the rework is done.
+   - ~~#14 split the weave apply service~~ — **DONE** in `36971a6`: the 843-line module is now five
+     modules behind one export. `weaveApplyGuards.ts` holds the containment, note-existence and
+     boundary-integrity guards; `weaveApplyNoteHandlers.ts` holds insert, edit and create;
+     `weaveApplyPathHandlers.ts` holds the seven path-mutation handlers and the comment recording that
+     the note-to-card and card-to-note mutation directions are not interchangeable;
+     `weaveApplyHandlerContract.ts` holds the explicit context, the handler result and the warning
+     format; `weaveApplyService.ts` holds `applyWeaveOperations`, the kind-to-handler map and the
+     reporting loop. Handlers take `(context, operation)` rather than five positional arguments, and
+     the map's `satisfies` clause proves kind by kind that each handler accepts its own operation, so
+     the ten payload casts are gone. The 83 characterization tests pass unmodified. Review caught a
+     real regression in the first cut: a plain object index for the dispatch map resolved inherited
+     property names, so kind `constructor` ran the `Object` constructor instead of reporting "Unknown
+     operation kind" as the old `switch` did; the lookup now checks `Object.hasOwn`, two regression
+     tests pin `constructor` and `hasOwnProperty` (mutation-checked: removing the guard fails both),
+     and that is the only test change — the characterization suite's existing assertions are
+     untouched. Review also corrected two inaccurate statements in the new docs, unified the edit
+     handler's duplicated retry tail and the shared write-and-sync, and renamed three confusable
+     dispatch types. No new test seam. Gate green from a clean install on Linux: 25 files / 276
+     tests, 0 lint errors with the unchanged 28 warnings, coverage 37.09% statements / 37.8% lines
+     (from 36.86 / 37.57).
+   - **Frontier is now #15** (split the largest renderer module), the two defects **#16** and **#17**,
+     and **#22** (reconcile the delete/rename directions, unblocked by #12 and #14). #18 needs #15 as
+     well as #14; #19 and #20 need #15; #21 needs #20. #4 (boundary-marker gap) remains unblocked but
+     is a tracked product gap, not rework: leave it until the rework is done.
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -463,12 +483,18 @@ the projection, restoring the old memo granularity. A second spec pass then foun
 suite exercised only fallback cards and that `tests/README.md` over-claimed `cards.ts` coverage;
 linked-card payloads, a missing card store and the Reference fallback are now asserted, and the
 README narrows its claim. The spec axis verified all four acceptance criteria and agreed the
-draft-path fallback is unreachable. The commits above carry the corrections; the hashes are the
-final ones.
+draft-path fallback is unreachable. For #14 the standards axis caught two false statements in the
+rewritten docs (the note handlers were said to own the boundary-integrity check, and the module map
+did not cover the handler-contract module), the duplicated edit-retry and write-and-sync tails, and
+three confusable dispatch-type names; the spec axis caught a prototype-chain regression in the new
+dispatch map (an inherited property name such as `constructor` ran as a handler), a false
+unknown-kind claim in the architecture doc, and an over-broad note-handler header. All were
+corrected before the commit. The commits above carry the corrections; the hashes are the final
+ones.
 
 **Branch state:** the newest commits are on `main` in this clone and **not pushed**: `ad5852d`
-(#13) and this record update. Everything through `b13af6b` (the correction to the #11 record) is on
-`origin/main`.
+(#13), its record `8efce3f`, `36971a6` (#14) and this record update. Everything through `de713b6`
+(the #12 record) is on `origin/main`.
 
 ## 8. How to resume
 
@@ -485,9 +511,9 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The newest commits (#13 `ad5852d` and this record update)
-are **not pushed**; the rework through #11, its record and the correction (`b13af6b`) is on
-`origin/main`.
+the decisions are no longer only local. The newest commits (#13 `ad5852d`, its record `8efce3f`, #14
+`36971a6` and this record update) are **not pushed**; everything through `de713b6` (the #12 record)
+is on `origin/main`.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -512,5 +538,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#14, #15, #16 and #17), and the
+Everything else is unchanged: the closed tickets, the frontier (#15, #16, #17 and #22), and the
 unpushed state of the newest commits.
