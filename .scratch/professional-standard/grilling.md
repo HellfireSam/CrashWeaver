@@ -452,10 +452,49 @@ The grilling frontier is otherwise **empty**. In order:
      dispatch types. No new test seam. Gate green from a clean install on Linux: 25 files / 276
      tests, 0 lint errors with the unchanged 28 warnings, coverage 37.09% statements / 37.8% lines
      (from 36.86 / 37.57).
-   - **Frontier is now #15** (split the largest renderer module), the two defects **#16** and **#17**,
-     and **#22** (reconcile the delete/rename directions, unblocked by #12 and #14). #18 needs #15 as
-     well as #14; #19 and #20 need #15; #21 needs #20. #4 (boundary-marker gap) remains unblocked but
-     is a tracked product gap, not rework: leave it until the rework is done.
+   - ~~#16 note rename half-updated duplicate references~~ — **DONE** in `102081c`:
+     `renameNoteAtPath` used `findIndex` and rewrote only the first `referenced_in` entry carrying the
+     old note path, so a card holding stored duplicates was left half-migrated. It now rewrites every
+     matching entry with `map`, preserving list order, leaving other notes' entries alone and skipping
+     the write when nothing matched. The regression test writes a card with two entries for the
+     renamed note plus an unrelated entry and fails against the first-match update. The roadmap's
+     known-gap line is removed. Gate green: 25 files / 277 tests.
+   - ~~#17 boundary integrity on note delete and rename~~ — **DONE** in `0283e66`: delete and rename
+     now call `verifyBoundaryIntegrity` on the note they read, before any mutation — rename before it
+     checks or creates the destination, delete before it prunes a reference or removes the file.
+     `move-note` inherits the check through the shared rename path; that is a deliberate, benign
+     extension of the ticket (moving a malformed note now fails the same way renaming it does). The
+     tests add an unterminated pair for both operations and assert the diagnostic code, the surviving
+     note and untouched card references; the two `it` titles were made distinct in `2ecce4b`. The
+     roadmap and `tests/README.md` gap lines are removed and the boundary/reference/architecture
+     documents corrected. Gate green: 25 files / 279 tests.
+   - ~~#22 reconcile the note-to-card and card-to-note reference mutations~~ — **DONE** in `980d61d`,
+     corrected in `d75f763`: the decision is **keep them separate**. ADR-0001 records both directions
+     and why the swap is destructive, the data model documents them side by side, and the warning
+     comment above the path-mutation handlers now points at the ADR as the single home for the
+     rationale. Review caught two precision errors in the first cut: the card-to-note services do not
+     leave `referenced_in` untouched (the note re-sync they trigger rewrites it), and restore is a
+     third card-to-note service (`reinsertCardBoundariesForReferences`); both were corrected, along
+     with the data-model claim that every note write runs the integrity guard (`create-note` does not).
+   - ~~#15 split the largest renderer module~~ — **DONE** in `d107335`: `App.tsx` went from 1431 to
+     709 lines. `useWeaverController` owns the Weaver (composer and its effects, provider health,
+     generation, apply with the destructive-operation gate, sessions, settings writes);
+     `EditorSurface` owns the editor pane; `AppChrome` owns the window strip, widget rail and layout
+     grid; `App.tsx` is the composition root, keeping the shared hooks, the external-change
+     subscription and the projections both surfaces need. The controller spreads `inspectorProps` and
+     `settingsProps` typed as `Pick` of the panes' own prop types, so no component's prop interface
+     changed. No test seam was added — the ticket forbids one — so the split is proven by typecheck,
+     tests and build plus a static comparison of the old component's UI strings, class names and
+     bridge calls; that comparison caught the external-change subscription being dropped in the first
+     cut, restored before commit. Lint warnings fell from 28 to 12 because the moved callbacks now
+     list their stable setters. Gate green: 25 files / 279 tests, coverage 37.04% statements / 37.75%
+     lines (from 37.09 / 37.8; the fall is the new untested UI modules).
+   - **Frontier is now #18** (remove the sixteen unimported contract exports, unblocked by #14 and
+     #15), **#19** (the Weaver/weave naming violations, unblocked by #15) and **#20** (centralise the
+     IPC channel contract and derive the renderer bridge type, unblocked by #15); **#21** needs #20.
+     Separately, **#23** (the card chip truncates titles) and **#25** (card UIDs are not validated on
+     read or in weaver apply) are unblocked product defects, and **#24** (spaces in card titles) is
+     feature work that waits for the rework to finish, as does **#4** (boundary-marker gap).
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -489,12 +528,25 @@ did not cover the handler-contract module), the duplicated edit-retry and write-
 three confusable dispatch-type names; the spec axis caught a prototype-chain regression in the new
 dispatch map (an inherited property name such as `constructor` ran as a handler), a false
 unknown-kind claim in the architecture doc, and an over-broad note-handler header. All were
-corrected before the commit. The commits above carry the corrections; the hashes are the final
-ones.
+corrected before the commit. For the four-ticket batch the standards axis caught an 80-character
+#15 subject, commit-body claims that no longer matched the final code (`674 lines`, both prop groups
+typed `Pick`, four contexts read), a `tests/README.md` gap that named only the closed #15, the
+controller's type-only dependency on the panes' prop interfaces, and the duplicated editor-kind
+flags; the spec axis caught the two ADR/data-model precision errors listed under #22, the missing
+restore service, the `create-note` integrity exception and a stale controller-options sentence. One
+spec finding — that `verifyBoundaryIntegrity` now also runs for `move-note` — was reviewed and kept
+as a deliberate consequence of the shared rename path. Two standards findings were considered and
+recorded rather than actioned: "one hook per concern", because #15 itself asks for a single Weaver
+controller hook and the controller is the one Weaver concern, and "characterise before refactoring",
+because the renderer layer has no existing seam to characterise at and #15 forbids adding one, so
+the split is proven by the static equivalence check, typecheck, tests and build, with the gap named
+in `tests/README.md`. Corrections landed in `d107335` (the amended #15 commit), `d75f763` and
+`2ecce4b`.
 
-**Branch state:** the newest commits are on `main` in this clone and **not pushed**: `ad5852d`
-(#13), its record `8efce3f`, `36971a6` (#14) and this record update. Everything through `de713b6`
-(the #12 record) is on `origin/main`.
+**Branch state:** the newest commits are on `main` in this clone and **not pushed**: the four-ticket
+batch (`102081c` #16, `0283e66` #17, `980d61d` #22, `d107335` #15), its review corrections
+(`d75f763`, `2ecce4b`) and this record update. Everything through `de713b6` (the #12 record) is on
+`origin/main`.
 
 ## 8. How to resume
 
@@ -511,9 +563,9 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The newest commits (#13 `ad5852d`, its record `8efce3f`, #14
-`36971a6` and this record update) are **not pushed**; everything through `de713b6` (the #12 record)
-is on `origin/main`.
+the decisions are no longer only local. The newest commits (the #15/#16/#17/#22 batch, its review
+corrections and this record update) are **not pushed**; everything through `de713b6` (the #12
+record) is on `origin/main`.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -538,5 +590,6 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#15, #16, #17 and #22), and the
-unpushed state of the newest commits.
+Everything else is unchanged: the closed tickets, the frontier (#18, #19 and #20; #21 needs #20;
+#23 and #25 are unblocked product defects; #24 and #4 wait for the rework), and the unpushed state
+of the newest commits.
