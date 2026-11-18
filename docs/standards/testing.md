@@ -11,7 +11,10 @@ configuration; `include` lists every suite in the repository.
 
 - **Renderer suites** — `src/**/*.test.{ts,tsx}` — run against the TypeScript sources and are
   colocated with the module they test (`src/lib/markdownPreview.test.ts` beside
-  `src/lib/markdownPreview.ts`).
+  `src/lib/markdownPreview.ts`, `src/components/WeaverCardChip.test.tsx` beside
+  `src/components/WeaverCardChip.tsx`). A component suite starts with
+  `// @vitest-environment jsdom` — the default environment is Node — and drives the component with
+  `createRoot` and React's `act`, so it renders the real markup rather than a snapshot.
 - **Main-process suites** — `tests/electron/**/*.test.ts` — run against the **compiled** CommonJS
   output in `dist-electron/`, imported through `createRequire`, not against `electron/*.ts`. The
   test command builds the main process first. That build is the compiled-artifact check: if the
@@ -32,8 +35,10 @@ the main-process suites and fails until `npm run build:main` has run.
   assert what a caller can observe. Do not assert on private state, call order, or the shape of an
   implementation object.
 - **Use real dependencies where the real thing is cheap.** Main-process tests use real temporary
-  directories (`fs.mkdtemp`) and real JSON files; they do not mock the filesystem. The provider
-  seam and the HTTP transport are the exceptions — tests fake the network there.
+  directories (`fs.mkdtemp`) and real JSON files; they do not mock the filesystem. Three things are
+  faked because the real ones are not cheap: the provider seam, the HTTP transport, and the
+  `electron` module — under plain Node that module resolves to the path of the Electron binary, so
+  the IPC handler-coverage suite replaces it with a recording double.
 - **No network and no clock dependence.** A suite must not call a live provider, and must not
   depend on wall-clock time or ordering between files. Vitest runs files in isolation; a test that
   only passes as part of a particular sequence is broken.

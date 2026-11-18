@@ -63,18 +63,18 @@ a declared area is the right one.
 
 These are the conventions the code already follows; match them in new code.
 
-| Kind                                    | Convention                     | Examples                                                                 |
-| --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------ |
-| Types, interfaces, React components     | `PascalCase`                   | `CardDocument`, `WeavePlanOperation`, `WeaverProposalPanel`              |
-| Functions, variables, parameters, props | `camelCase`                    | `removeCardBoundaryLines`, `rootPath`, `cardStorePath`                   |
-| React hooks                             | `use` + `PascalCase`           | `useEditorTabs`, `useCrashpadActions`, `usePaneLayout`                   |
-| Shared constant values                  | `SCREAMING_SNAKE_CASE`         | `MAX_TOTAL_STEPS`, `MIN_REMAINING_TIME_MS`, `EMBEDDING_SIMILARITY_BOOST` |
-| Module-scoped state and derived values  | `camelCase`                    | `isDev`, `pendingChangedPaths`                                           |
-| Component files                         | `PascalCase.tsx`               | `InspectorPane.tsx`, `WeaverDiffPreview.tsx`                             |
-| Hook files                              | `usePascalCase.ts`             | `useEditorTabs.ts`, `useVaultLoadActions.ts`                             |
-| Other modules                           | `camelCase.ts`                 | `vaultService.ts`, `cardParser.ts`, `weavePlanSchema.ts`                 |
-| Test files                              | `<module>.test.ts`             | `vaultService.test.ts`, `markdownPreview.test.ts`                        |
-| Test-only exports                       | `__` prefix, `ForTests` suffix | `__setSettingsFilePathForTests`, `__resetWeaverProviderForTests`         |
+| Kind                                    | Convention                                 | Examples                                                                 |
+| --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| Types, interfaces, React components     | `PascalCase`                               | `CardDocument`, `WeavePlanOperation`, `WeaverProposalPanel`              |
+| Functions, variables, parameters, props | `camelCase`                                | `removeCardBoundaryLines`, `rootPath`, `cardStorePath`                   |
+| React hooks                             | `use` + `PascalCase`                       | `useEditorTabs`, `useCrashpadActions`, `usePaneLayout`                   |
+| Shared constant values                  | `SCREAMING_SNAKE_CASE`                     | `MAX_TOTAL_STEPS`, `MIN_REMAINING_TIME_MS`, `EMBEDDING_SIMILARITY_BOOST` |
+| Module-scoped state and derived values  | `camelCase`                                | `isDev`, `pendingChangedPaths`                                           |
+| Component files                         | `PascalCase.tsx`                           | `InspectorPane.tsx`, `WeaverDiffPreview.tsx`                             |
+| Hook files                              | `usePascalCase.ts`                         | `useEditorTabs.ts`, `useVaultLoadActions.ts`                             |
+| Other modules                           | `camelCase.ts`                             | `vaultService.ts`, `cardParser.ts`, `weavePlanSchema.ts`                 |
+| Test files                              | `<module>.test.ts`, `<Component>.test.tsx` | `vaultService.test.ts`, `WeaverCardChip.test.tsx`                        |
+| Test-only exports                       | `__` prefix, `ForTests` suffix             | `__setSettingsFilePathForTests`, `__resetWeaverProviderForTests`         |
 
 More rules, in the same spirit:
 

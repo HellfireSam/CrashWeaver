@@ -44,7 +44,7 @@ filesystem handles stay on the main side.
 | `src/hooks/`                     | React stateful logic and effects. One hook per concern; name it `useXxx`.                                                                                                                                  |
 | `src/state/`                     | The shared state contexts and their providers; `index.ts` re-exports the providers, consumers and types.                                                                                                   |
 | `src/components/`                | Presentation: components and their props. They read state through hooks and render; where they need main-process data they go through a hook or `window.crashWeaver`, never through Node or Electron APIs. |
-| `tests/electron/`                | Main-process suites. Renderer suites sit beside their module (`src/lib/*.test.ts`).                                                                                                                        |
+| `tests/electron/`                | Main-process suites. Renderer suites sit beside their module: `src/lib/*.test.ts` for pure helpers, `src/components/*.test.tsx` for components.                                                            |
 
 A new module name is expected to fit one of those rows. A file that needs two rows is two files:
 `main.ts` registers and delegates to services rather than also implementing them, and pure logic

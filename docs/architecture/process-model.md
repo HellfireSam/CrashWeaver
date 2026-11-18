@@ -234,14 +234,15 @@ and the Weaver surfaces `WeaverProposalPanel`, `WeaverCardChip`, `WeaverProgress
 `WeaverSessionHistory`. A few components call `window.crashWeaver` directly rather than going
 through `App.tsx`: `WeaverProposalPanel` uses `isStubWeaverProvider`, `listWeaverModels` and
 `onWeavePlanProgress`, `WeaverSessionHistory` uses `getWeaverSession`, and
-`WeaverUnifiedDiffModal` uses `readNote`.
+`WeaverUnifiedDiffModal` uses `readNote`. `src/components/WeaverCardChip.test.tsx` is the first
+component suite: it runs under jsdom and asserts the card chip's rendered title and tooltip,
+because CSS line clamping is not unit-testable.
 
 `src/lib/` holds the pure helpers — `cardProjection.ts`, `cards.ts`, `crashpadHistory.ts`,
 `crashpadStatus.ts`, `editorPaths.ts`, `errorUtils.ts`, `explorerTree.ts`, `layout.ts`,
 `markdownPreview.ts`, `stateUtils.ts` — with no React state and no IPC. Vitest suites sit beside
 `cardProjection.ts`, `crashpadStatus.ts`, `editorPaths.ts`, `layout.ts` and
-`markdownPreview.ts`; `src/components/WeaverCardChip.test.tsx` is the first component suite and
-runs under jsdom, asserting the rendered title because CSS clamping is not unit-testable.
+`markdownPreview.ts`.
 
 ### Error boundaries
 
