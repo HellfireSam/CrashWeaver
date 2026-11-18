@@ -233,7 +233,8 @@ noteOnly, directoryOnly })` is the shared path gate: it resolves against the roo
 **Result validation.** `validateWeavePlanResult(result, request, settings)` checks the envelope (model present, provider `stub` or `openrouter`, non-negative latency), then `validatePlan`: the
 plan `kind` must match the request, the summary must be non-empty, there must be at least one and no more than `request.maxOperations ?? resolveDefaultMaxOperations(...)` operations, `warnings`
 and `referencedCards` are de-duplicated, `referencedCards` must include the focused UID, and the plan must echo the request's permissions or strength exactly. `validateOperation` rejects unknown
-kinds and kinds the request may not emit, and requires a non-empty rationale, target path, and payload. Payload rules with product meaning: `insert-boundary-pair` requires `cardUid` equal to the
+kinds and kinds the request may not emit, and requires a non-empty rationale, target path, and payload. Payload rules with product meaning: a payload `cardUid` is validated against the card UID
+grammar when the operation is normalised, so a traversal UID is rejected before apply; `insert-boundary-pair` requires `cardUid` equal to the
 focused card, a valid placement, `headingText` for heading placements, `selectedText` for `after-selection`, and — via `assertBoundaryBlockIncludesCard` — the exact `%%CW_CARD_START uid:<uid>%%`
 and `%%CW_CARD_END uid:<uid>%%` markers; `create-note` requires the focused `cardUid` and, via `assertCreateNoteHasSubstantiveContent`, a trimmed length of at least 20 characters (leading and
 trailing whitespace is trimmed, internal whitespace counts; markers inside the content are optional and no longer injected); rename and move kinds require `targetPath` to equal `payload.toPath`

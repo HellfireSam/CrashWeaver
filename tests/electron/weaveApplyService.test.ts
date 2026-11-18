@@ -1945,4 +1945,42 @@ describe('weaveApplyService', () => {
       });
     }
   });
+
+  // ── card UID validation ─────────────────────────────────────────────────────
+
+  describe('card UID validation', () => {
+    it('rejects traversal UIDs on create-note and insert without touching the vault', async () => {
+      const vault = await setupTestVault({
+        'notes/graph.md': boundaryBlock('CW-001', 'Graph prose.'),
+      });
+      const before = await snapshotVault(vault.rootPath);
+
+      const result = await applyOperations(
+        vault,
+        [
+          makeOperation('create-note', 'notes/evil.md', {
+            cardUid: '../evil',
+            title: 'Traversal',
+            content: 'This note must never be written by the traversal attempt.',
+          }),
+          makeOperation('insert-boundary-pair', 'notes/graph.md', {
+            cardUid: '../evil',
+            placement: 'append-to-note',
+            boundaryBlock: '',
+          }),
+        ],
+        { stopOnError: false },
+      );
+
+      expect(result.allOk).toBe(false);
+      expect(result.failedCount).toBe(2);
+      for (const operationResult of result.results) {
+        expect(operationResult.ok).toBe(false);
+        expect(operationResult.error).toMatch(/Card title \/ ID must use only letters, numbers/);
+      }
+      // Nothing outside the card store was created, read or deleted, and the
+      // note targeted by the insert is byte-for-byte unchanged.
+      expect(await snapshotVault(vault.rootPath)).toEqual(before);
+    });
+  });
 });

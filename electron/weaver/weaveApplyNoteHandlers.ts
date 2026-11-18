@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { formatCardEndBoundary, formatCardStartBoundary } from '../cardParser';
-import { cardDocumentExists, getCardFilePath } from '../cardStoreService';
+import { assertValidCardUid, cardDocumentExists, getCardFilePath } from '../cardStoreService';
 import { syncNoteToCardStore } from '../cardSyncService';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { writeJsonAtomically, writeTextAtomically } from '../utils/jsonFile';
@@ -54,6 +54,11 @@ export async function applyInsertBoundaryPair(
     return { ok: true, affectedPaths: [targetPath] };
   }
 
+  // Fail closed on a UID the card store would reject: the boundary formatter
+  // would otherwise write a traversal UID into the note before the store's
+  // path guard could stop the write.
+  const cardUid = assertValidCardUid(payload.cardUid);
+
   await assertNoteExists(absolutePath);
   const noteContent = await fs.readFile(absolutePath, 'utf8');
   const lines = noteContent.replace(/\r\n/g, '\n').split('\n');
@@ -64,7 +69,7 @@ export async function applyInsertBoundaryPair(
   // per the prompt contract. Do NOT re-wrap — use the block as-is.
   const blockLines = boundaryBlock.trim()
     ? boundaryBlock.replace(/\r\n/g, '\n').split('\n')
-    : [formatCardStartBoundary(payload.cardUid), formatCardEndBoundary(payload.cardUid)];
+    : [formatCardStartBoundary(cardUid), formatCardEndBoundary(cardUid)];
 
   let insertIndex: number;
   const placement = payload.placement;
@@ -229,6 +234,10 @@ export async function applyCreateNote(
     return { ok: true, affectedPaths: [targetPath] };
   }
 
+  // Fail closed before the note write and the store sync can touch anything:
+  // the card this note is created for must be a UID the card store accepts.
+  const cardUid = assertValidCardUid(payload.cardUid);
+
   // Check if note already exists
   let noteExists = false;
   try {
@@ -256,11 +265,11 @@ export async function applyCreateNote(
   await syncNoteToCardStore(cardStorePath, targetPath, noteContent);
 
   // Auto-create the card JSON if it doesn't exist
-  const cardExists = await cardDocumentExists(cardStorePath, payload.cardUid);
+  const cardExists = await cardDocumentExists(cardStorePath, cardUid);
   if (!cardExists) {
-    const cardFilePath = getCardFilePath(cardStorePath, payload.cardUid);
+    const cardFilePath = getCardFilePath(cardStorePath, cardUid);
     const defaultCard = {
-      uid: payload.cardUid,
+      uid: cardUid,
       type: [] as string[],
       raw_content: '',
       metadata: {

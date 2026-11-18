@@ -95,8 +95,14 @@ function coerceCardDocument(uid: string, value: unknown, fallbackBlockContent = 
   };
 }
 
+/**
+ * The single UID-to-path hop. Every read and write of a card file goes through
+ * here, so validating the UID here means no caller can build a path outside the
+ * card store — a weave plan or hand-edited crashpad naming `../evil` fails
+ * closed instead of escaping. Callers must not add a second path builder.
+ */
 export function getCardFilePath(cardStorePath: string, uid: string) {
-  return path.join(cardStorePath, `${uid}.json`);
+  return path.join(cardStorePath, `${assertValidCardUid(uid)}.json`);
 }
 
 export async function ensureCardStoreDirectory(cardStorePath: string) {

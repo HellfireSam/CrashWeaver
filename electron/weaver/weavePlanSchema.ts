@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { assertValidCardUid } from '../cardStoreService';
 import { toPosixPath } from '../utils/paths';
 import type {
   GuidedInsertPermissions,
@@ -143,7 +144,9 @@ function normalizeGuidedInsertPermissions(value: unknown): GuidedInsertPermissio
 }
 
 function normalizeCardUid(value: unknown, label: string) {
-  return normalizeNonEmptyString(value, label);
+  // Grammar is checked here so a traversal UID is rejected when the plan is
+  // normalised, not when apply reaches the card store.
+  return assertValidCardUid(normalizeNonEmptyString(value, label));
 }
 
 function assertBoundaryBlockIncludesCard(boundaryBlock: string, cardUid: string, label: string) {

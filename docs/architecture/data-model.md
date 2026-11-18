@@ -114,11 +114,19 @@ rewrites the whole index.
 A card is a `CardDocument` (`electron/vault-contract.ts`), the full payload described in
 [card-schema.md](../reference/card-schema.md). `electron/cardStoreService.ts` owns its
 persistence as a flat directory of JSON files, one per card: `getCardFilePath` is
-`path.join(cardStorePath, `${uid}.json`)`. The UID is therefore both the card's identity
-and its filename. `assertValidCardUid` trims it and rejects an empty UID (`Card title / ID
-is required.`) or one not matching `^[A-Za-z0-9_-]+$` (`Card title / ID must use only
-letters, numbers, underscores, or dashes.`); that pattern also makes a UID unusable as a
-traversal vector.
+`path.join(cardStorePath, `${assertValidCardUid(uid)}.json`)`. The UID is therefore both the
+card's identity and its filename. `assertValidCardUid` trims it and rejects an empty UID
+(`Card title / ID is required.`) or one not matching `^[A-Za-z0-9_-]+$` (`Card title / ID must
+use only letters, numbers, underscores, or dashes.`); that pattern also makes a UID unusable as
+a traversal vector.
+
+`getCardFilePath` is the single UID-to-path hop and it calls that validator, so every card
+read, existence check, write and delete fails closed on a UID that could escape the store: a
+hand-edited crashpad, a note UID or a weave plan naming `../evil` never produces a path at all.
+The same grammar is checked earlier where the UID arrives — `weavePlanSchema` validates it
+during plan normalisation, and the apply handlers validate a create or insert payload UID
+before they build boundaries, write a note or touch the store. There is no second path builder
+and no second copy of the rule.
 
 The default store is `<vault>/.crashweaver/cards` (`getDefaultCardStorePath`).
 `getCardStoreConfig` returns the per-vault override recorded in `cardStoreByVault` keyed

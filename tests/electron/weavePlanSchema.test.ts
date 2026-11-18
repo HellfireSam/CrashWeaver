@@ -232,4 +232,43 @@ describe('weavePlanSchema', () => {
       'create-note',
     ]);
   });
+
+  it('rejects a traversal card UID when the plan is normalised', async () => {
+    const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-schema-'));
+    const request = validateWeavePlanRequest(
+      createGuidedRequest(rootPath, {
+        permissions: { editContent: false, createNote: true },
+      }),
+    );
+
+    expect(() =>
+      validateWeavePlanResult(
+        {
+          plan: {
+            kind: 'guided-insert',
+            permissions: { editContent: false, createNote: true },
+            summary: 'Create a note for a card whose UID escapes the card store.',
+            operations: [
+              {
+                kind: 'create-note',
+                targetPath: 'notes/evil.md',
+                payload: {
+                  cardUid: '../evil',
+                  title: 'Evil',
+                  content: 'Substantive prose that would otherwise be accepted by create-note.',
+                },
+                rationale: 'The traversal must be rejected during normalisation.',
+              },
+            ],
+            warnings: [],
+            referencedCards: ['CW-001'],
+          },
+          model: 'stub',
+          provider: 'stub',
+          latencyMs: 1,
+        },
+        request,
+      ),
+    ).toThrow(/Card title \/ ID must use only letters, numbers/);
+  });
 });

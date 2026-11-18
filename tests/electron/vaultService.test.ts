@@ -139,6 +139,46 @@ describe('vaultService', () => {
     }
   });
 
+  it('restoreDeletedCard rejects a corrupted snapshot UID instead of resolving a path outside the store', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-vault-restore-traversal-'));
+    const settingsPath = path.join(tempDir, 'crashweaver-settings.json');
+    const rootPath = path.join(tempDir, 'vault-root');
+
+    await fs.mkdir(rootPath, { recursive: true });
+
+    settingsService.__resetSettingsMutationQueueForTests();
+    settingsService.__setSettingsFilePathForTests(settingsPath);
+
+    try {
+      // A hand-edited crashpad can carry any string in a deleted-card snapshot;
+      // the restore path must fail closed rather than resolve a path outside
+      // the card store.
+      await expect(
+        vaultService.restoreDeletedCard(
+          rootPath,
+          {
+            uid: 'restore-uid',
+            origin: 'existing',
+            deletedAt: new Date().toISOString(),
+            removeNoteBoundaries: false,
+            card: {
+              uid: '../evil',
+              type: [],
+              raw_content: 'Q\nA',
+              metadata: { familiarity: 0, next_review: null },
+              memory_tricks: { memory_technique: '', qa_pairs: [] },
+              referenced_in: [],
+            },
+          },
+          { mode: 'forget-note-references' },
+        ),
+      ).rejects.toThrow(/Card title \/ ID must use only letters, numbers/);
+    } finally {
+      settingsService.__setSettingsFilePathForTests(null);
+      settingsService.__resetSettingsMutationQueueForTests();
+    }
+  });
+
   it('restoreDeletedCard forget mode clears saved references and reports forgotten count', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-vault-restore-forget-'));
     const settingsPath = path.join(tempDir, 'crashweaver-settings.json');

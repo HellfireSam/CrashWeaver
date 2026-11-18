@@ -72,7 +72,8 @@ script path. The renderer therefore cannot reach `require`, `fs`, or `ipcRendere
 privileged act is an explicit, named channel call — the preload bridge is the complete list of
 what the UI can ask the main process to do, and the main process re-validates each argument
 (for example `electron/vaultService.ts`'s `resolveNotePath` rejects a note path outside the
-vault).
+vault, and `electron/cardStoreService.ts`'s `getCardFilePath` refuses to build a path for a
+card UID outside its grammar).
 
 The main process is also the only participant that watches the vault, because a
 watcher is a privileged resource. `watchVault` syncs externally changed notes into the card
