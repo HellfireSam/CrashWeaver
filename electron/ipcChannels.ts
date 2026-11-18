@@ -10,71 +10,61 @@
  * Channel names follow the naming standard: `<area>:<name>`, lower-case and
  * kebab-cased inside each part, with a request/response channel named for the
  * imperative verb the main process performs and an event channel named for the
- * event. The area rule (agent concerns use `weaver:`) is applied in #21.
+ * event. The `as const` keeps every value a string-literal type. The area rule
+ * (agent concerns use `weaver:`) is applied in #21.
  */
-
-/**
- * Builds an `<area>:<name>` channel while keeping the literal type, so every
- * value below is a string literal type rather than `string`.
- */
-function channel<Area extends string, Name extends string>(
-  area: Area,
-  name: Name,
-): `${Area}:${Name}` {
-  return `${area}:${name}`;
-}
 
 export const IPC_CHANNELS = {
   vault: {
-    selectFolder: channel('vault', 'select-folder'),
-    open: channel('vault', 'open'),
-    listInternalDirectories: channel('vault', 'list-internal-directories'),
-    readNote: channel('vault', 'read-note'),
-    writeNote: channel('vault', 'write-note'),
-    updateIndex: channel('vault', 'update-index'),
-    selectImageDirectories: channel('vault', 'select-image-directories'),
-    setImageDirectories: channel('vault', 'set-image-directories'),
+    selectFolder: 'vault:select-folder',
+    open: 'vault:open',
+    listInternalDirectories: 'vault:list-internal-directories',
+    readNote: 'vault:read-note',
+    writeNote: 'vault:write-note',
+    updateIndex: 'vault:update-index',
+    selectImageDirectories: 'vault:select-image-directories',
+    setImageDirectories: 'vault:set-image-directories',
   },
   cardStore: {
-    selectFolder: channel('card-store', 'select-folder'),
-    getConfig: channel('card-store', 'get-config'),
-    listCards: channel('card-store', 'list-cards'),
-    createCard: channel('card-store', 'create-card'),
-    saveCard: channel('card-store', 'save-card'),
-    renameCard: channel('card-store', 'rename-card'),
-    deleteCard: channel('card-store', 'delete-card'),
-    restoreCard: channel('card-store', 'restore-card'),
-    setPath: channel('card-store', 'set-path'),
+    selectFolder: 'card-store:select-folder',
+    getConfig: 'card-store:get-config',
+    listCards: 'card-store:list-cards',
+    createCard: 'card-store:create-card',
+    saveCard: 'card-store:save-card',
+    renameCard: 'card-store:rename-card',
+    deleteCard: 'card-store:delete-card',
+    restoreCard: 'card-store:restore-card',
+    setPath: 'card-store:set-path',
   },
   crashpad: {
-    list: channel('crashpad', 'list'),
-    open: channel('crashpad', 'open'),
-    create: channel('crashpad', 'create'),
-    save: channel('crashpad', 'save'),
-    getDeletePreferences: channel('crashpad', 'get-delete-preferences'),
-    setDeletePreferences: channel('crashpad', 'set-delete-preferences'),
+    list: 'crashpad:list',
+    open: 'crashpad:open',
+    create: 'crashpad:create',
+    save: 'crashpad:save',
+    getDeletePreferences: 'crashpad:get-delete-preferences',
+    setDeletePreferences: 'crashpad:set-delete-preferences',
   },
   weave: {
-    generatePlan: channel('weave', 'generate-plan'),
-    healthCheck: channel('weave', 'health-check'),
-    isStubProvider: channel('weave', 'is-stub-provider'),
-    listModels: channel('weave', 'list-models'),
-    getSettings: channel('weave', 'get-settings'),
-    updateSettings: channel('weave', 'update-settings'),
-    setPreferredModel: channel('weave', 'set-preferred-model'),
-    getRequestLogsDirectory: channel('weave', 'get-request-logs-directory'),
-    setRequestLogsDirectory: channel('weave', 'set-request-logs-directory'),
-    setApiKey: channel('weave', 'set-api-key'),
-    clearApiKey: channel('weave', 'clear-api-key'),
-    listSessions: channel('weave', 'list-sessions'),
-    getSession: channel('weave', 'get-session'),
-    deleteSession: channel('weave', 'delete-session'),
-    clearSessions: channel('weave', 'clear-sessions'),
-    applyPlan: channel('weave', 'apply-plan'),
+    generatePlan: 'weave:generate-plan',
+    healthCheck: 'weave:health-check',
+    isStubProvider: 'weave:is-stub-provider',
+    listModels: 'weave:list-models',
+    getSettings: 'weave:get-settings',
+    updateSettings: 'weave:update-settings',
+    setPreferredModel: 'weave:set-preferred-model',
+    getRequestLogsDirectory: 'weave:get-request-logs-directory',
+    setRequestLogsDirectory: 'weave:set-request-logs-directory',
+    setApiKey: 'weave:set-api-key',
+    clearApiKey: 'weave:clear-api-key',
+    listSessions: 'weave:list-sessions',
+    getSession: 'weave:get-session',
+    deleteSession: 'weave:delete-session',
+    clearSessions: 'weave:clear-sessions',
+    applyPlan: 'weave:apply-plan',
   },
   /** Push channels: main sends, preload subscribes. */
   events: {
-    weavePlanProgress: channel('weave', 'plan-progress'),
-    vaultExternalChange: channel('vault', 'external-change'),
+    weavePlanProgress: 'weave:plan-progress',
+    vaultExternalChange: 'vault:external-change',
   },
 } as const;
