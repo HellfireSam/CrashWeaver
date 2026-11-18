@@ -1,7 +1,7 @@
 /**
  * openRouterClient.ts
  *
- * OpenRouter WeaverModelProvider — the production AI backend for the Weaver planner.
+ * OpenRouter Weaver provider — the production AI backend for the Weaver planner.
  *
  * HTTP transport lives in weaveHttpClient.ts.
  * Orchestration (model resolution → context → graph execution) is
@@ -75,7 +75,7 @@ interface OpenRouterPlanOptions {
 // ── OpenRouter Weave Provider ─────────────────────────────────────────────────
 
 /**
- * WeaverModelProvider backed by OpenRouter.
+ * Weaver provider backed by OpenRouter.
  * generatePlan() resolves the model, profile, and context, then delegates
  * the ReAct loop to runWeaveGraph().
  */

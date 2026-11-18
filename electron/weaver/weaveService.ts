@@ -26,15 +26,12 @@ import {
 import type {
   WeavePlanRequest,
   WeavePlanResult,
-  WeaverModelProvider,
   WeaveModelInfo,
   WeaverProviderHealth,
   WeaverSettings,
   WeaverKeyStatus,
 } from '../vault-contract';
 import type { WeaveProgressCallback } from './weaveGraphState';
-
-export type { WeaverModelProvider };
 
 interface InternalWeaverModelProvider {
   generatePlan(

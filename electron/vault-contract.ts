@@ -452,12 +452,6 @@ export interface WeaveModelInfo {
   contextLength?: number;
 }
 
-export interface WeaverModelProvider {
-  generatePlan(request: WeavePlanRequest): Promise<WeavePlanResult>;
-  healthCheck(): Promise<WeaverProviderHealth>;
-  listModels(): Promise<WeaveModelInfo[]>;
-}
-
 export interface WeaverSettings {
   configured: boolean;
   preferredModel: string | null;
