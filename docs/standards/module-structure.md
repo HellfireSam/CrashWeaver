@@ -9,10 +9,12 @@ placement and boundaries.
 CrashWeaver is the standard Electron split — main process, preload bridge, renderer — and the
 split is enforced, not merely conventional.
 
-- **The renderer (`src/`) never imports main-process runtime code.** Its only dependency on
-  `electron/` is `import type` from `electron/vault-contract.ts`. It has no `node:` built-ins and
-  no `electron` import; every privileged act goes through `window.crashWeaver`, and nothing else in
-  the renderer may reach the main process.
+- **The renderer (`src/`) never imports main-process runtime code.** Its only dependencies on
+  `electron/` are `import type` from `electron/vault-contract.ts` and, for the bridge's own shape,
+  from `electron/preload.ts`; both are erased at build time, so the renderer bundle carries no
+  main-process dependency. It has no `node:` built-ins and no `electron` import; every privileged
+  act goes through `window.crashWeaver`, and nothing else in the renderer may reach the main
+  process.
 - **The main process (`electron/`) never imports from `src/`.** Shared types belong in
   `electron/vault-contract.ts`; the IPC channel names belong in `electron/ipcChannels.ts`.
 - **The preload bridge (`electron/preload.ts`) forwards and nothing else.** It imports `electron`,
@@ -69,7 +71,7 @@ the handler.
 
 - **An export exists because someone imports it.** Delete unused exports instead of keeping them
   "for later"; the compiler does not warn about an unimported export, which is exactly how the
-  contract accumulated sixteen dead ones. When removing dead code would be ambiguous, record the
+  contract accumulated dead exports that nobody imported. When removing dead code would be ambiguous, record the
   reason in the commit body.
 - **One public behaviour, one export.** A service exports the operations its callers use; helpers
   that only one module uses stay private to it.

@@ -69,11 +69,16 @@ table groups the shapes by what they describe:
 | Group                                | Representative exports                                                                                                                                                                                                           | Who uses it                                                             |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Crash Card payload and review state  | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `ReviewMetadata`                                                                                                                          | Main persists it; renderer renders it                                   |
-| UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`, `CardParseDiagnosticCode`                                                                                                                                      | Main produces Diagnostics; renderer displays them                       |
+| UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`                                                                                                                                                                 | Main produces Diagnostics; renderer displays them                       |
 | Vault                                | `VaultDescriptor`, `VaultNoteSummary`, `VaultNoteDocument`, `VaultIndex`, `VaultIndexEntry`, `VaultWriteNoteInput`, `VaultWriteNoteResult`                                                                                       | Returned by `vault:*` channels; the descriptor lives in `VaultContext`  |
 | Crashpad                             | `CrashpadDocument`, `CrashpadSummary`, `CrashpadCardEntry`, `CrashpadDeletedCardSnapshot`, `CrashpadDeletePreferences`                                                                                                           | Main persists; renderer authors and restores                            |
 | Weaver requests, plans and results   | `WeaveKind`, `WeaveStrength`, `GuidedInsertPermissions`, `WeavePlanRequest`, `WeavePlan`, `WeaveReActStep`, `WeavePlanResult`, `WeaverProviderHealth`, `WeaveModelInfo`, `WeaveApplyResult`, `WeaverSettings`, `WeaverKeyStatus` | Renderer submits a request and reviews a plan; main runs and applies it |
 | Weave operation kinds and payloads   | `WeavePlanOperationKind`, the `*Payload` interfaces and the matching `*Operation` aliases, the `WeavePlanOperation` union                                                                                                        | Both sides: a `WeavePlanOperation[]` is posted to `weave:apply-plan`    |
+
+A sweep of the module's exports after #14/#15 found six types referenced only inside the module —
+`CardParseDiagnosticCode`, `WeaverProviderName`, the two request interfaces and the two plan
+interfaces — which are now module-private, while the ten operation aliases the original sweep
+listed are imported by the split apply handlers. The table above is the remaining export surface.
 
 Ownership follows the shapes. Main owns the behaviour behind them: it reads and writes the
 Vault, validates paths, persists the Card store and settings, and calls the provider. Preload
@@ -88,9 +93,9 @@ what is on the wire.
 ### The channel declaration
 
 `electron/ipcChannels.ts` declares every request/response and event channel exactly once. The
-names are built by a small `channel(area, name)` helper into literal types, grouped by area
-(`vault`, `cardStore`, `crashpad`, `weave`, and an `events` group for the two push channels). It
-is the only home for a channel string: `electron/main.ts` registers with
+names are a nested `as const` object, so every value is a string-literal type and the file holds
+no behaviour at all; they are grouped by area (`vault`, `cardStore`, `crashpad`, `weave`, and an
+`events` group for the two push channels). It is the only home for a channel string: `electron/main.ts` registers with
 `ipcMain.handle(IPC_CHANNELS.<area>.<name>, handler)` and `electron/preload.ts` invokes and
 subscribes with the same values, so a renamed channel is one edit and the two sides cannot spell
 it differently. The declaration imports nothing and is not part of the shared type contract,
@@ -141,8 +146,10 @@ declares `Window.crashWeaver` from it. Renaming a member of the exposed object, 
 signature, is therefore a compile error in the renderer; a payload change is caught by the contract
 type on both sides; and a channel rename is a single edit in the declaration.
 
-What the compiler still cannot see is whether a channel has a registered handler on the main side;
-that runtime check is ticket #21. Errors surface by rejection: `useWeaverController` normalises
+What the compiler still cannot see is whether a channel has a registered handler on the main side,
+or whether a call site passed a different _declared_ key (`ipcRenderer.invoke` and `ipcMain.handle`
+accept any string, so a wrong-key selection compiles and hangs). Both are runtime-concern gaps;
+the handler-coverage assertion is ticket #21. Errors surface by rejection: `useWeaverController` normalises
 Weaver errors by stripping Electron's wrapper with a regex matching
 `Error invoking remote method '<channel>': Error: <message>`.
 
@@ -208,7 +215,7 @@ Crashpad card and the editor ref from the root.
 and the Weaver surfaces `WeaverProposalPanel`, `WeaverProgressFeed`, `WeaverOperationItem`,
 `WeaverDiffPreview`, `WeaverUnifiedDiffModal`, `WeaverConfirmDialog` and `WeaverSessionHistory`.
 A few components call `window.crashWeaver` directly rather than going through `App.tsx`:
-`WeaverProposalPanel` uses `isStubWeaverProvider`, `listWeaveModels` and `onWeavePlanProgress`,
+`WeaverProposalPanel` uses `isStubWeaveProvider`, `listWeaveModels` and `onWeavePlanProgress`,
 `WeaverSessionHistory` uses `getWeaverSession`, and `WeaverUnifiedDiffModal` uses `readNote`.
 
 `src/lib/` holds the pure helpers — `cardProjection.ts`, `cards.ts`, `crashpadHistory.ts`,

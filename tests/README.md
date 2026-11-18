@@ -40,12 +40,13 @@ it where a ticket does.
 - **Main-process composition — `electron/main.ts`.** The service functions below it are tested
   directly, but the composition root is not: the 39 `ipcMain.handle` registrations, window
   creation and lifecycle, the native folder pickers, the vault watcher wiring and the
-  `crashweaver-local` protocol handler have no test. Ticket #20 centralises the channel contract
-  and #21 adds handler coverage.
+  `crashweaver-local` protocol handler have no test; #21 adds handler coverage.
 - **Preload bridge — `electron/preload.ts`.** The channel names now come from the single
-  declaration in `electron/ipcChannels.ts`, and the renderer's bridge type is derived from the
-  preload, so a renamed channel or member is a compile error (#20). Nothing yet asserts at runtime
-  that every exposed member has a registered main-process handler, or vice versa; ticket #21.
+  declaration in `electron/ipcChannels.ts` (#20), so the two sides cannot spell a name
+  differently, and the renderer's bridge type is derived from the preload, so renaming or
+  re-signaturing a bridge member is a compile error. Nothing yet asserts at runtime that every
+  exposed member has a registered main-process handler, or vice versa, and selecting a different
+  declared key at a call site would compile and hang; ticket #21.
 - **Renderer UI layer.** `src/App.tsx`, `src/components/**`, `src/hooks/**` and `src/state/**`
   have no tests; only the pure helpers in `src/lib/` are covered. The pure logic extracted from
   the largest module is tested — `src/lib/cardProjection.ts` (the rendered card surface) and

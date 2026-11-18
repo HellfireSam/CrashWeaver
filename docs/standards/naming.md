@@ -52,9 +52,10 @@ name again:
 
 Known violations of the rule are tracked, not silently tolerated:
 
-| Violation                                                                                                                                 | Ticket |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels) | #21    |
+| Violation                                                                                                                                                                                                                                                  | Ticket |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels)                                                                                                                  | #21    |
+| Provider, model and session identifiers still named with the action prefix — `weaveProviderHealth`, `checkWeaveProvider`, `listWeaveModels`, `WeaveModelInfo`, `initializeWeaveProvider`, the provider test seams, `weaveActiveSessionId` and `weaveModel` | #26    |
 
 ## Code conventions
 
