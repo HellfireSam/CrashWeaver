@@ -840,7 +840,7 @@ describe('weaveApplyService', () => {
       ]);
     });
 
-    it('fails and leaves the note and its card references untouched when a boundary pair is broken', async () => {
+    it('fails and leaves the note it was renaming untouched when the source has a broken boundary pair', async () => {
       const uid = 'CW-BROKEN';
       const noteContent = [
         '# Broken',
@@ -1054,7 +1054,7 @@ describe('weaveApplyService', () => {
       expect(result.results[0].error).toContain('Note not found');
     });
 
-    it('fails and leaves the note and its card references untouched when a boundary pair is broken', async () => {
+    it('fails and leaves the note it was deleting untouched when the note has a broken boundary pair', async () => {
       const uid = 'CW-BROKEN';
       const noteContent = [
         '# Broken',
