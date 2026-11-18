@@ -24,6 +24,7 @@ only; everything superseded lives in [the archive](./archive/README.md).
 ## Decisions
 
 - [ADR-0001: keep the two reference-mutation directions separate](./adr/0001-separate-reference-mutation-directions.md)
+- [ADR-0002: keep UID boundary markers optional in a create-note plan](./adr/0002-boundary-markers-optional-in-create-note.md)
 
 ## Reference
 

@@ -100,18 +100,11 @@ describe('weavePlanSchema', () => {
     ).toThrow(/cannot include edit-note-content/i);
   });
 
-  it('create-note content enforces a prose floor and treats boundary markers as optional', async () => {
-    const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-schema-'));
-    const request = validateWeavePlanRequest(
-      createGuidedRequest(rootPath, {
-        permissions: {
-          editContent: false,
-          createNote: true,
-        },
-      }),
-    );
-
-    const resultFor = (content: string) => ({
+  // The create-note characterisation. Boundary markers are optional in a
+  // create-note payload's content (see ADR-0002); only the trimmed prose floor
+  // is enforced. These tests exist to fail if that acceptance behaviour changes.
+  function guidedCreateNoteResult(content: string) {
+    return {
       plan: {
         kind: 'guided-insert',
         permissions: { editContent: false, createNote: true },
@@ -134,27 +127,49 @@ describe('weavePlanSchema', () => {
       model: 'stub',
       provider: 'stub',
       latencyMs: 1,
-    });
+    };
+  }
 
-    // Boundary markers are optional for create-note: prose on its own is accepted.
+  async function guidedCreateRequest() {
+    const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-schema-'));
+    return validateWeavePlanRequest(
+      createGuidedRequest(rootPath, {
+        permissions: {
+          editContent: false,
+          createNote: true,
+        },
+      }),
+    );
+  }
+
+  it('accepts create-note content that omits UID boundary markers', async () => {
+    const request = await guidedCreateRequest();
+
     expect(() =>
       validateWeavePlanResult(
-        resultFor('# New graph note\n\nGraph traversal notes for the focused card.'),
+        guidedCreateNoteResult('# New graph note\n\nGraph traversal notes for the focused card.'),
         request,
       ),
     ).not.toThrow();
+  });
 
-    // Content is judged only by its trimmed length, so a boundary-only payload
-    // that clears the 20-character floor is accepted too.
+  it('accepts boundary-only create-note content that clears the prose floor', async () => {
+    const request = await guidedCreateRequest();
+
     expect(() =>
       validateWeavePlanResult(
-        resultFor(['%%CW_CARD_START uid:CW-001%%', '%%CW_CARD_END uid:CW-001%%'].join('\n')),
+        guidedCreateNoteResult(
+          ['%%CW_CARD_START uid:CW-001%%', '%%CW_CARD_END uid:CW-001%%'].join('\n'),
+        ),
         request,
       ),
     ).not.toThrow();
+  });
 
-    // The floor itself is still enforced.
-    expect(() => validateWeavePlanResult(resultFor('Too short.'), request)).toThrow(
+  it('rejects create-note content shorter than the prose floor', async () => {
+    const request = await guidedCreateRequest();
+
+    expect(() => validateWeavePlanResult(guidedCreateNoteResult('Too short.'), request)).toThrow(
       /substantive markdown prose/i,
     );
   });

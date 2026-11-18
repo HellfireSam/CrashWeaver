@@ -179,7 +179,8 @@ Plan validation in `electron/weaver/weavePlanSchema.ts` constrains the markers a
   `guided-insert` request, `getAllowedOperationKinds` permits only `insert-boundary-pair` plus whichever
   of `edit-note-content` and `create-note` the request's permissions grant.
 - `create-note` is exempt: `assertCreateNoteHasSubstantiveContent` ignores markers and only enforces a
-  20-character trimmed length, so boundary markers are optional in created note content.
+  20-character trimmed length, so boundary markers are optional in created note content (see
+  [ADR-0002](../adr/0002-boundary-markers-optional-in-create-note.md)).
 
 Apply touches markers as follows. The dispatch map and reporting loop live in
 `electron/weaver/weaveApplyService.ts`; the note-content handlers are in

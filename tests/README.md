@@ -81,5 +81,8 @@ it where a ticket does.
 - **No packaging or signing check.** Out of scope for the rework (GitHub issue #1), and not
   started.
 
-One gap is product behaviour rather than missing harness work and is tracked on its own ticket: a
-weave plan that omits a UID boundary marker is accepted (#4).
+One gap is product behaviour rather than missing harness work: a weave plan that omits a UID
+boundary marker from `create-note` content is accepted. That is deliberate — the decision and its
+reference consequence are in
+[ADR-0002](../docs/adr/0002-boundary-markers-optional-in-create-note.md), and the acceptance
+behaviour is pinned by the `weavePlanSchema` characterisation tests rather than left untested.
