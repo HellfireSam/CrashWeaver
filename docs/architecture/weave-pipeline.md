@@ -309,6 +309,21 @@ a plan proposes to change.
 `WeaveApplyOptions` — `dryRun` (default `false`) and `stopOnError` (default `true`). The `weave:apply-plan` handler resolves the card store with `getVaultCardStore` and calls the service with `{
 dryRun: false, stopOnError: true }`, so production always writes and always stops on the first failure.
 
+**Where the code lives.** The service module holds the public entry point, the kind-to-handler map
+and the reporting loop. The handlers are split by what they change. `weaveApplyNoteHandlers.ts`
+holds the three note-content handlers — insert, edit and create — whose writes are followed by
+`syncNoteToCardStore`; insert and edit call `verifyBoundaryIntegrity` before writing, while create
+writes the note content the plan authored. `weaveApplyPathHandlers.ts` holds the seven path-mutation
+handlers, which move or remove paths and, for note delete and rename, prune the card references that
+point at the old path. The guards live in `weaveApplyGuards.ts`, and the handler contract — the
+explicit `WeaveApplyContext` (root, card store, dry-run flag), the result a handler returns and the
+warning format — lives in `weaveApplyHandlerContract.ts`. Every handler receives the context object
+and its own operation, never positional arguments; the dispatch map's `satisfies` clause proves kind
+by kind that the handler accepts that operation type, so no handler casts a payload. An unknown kind
+— reachable because plan data crosses IPC — resolves to no handler and is reported as a failed
+result; the lookup checks `Object.hasOwn`, so an inherited property name such as `constructor` is not
+mistaken for a handler.
+
 **The ten operation kinds.** `applyWeaveOperations` dispatches on `operation.kind`; the table mirrors the `WeavePlanOperationKind` union in `electron/vault-contract.ts`, which is authoritative:
 
 | Kind                   | Handler                   | High-level behaviour                                                                                                                                                                                                                                                      |
@@ -328,7 +343,8 @@ Two consequences are worth stating because the plan diff does not show them. A n
 moved note by path. A directory rename or move performs no reference rewriting at all — only the note handlers update references. Whether directory-level reference repair belongs in apply is not
 answerable from the code.
 
-**Guards.**
+**Guards.** The containment, note-existence and boundary-integrity guards live in
+`weaveApplyGuards.ts`; the remaining checks below are inline in their handlers.
 
 | Guard              | Symbol                                                                 | Enforces                                                                                                                                                                                                                                                                           |
 | ------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -411,28 +427,32 @@ apply-result banner + vault re-index
 
 ## Stage map
 
-| Stage                                    | Module                                                                           | Key export                                                                                                           |
-| ---------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Entry and orchestration                  | `electron/weaver/weaveService.ts`                                                | `generateWeavePlan`, `initializeWeaveProvider`                                                                       |
-| Entry IPC                                | `electron/main.ts`, `electron/preload.ts`                                        | `ipcMain.handle('weave:generate-plan')`, `generateWeavePlan` bridge                                                  |
-| Context retrieval                        | `electron/weaver/weaveContextService.ts`                                         | `buildWeaveContextSnapshot`                                                                                          |
-| Read-only tools                          | `electron/weaver/weaveContextService.ts`                                         | `WeaveContextToolRuntime`, `createWeaveContextToolRuntime`                                                           |
-| Embeddings and cache                     | `electron/weaver/weaverEmbeddingService.ts`                                      | `buildQueryEmbedding`, `getOrComputeNoteEmbedding`, `buildSimilarityMap`                                             |
-| Model policy and budgets                 | `electron/weaver/weaveModelProfiles.ts`                                          | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS`                                                |
-| Provider (production)                    | `electron/weaver/openRouterClient.ts`                                            | `OpenRouterWeaveProvider`                                                                                            |
-| Provider (offline)                       | `electron/weaver/stubWeaveProvider.ts`                                           | `StubWeaveProvider`                                                                                                  |
-| Transport                                | `electron/weaver/weaveHttpClient.ts`                                             | `OpenRouterHttpClient`                                                                                               |
-| Planning loop                            | `electron/weaver/weaveGraph.ts`                                                  | `runWeaveGraph`, `resolveWeaveEffectiveBudget`                                                                       |
-| Planning nodes                           | `electron/weaver/weaveGraphNodes.ts`                                             | `makeCallModelNode`, `makeExecuteToolNode`, `makeRepairNode`, `makeFinalizeNode`, `makeValidateNode`, `makeFailNode` |
-| Loop state and events                    | `electron/weaver/weaveGraphState.ts`                                             | `WeaveAgentState`, `WeaveProgressEvent`, `MAX_TOTAL_STEPS`                                                           |
-| Prompts                                  | `electron/weaver/weavePlanPrompts.ts`                                            | `buildSystemPrompt`, `buildInitialUserTurn`                                                                          |
-| Validation                               | `electron/weaver/weavePlanSchema.ts`                                             | `validateWeavePlanRequest`, `validateWeavePlanResult`, `normalizeVaultRelativePath`                                  |
-| Request logging                          | `electron/weaver/weaveRequestLogger.ts`                                          | `createWeaveRequestSessionLogger`                                                                                    |
-| Trace compaction                         | `electron/weaver/weaveTraceCompactor.ts`                                         | `compactTraceItem`, `WeaveTraceAccumulator`                                                                          |
-| Session history                          | `electron/weaver/weaverSessionHistory.ts`                                        | `listWeaverSessions`, `getWeaverSession`, `deleteWeaverSession`, `clearWeaverSessions`                               |
-| Approval gate (panel)                    | `src/components/WeaverProposalPanel.tsx`                                         | `WeaverProposalPanel`                                                                                                |
-| Approval gate (items, previews)          | `src/components/WeaverOperationItem.tsx`, `src/components/WeaverDiffPreview.tsx` | `WeaverOperationItem`, `WEAVE_OPERATION_META`, `WeaverDiffPreview`                                                   |
-| Approval gate (unified diff)             | `src/components/WeaverUnifiedDiffModal.tsx`                                      | `WeaverUnifiedDiffModal`                                                                                             |
-| Approval gate (destructive confirmation) | `src/components/WeaverConfirmDialog.tsx`                                         | `WeaverConfirmDialog`, `isDestructiveOperation`                                                                      |
-| Apply                                    | `electron/weaver/weaveApplyService.ts`                                           | `applyWeaveOperations`                                                                                               |
-| Shared contract                          | `electron/vault-contract.ts`                                                     | `WeavePlanRequest`, `WeavePlan`, `WeavePlanOperation`, `WeavePlanResult`, `WeaveApplyResult`, `WeaveApplyOptions`    |
+| Stage                                    | Module                                                                           | Key export                                                                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entry and orchestration                  | `electron/weaver/weaveService.ts`                                                | `generateWeavePlan`, `initializeWeaveProvider`                                                                                                      |
+| Entry IPC                                | `electron/main.ts`, `electron/preload.ts`                                        | `ipcMain.handle('weave:generate-plan')`, `generateWeavePlan` bridge                                                                                 |
+| Context retrieval                        | `electron/weaver/weaveContextService.ts`                                         | `buildWeaveContextSnapshot`                                                                                                                         |
+| Read-only tools                          | `electron/weaver/weaveContextService.ts`                                         | `WeaveContextToolRuntime`, `createWeaveContextToolRuntime`                                                                                          |
+| Embeddings and cache                     | `electron/weaver/weaverEmbeddingService.ts`                                      | `buildQueryEmbedding`, `getOrComputeNoteEmbedding`, `buildSimilarityMap`                                                                            |
+| Model policy and budgets                 | `electron/weaver/weaveModelProfiles.ts`                                          | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS`                                                                               |
+| Provider (production)                    | `electron/weaver/openRouterClient.ts`                                            | `OpenRouterWeaveProvider`                                                                                                                           |
+| Provider (offline)                       | `electron/weaver/stubWeaveProvider.ts`                                           | `StubWeaveProvider`                                                                                                                                 |
+| Transport                                | `electron/weaver/weaveHttpClient.ts`                                             | `OpenRouterHttpClient`                                                                                                                              |
+| Planning loop                            | `electron/weaver/weaveGraph.ts`                                                  | `runWeaveGraph`, `resolveWeaveEffectiveBudget`                                                                                                      |
+| Planning nodes                           | `electron/weaver/weaveGraphNodes.ts`                                             | `makeCallModelNode`, `makeExecuteToolNode`, `makeRepairNode`, `makeFinalizeNode`, `makeValidateNode`, `makeFailNode`                                |
+| Loop state and events                    | `electron/weaver/weaveGraphState.ts`                                             | `WeaveAgentState`, `WeaveProgressEvent`, `MAX_TOTAL_STEPS`                                                                                          |
+| Prompts                                  | `electron/weaver/weavePlanPrompts.ts`                                            | `buildSystemPrompt`, `buildInitialUserTurn`                                                                                                         |
+| Validation                               | `electron/weaver/weavePlanSchema.ts`                                             | `validateWeavePlanRequest`, `validateWeavePlanResult`, `normalizeVaultRelativePath`                                                                 |
+| Request logging                          | `electron/weaver/weaveRequestLogger.ts`                                          | `createWeaveRequestSessionLogger`                                                                                                                   |
+| Trace compaction                         | `electron/weaver/weaveTraceCompactor.ts`                                         | `compactTraceItem`, `WeaveTraceAccumulator`                                                                                                         |
+| Session history                          | `electron/weaver/weaverSessionHistory.ts`                                        | `listWeaverSessions`, `getWeaverSession`, `deleteWeaverSession`, `clearWeaverSessions`                                                              |
+| Approval gate (panel)                    | `src/components/WeaverProposalPanel.tsx`                                         | `WeaverProposalPanel`                                                                                                                               |
+| Approval gate (items, previews)          | `src/components/WeaverOperationItem.tsx`, `src/components/WeaverDiffPreview.tsx` | `WeaverOperationItem`, `WEAVE_OPERATION_META`, `WeaverDiffPreview`                                                                                  |
+| Approval gate (unified diff)             | `src/components/WeaverUnifiedDiffModal.tsx`                                      | `WeaverUnifiedDiffModal`                                                                                                                            |
+| Approval gate (destructive confirmation) | `src/components/WeaverConfirmDialog.tsx`                                         | `WeaverConfirmDialog`, `isDestructiveOperation`                                                                                                     |
+| Apply                                    | `electron/weaver/weaveApplyService.ts`                                           | `applyWeaveOperations`                                                                                                                              |
+| Apply guards                             | `electron/weaver/weaveApplyGuards.ts`                                            | `assertWithinVault`, `assertNoteExists`, `verifyBoundaryIntegrity`                                                                                  |
+| Apply note-content handlers              | `electron/weaver/weaveApplyNoteHandlers.ts`                                      | `applyInsertBoundaryPair`, `applyEditNoteContent`, `applyCreateNote`                                                                                |
+| Apply path-mutation handlers             | `electron/weaver/weaveApplyPathHandlers.ts`                                      | `applyRenameNote`, `applyMoveNote`, `applyDeleteNote`, `applyCreateDirectory`, `applyRenameDirectory`, `applyMoveDirectory`, `applyDeleteDirectory` |
+| Apply handler contract                   | `electron/weaver/weaveApplyHandlerContract.ts`                                   | `WeaveApplyContext`, `WeaveApplyHandlerResult`, `buildOperationWarning`                                                                             |
+| Shared contract                          | `electron/vault-contract.ts`                                                     | `WeavePlanRequest`, `WeavePlan`, `WeavePlanOperation`, `WeavePlanResult`, `WeaveApplyResult`, `WeaveApplyOptions`                                   |

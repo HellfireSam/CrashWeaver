@@ -29,7 +29,7 @@ Card documents are consumed by:
 | Main     | `electron/vaultService.ts`                                                                                                                                                                                      | Orchestrates `createCard`, `saveCard`, `renameCard`, `deleteCard` and `restoreDeletedCard` over the `card-store:*` IPC channels.                                                                                                                                                       |
 | Main     | `electron/services/crashpadCardMutationService.ts`, `electron/services/cardReferenceMutationService.ts`                                                                                                         | Rewrite UIDs in crashpad entries and snapshots on rename, and rewrite or remove UID boundaries in notes from a card's `referenced_in`.                                                                                                                                                 |
 | Main     | `electron/weaver/weaveContextService.ts`                                                                                                                                                                        | `buildWeaveContextSnapshot` reads the focused card and uses `uid`, `type`, `raw_content`, `memory_tricks` and `referenced_in` to build retrieval tokens and prompt context.                                                                                                            |
-| Main     | `electron/weaver/weaveApplyService.ts`                                                                                                                                                                          | Reads cards to rewrite `referenced_in` during note rename, move and delete; creates a default card document when `create-note` targets a UID with no file.                                                                                                                             |
+| Main     | `electron/weaver/weaveApplyPathHandlers.ts`, `electron/weaver/weaveApplyNoteHandlers.ts`                                                                                                                        | Reads cards to rewrite `referenced_in` during note rename, move and delete (path-mutation handlers); creates a default card document when `create-note` targets a UID with no file (the note-content handler `applyCreateNote`).                                                       |
 | Preload  | `electron/preload.ts`                                                                                                                                                                                           | Declares the typed `window.crashWeaver` card surface, mirrored in `src/vite-env.d.ts`.                                                                                                                                                                                                 |
 | Renderer | `src/lib/cards.ts`                                                                                                                                                                                              | Maps `CardDocument` to the camelCase `CardViewRecord` the UI renders.                                                                                                                                                                                                                  |
 | Renderer | `src/components/CardMetadataPanel.tsx`, `src/components/CardsWorkspace.tsx`, `src/components/CrashpadWorkspace.tsx` with `src/hooks/useCrashpadCardEditor.ts` and `src/hooks/useCrashpadCardMutationActions.ts` | Reads card fields for display; the crashpad editor is the only surface that edits them.                                                                                                                                                                                                |
@@ -108,7 +108,7 @@ There are three entry points, and all three normalise.
    of the coerced stored card is updated. This runs
    whenever a note is written (`writeNote` in `electron/vaultService.ts`), when a vault is opened
    or its index rebuilt (`rebuildCardStoreFromNotes`) and after Weaver operations that write notes
-   (`syncNoteToCardStore` calls in `electron/weaver/weaveApplyService.ts`).
+   (`syncNoteToCardStore` calls in `electron/weaver/weaveApplyNoteHandlers.ts`).
 2. From the card store. `readCardDocument` and `listCardDocuments` parse the JSON and pass it
    through `coerceCardDocument`, which supplies every default in the field table. Results reach
    the renderer over the `card-store:list-cards` channel and become `CardViewRecord`s through
@@ -120,7 +120,7 @@ There are three entry points, and all three normalise.
    `createCard`. `createFallbackCard` in `src/lib/cards.ts` also builds a card-shaped object from
    a parsed span, but only for display when no card file is linked.
 
-The exception is `applyCreateNote` in `electron/weaver/weaveApplyService.ts`: when a `create-note`
+The exception is `applyCreateNote` in `electron/weaver/weaveApplyNoteHandlers.ts`: when a `create-note`
 operation names a `cardUid` with no file, it writes a default card document straight through
 `writeJsonAtomically` with an inline object literal. It matches the schema but is not produced by
 `coerceCardDocument`; the next read normalises it.
@@ -149,7 +149,7 @@ Crashpads live beside the card store under `<vault>/.crashweaver/crashpads`, one
 `electron/crashpadService.ts`). A crashpad holds `CrashpadCardEntry` UID references and
 `CrashpadDeletedCardSnapshot` payloads, not live cards. Removing a card's last Reference does not
 delete the file: the card becomes an orphaned card, and `applyDeleteNote` in
-`electron/weaver/weaveApplyService.ts` explicitly preserves it.
+`electron/weaver/weaveApplyPathHandlers.ts` explicitly preserves it.
 
 ## Validation and tolerance
 

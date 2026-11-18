@@ -26,20 +26,20 @@ filesystem handles stay on the main side.
 
 ## Where code goes
 
-| Location                                           | What belongs there                                                                                                                                                                                         |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `electron/main.ts`                                 | The composition root: window lifecycle, native dialogs, `ipcMain` registration, the vault watcher, the `crashweaver-local` protocol, and the calls that wire services together. No domain logic.           |
-| `electron/<name>Service.ts`                        | A domain service: the exported behaviour for one domain noun (`vaultService`, `cardStoreService`, `cardSyncService`, `crashpadService`, `settingsService`).                                                |
-| `electron/cardParser.ts`                           | The boundary grammar: pure parsing and formatting of notes and UID boundaries.                                                                                                                             |
-| `electron/services/`                               | Filesystem mutation services with explicit inputs — boundary lines, references, restore, the vault index. No `electron` import; they take paths and content and return results.                            |
-| `electron/weaver/`                                 | The agent and its runs: the service facade, context retrieval, the ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging, session history.                               |
-| `electron/weaver/weaveApplyService.ts` and similar | A weave artifact's behaviour: guards, handlers and dispatch for applying a plan.                                                                                                                           |
-| `electron/utils/`                                  | Generic helpers with no domain knowledge (`paths`, `fsErrors`, `jsonFile`).                                                                                                                                |
-| `src/lib/`                                         | Pure renderer helpers: no React state, no bridge calls, no side effects. Unit-tested from a file beside the module.                                                                                        |
-| `src/hooks/`                                       | React stateful logic and effects. One hook per concern; name it `useXxx`.                                                                                                                                  |
-| `src/state/`                                       | The shared state contexts and their providers; `index.ts` re-exports the providers, consumers and types.                                                                                                   |
-| `src/components/`                                  | Presentation: components and their props. They read state through hooks and render; where they need main-process data they go through a hook or `window.crashWeaver`, never through Node or Electron APIs. |
-| `tests/electron/`                                  | Main-process suites. Renderer suites sit beside their module (`src/lib/*.test.ts`).                                                                                                                        |
+| Location                         | What belongs there                                                                                                                                                                                         |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `electron/main.ts`               | The composition root: window lifecycle, native dialogs, `ipcMain` registration, the vault watcher, the `crashweaver-local` protocol, and the calls that wire services together. No domain logic.           |
+| `electron/<name>Service.ts`      | A domain service: the exported behaviour for one domain noun (`vaultService`, `cardStoreService`, `cardSyncService`, `crashpadService`, `settingsService`).                                                |
+| `electron/cardParser.ts`         | The boundary grammar: pure parsing and formatting of notes and UID boundaries.                                                                                                                             |
+| `electron/services/`             | Filesystem mutation services with explicit inputs — boundary lines, references, restore, the vault index. No `electron` import; they take paths and content and return results.                            |
+| `electron/weaver/`               | The agent and its runs: the service facade, context retrieval, the ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging, session history.                               |
+| `electron/weaver/weaveApply*.ts` | A weave artifact's behaviour: the public apply entry point and dispatch map (`weaveApplyService.ts`), the handler contract, guards, note-content handlers and path-mutation handlers, one module per seam. |
+| `electron/utils/`                | Generic helpers with no domain knowledge (`paths`, `fsErrors`, `jsonFile`).                                                                                                                                |
+| `src/lib/`                       | Pure renderer helpers: no React state, no bridge calls, no side effects. Unit-tested from a file beside the module.                                                                                        |
+| `src/hooks/`                     | React stateful logic and effects. One hook per concern; name it `useXxx`.                                                                                                                                  |
+| `src/state/`                     | The shared state contexts and their providers; `index.ts` re-exports the providers, consumers and types.                                                                                                   |
+| `src/components/`                | Presentation: components and their props. They read state through hooks and render; where they need main-process data they go through a hook or `window.crashWeaver`, never through Node or Electron APIs. |
+| `tests/electron/`                | Main-process suites. Renderer suites sit beside their module (`src/lib/*.test.ts`).                                                                                                                        |
 
 A new module name is expected to fit one of those rows. A file that needs two rows is two files:
 `main.ts` registers and delegates to services rather than also implementing them, and pure logic
@@ -99,6 +99,6 @@ the handler.
   are in [formatting-and-linting.md](./formatting-and-linting.md).
 - **Comments explain why.** A comment that restates the code is noise; a comment that records a
   trap, a deliberate trade-off or a piece of history is required. The repository's warning
-  comments — for example the note in `weaveApplyService.ts` recording that the note-to-card and
+  comments — for example the note in `weaveApplyPathHandlers.ts` recording that the note-to-card and
   card-to-note mutation directions are not interchangeable, and the TypeScript-configuration
   notes — exist because that history was expensive to learn.

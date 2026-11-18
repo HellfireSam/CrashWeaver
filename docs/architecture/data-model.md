@@ -67,7 +67,7 @@ at the point where a relative path enters filesystem code:
 | -------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `resolveNotePath` with `isOutsideRoot` | `electron/vaultService.ts`                          | Resolves the normalised note path against the root and throws `Note paths must stay inside the selected vault.` when it escapes                                                    |
 | `resolveReferenceNotePath`             | `electron/services/noteReferenceMutationService.ts` | Returns `null` instead of throwing; callers treat `null` as "skip this reference"                                                                                                  |
-| `assertWithinVault`                    | `electron/weaver/weaveApplyService.ts`              | Resolves root and target through symlinks (`fs.realpath`), walking up to the nearest existing ancestor when the target does not exist yet, and throws `Path escapes vault root: …` |
+| `assertWithinVault`                    | `electron/weaver/weaveApplyGuards.ts`               | Resolves root and target through symlinks (`fs.realpath`), walking up to the nearest existing ancestor when the target does not exist yet, and throws `Path escapes vault root: …` |
 
 Each guard compares `path.relative(root, target)` against a leading `..` or an absolute
 remainder. `electron/utils/paths.ts` exports only `toPosixPath`, a separator normaliser and
@@ -195,7 +195,7 @@ card file as a consequence of reference removal: `removeCardReference`,
 `syncParsedCrashCards` and `rebuildCardStoreFromNotes` only rewrite `referenced_in`, and
 `getPreferredReference` in `src/lib/cards.ts` simply returns `null` for an empty list. The
 one place the term is surfaced to the user is `applyDeleteNote` in
-`electron/weaver/weaveApplyService.ts`, which collects the UIDs left with no references,
+`electron/weaver/weaveApplyPathHandlers.ts`, which collects the UIDs left with no references,
 preserves their files and reports a warning that they remain in the card store and must be
 deleted manually.
 
@@ -274,7 +274,7 @@ returned to the renderer by `writeNote` as `cardSync` and stored on the descript
 count for a single sync.
 
 Diagnostics are not only reporting: an error-severity diagnostic suppresses reference pruning
-for that note, and `verifyBoundaryIntegrity` in `electron/weaver/weaveApplyService.ts`
+for that note, and `verifyBoundaryIntegrity` in `electron/weaver/weaveApplyGuards.ts`
 re-parses content before a weave write and throws if any error-severity diagnostic remains.
 
 ## Path safety and failure handling

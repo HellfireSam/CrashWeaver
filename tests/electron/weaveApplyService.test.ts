@@ -1372,6 +1372,36 @@ describe('weaveApplyService', () => {
       expect(await pathExists(absolutePath(vault, 'notes/after-failure'))).toBe(false);
     });
 
+    it.each(['constructor', 'hasOwnProperty'])(
+      'reports the inherited property name "%s" as an unknown operation kind',
+      async (kind) => {
+        const vault = await setupTestVault({});
+        // The kind-to-handler map is a plain object literal, so the dispatch
+        // lookup must check that the kind is an own key; otherwise a
+        // prototype-inherited name resolves to a function. The previous switch
+        // reported every kind it did not recognise, inherited names included.
+        const unknownOperation = {
+          kind,
+          targetPath: 'notes/somewhere.md',
+          payload: {},
+          rationale: 'Inherited property name under test',
+        } as unknown as WeavePlanOperation;
+
+        const result = await applyOperations(vault, [unknownOperation]);
+
+        expect(result.results).toEqual([
+          {
+            operationIndex: 0,
+            kind,
+            targetPath: 'notes/somewhere.md',
+            ok: false,
+            error: `Unknown operation kind: ${kind}`,
+          },
+        ]);
+        expect(result.failedCount).toBe(1);
+      },
+    );
+
     it('rejects a target path that escapes the vault root', async () => {
       const vault = await setupTestVault({});
 

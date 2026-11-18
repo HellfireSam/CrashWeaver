@@ -142,7 +142,7 @@ the card JSON references follow the text.
 
 | Operation                       | Text transform                  | Service export                                                                                                                                                   | Reaches                                                                                                                      |
 | ------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Insert a pair into a note       | none (the block is the payload) | `applyInsertBoundaryPair` in `electron/weaver/weaveApplyService.ts`, called from `applyWeaveOperations`                                                          | Note text, then card JSON through `syncNoteToCardStore`.                                                                     |
+| Insert a pair into a note       | none (the block is the payload) | `applyInsertBoundaryPair` in `electron/weaver/weaveApplyNoteHandlers.ts`, called from `applyWeaveOperations` in `weaveApplyService.ts`                           | Note text, then card JSON through `syncNoteToCardStore`.                                                                     |
 | Rewrite the text between a pair | none dedicated                  | no boundary-specific export: the Weaver's `edit-note-content` handler `applyEditNoteContent`, or a direct save through `writeNote` in `electron/vaultService.ts` | Note text; card JSON follows via the sync pass. The prose inside a pair is ordinary note text.                               |
 | Strip ranges                    | `removeCardBoundaryLines`       | `removeCardBoundariesAcrossReferences` in `electron/services/cardReferenceMutationService.ts`, called from `deleteCard` in `electron/vaultService.ts`            | Note text (marker lines only, never the wrapped prose), then card JSON.                                                      |
 | Rename a UID across references  | `replaceCardBoundaryUids`       | `renameCardBoundariesAcrossReferences` in the same service, called from `renameCard` in `electron/vaultService.ts`                                               | Note text, then card JSON; `renameCard` also writes the new card file, deletes the old one, and updates crashpad references. |
@@ -181,7 +181,10 @@ Plan validation in `electron/weaver/weavePlanSchema.ts` constrains the markers a
 - `create-note` is exempt: `assertCreateNoteHasSubstantiveContent` ignores markers and only enforces a
   20-character trimmed length, so boundary markers are optional in created note content.
 
-Apply in `electron/weaver/weaveApplyService.ts` touches markers as follows:
+Apply touches markers as follows. The dispatch map and reporting loop live in
+`electron/weaver/weaveApplyService.ts`; the note-content handlers are in
+`electron/weaver/weaveApplyNoteHandlers.ts` and the path-mutation handlers in
+`electron/weaver/weaveApplyPathHandlers.ts`.
 
 - `applyInsertBoundaryPair` reads the note, splits it into lines, and splices `payload.boundaryBlock`
   at the index implied by the placement. It uses the provided block as-is and synthesises a bare pair
@@ -193,8 +196,9 @@ Apply in `electron/weaver/weaveApplyService.ts` touches markers as follows:
 - `applyEditNoteContent` replaces the target text and then runs the same integrity check before
   writing; the test `edit-note-content: fails when edit would break boundary integrity` pins the
   rejection of a replacement that would remove one marker of a pair.
-- `applyRenameNote` and `applyDeleteNote` re-parse the note with `parseCrashCardsFromNote` to find the
-  card UIDs it contains, then update or orphan the corresponding card JSON references.
+- `applyRenameNote` and `applyDeleteNote` in the path-mutation handlers re-parse the note with
+  `parseCrashCardsFromNote` to find the card UIDs it contains, then update or orphan the
+  corresponding card JSON references.
 
 The ordering of retrieval, planning, the Approval gate and apply is specified in
 [The weave pipeline](../architecture/weave-pipeline.md).
