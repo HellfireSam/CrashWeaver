@@ -18,7 +18,7 @@ import type {
   WeaveApplyResult,
   WeaveKind,
   WeavePlanResult,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
   WeaveStrength,
   WeaverSettings,
 } from '../../electron/vault-contract';
@@ -36,12 +36,12 @@ export interface WeaverState {
   weaveStrength: WeaveStrength;
   weaveIntent: string;
   weavePlanResult: WeavePlanResult | null;
-  weaveProviderHealth: WeaveProviderHealth | null;
+  weaveProviderHealth: WeaverProviderHealth | null;
   isCheckingWeaveProvider: boolean;
   isGeneratingWeavePlan: boolean;
   weaveEvaluatingCardUid: string | null;
   weaverSettings: WeaverSettings | undefined;
-  weaveSessions: WeaverSessionSummary[];
+  weaverSessions: WeaverSessionSummary[];
   weaveActiveSessionId: string | null;
   weaveApplyResult: WeaveApplyResult | null;
   isApplyingWeavePlan: boolean;
@@ -56,12 +56,12 @@ export interface WeaverActions {
   setWeaveStrength: Dispatch<SetStateAction<WeaveStrength>>;
   setWeaveIntent: Dispatch<SetStateAction<string>>;
   setWeavePlanResult: Dispatch<SetStateAction<WeavePlanResult | null>>;
-  setWeaveProviderHealth: Dispatch<SetStateAction<WeaveProviderHealth | null>>;
+  setWeaveProviderHealth: Dispatch<SetStateAction<WeaverProviderHealth | null>>;
   setIsCheckingWeaveProvider: Dispatch<SetStateAction<boolean>>;
   setIsGeneratingWeavePlan: Dispatch<SetStateAction<boolean>>;
   setWeaveEvaluatingCardUid: Dispatch<SetStateAction<string | null>>;
   setWeaverSettings: Dispatch<SetStateAction<WeaverSettings | undefined>>;
-  setWeaveSessions: Dispatch<SetStateAction<WeaverSessionSummary[]>>;
+  setWeaverSessions: Dispatch<SetStateAction<WeaverSessionSummary[]>>;
   setWeaveActiveSessionId: Dispatch<SetStateAction<string | null>>;
   setWeaveApplyResult: Dispatch<SetStateAction<WeaveApplyResult | null>>;
   setIsApplyingWeavePlan: Dispatch<SetStateAction<boolean>>;
@@ -82,12 +82,12 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
   const [weaveStrength, setWeaveStrength] = useState<WeaveStrength>('standard');
   const [weaveIntent, setWeaveIntent] = useState('');
   const [weavePlanResult, setWeavePlanResult] = useState<WeavePlanResult | null>(null);
-  const [weaveProviderHealth, setWeaveProviderHealth] = useState<WeaveProviderHealth | null>(null);
+  const [weaveProviderHealth, setWeaveProviderHealth] = useState<WeaverProviderHealth | null>(null);
   const [isCheckingWeaveProvider, setIsCheckingWeaveProvider] = useState(false);
   const [isGeneratingWeavePlan, setIsGeneratingWeavePlan] = useState(false);
   const [weaveEvaluatingCardUid, setWeaveEvaluatingCardUid] = useState<string | null>(null);
   const [weaverSettings, setWeaverSettings] = useState<WeaverSettings | undefined>(undefined);
-  const [weaveSessions, setWeaveSessions] = useState<WeaverSessionSummary[]>([]);
+  const [weaverSessions, setWeaverSessions] = useState<WeaverSessionSummary[]>([]);
   const [weaveActiveSessionId, setWeaveActiveSessionId] = useState<string | null>(null);
   const [weaveApplyResult, setWeaveApplyResult] = useState<WeaveApplyResult | null>(null);
   const [isApplyingWeavePlan, setIsApplyingWeavePlan] = useState(false);
@@ -107,7 +107,7 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
       isGeneratingWeavePlan,
       weaveEvaluatingCardUid,
       weaverSettings,
-      weaveSessions,
+      weaverSessions,
       weaveActiveSessionId,
       weaveApplyResult,
       isApplyingWeavePlan,
@@ -124,7 +124,7 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
       setIsGeneratingWeavePlan,
       setWeaveEvaluatingCardUid,
       setWeaverSettings,
-      setWeaveSessions,
+      setWeaverSessions,
       setWeaveActiveSessionId,
       setWeaveApplyResult,
       setIsApplyingWeavePlan,
@@ -143,7 +143,7 @@ export function WeaverStateProvider({ children }: { children: ReactNode }) {
       isGeneratingWeavePlan,
       weaveEvaluatingCardUid,
       weaverSettings,
-      weaveSessions,
+      weaverSessions,
       weaveActiveSessionId,
       weaveApplyResult,
       isApplyingWeavePlan,

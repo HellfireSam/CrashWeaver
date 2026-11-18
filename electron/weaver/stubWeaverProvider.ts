@@ -4,7 +4,7 @@ import type {
   WeavePlanRequest,
   WeavePlanResult,
   WeaveModelInfo,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
 } from '../vault-contract';
 
 const STUB_MODEL = 'weaver-stub-v1';
@@ -238,7 +238,7 @@ function buildPlanOperations(request: WeavePlanRequest) {
   return operations;
 }
 
-export class StubWeaveProvider {
+export class StubWeaverProvider {
   async generatePlan(
     request: WeavePlanRequest,
     _context: WeaveContextSnapshot,
@@ -305,7 +305,7 @@ export class StubWeaveProvider {
     };
   }
 
-  async healthCheck(): Promise<WeaveProviderHealth> {
+  async healthCheck(): Promise<WeaverProviderHealth> {
     return {
       ok: true,
       provider: 'stub',

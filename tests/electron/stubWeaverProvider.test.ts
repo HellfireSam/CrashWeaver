@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 // The main-process suites run against the compiled CommonJS output, not the
 // TypeScript source, so `npm test` builds the main process first.
 const require = createRequire(import.meta.url);
-const { StubWeaveProvider } = require('../../dist-electron/weaver/stubWeaveProvider.js');
+const { StubWeaverProvider } = require('../../dist-electron/weaver/stubWeaverProvider.js');
 
-describe('stubWeaveProvider', () => {
+describe('stubWeaverProvider', () => {
   type PlanOperation = { kind: string };
 
   function createGuidedRequest(overrides: Record<string, unknown> = {}) {
@@ -45,7 +45,7 @@ describe('stubWeaveProvider', () => {
   }
 
   it('guided insert stub emits insertion only when no extra permissions are enabled', async () => {
-    const provider = new StubWeaveProvider();
+    const provider = new StubWeaverProvider();
     const result = await provider.generatePlan(createGuidedRequest());
 
     expect(result.plan.kind).toBe('guided-insert');
@@ -55,7 +55,7 @@ describe('stubWeaveProvider', () => {
   });
 
   it('guided insert stub adds note edits and create-note when permissions allow them', async () => {
-    const provider = new StubWeaveProvider();
+    const provider = new StubWeaverProvider();
     const result = await provider.generatePlan(
       createGuidedRequest({
         permissions: {
@@ -75,7 +75,7 @@ describe('stubWeaveProvider', () => {
   });
 
   it('go-ham intelligent stub includes delete proposals and never emits crashpad operations', async () => {
-    const provider = new StubWeaveProvider();
+    const provider = new StubWeaverProvider();
     const result = await provider.generatePlan(createIntelligentRequest());
     const kinds = result.plan.operations.map((operation: PlanOperation) => operation.kind);
 

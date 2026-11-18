@@ -1,7 +1,7 @@
 /**
  * openRouterClient.ts
  *
- * OpenRouter WeaveModelProvider — the production AI backend for the Weaver planner.
+ * OpenRouter WeaverModelProvider — the production AI backend for the Weaver planner.
  *
  * HTTP transport lives in weaveHttpClient.ts.
  * Orchestration (model resolution → context → graph execution) is
@@ -14,7 +14,7 @@ import type {
   WeavePlanRequest,
   WeavePlanResult,
   WeaveModelInfo,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
 } from '../vault-contract';
 import type { WeaveProgressCallback } from './weaveGraphState';
 import { getWeaverSettings } from '../settingsService';
@@ -75,11 +75,11 @@ interface OpenRouterPlanOptions {
 // ── OpenRouter Weave Provider ─────────────────────────────────────────────────
 
 /**
- * WeaveModelProvider backed by OpenRouter.
+ * WeaverModelProvider backed by OpenRouter.
  * generatePlan() resolves the model, profile, and context, then delegates
  * the ReAct loop to runWeaveGraph().
  */
-export class OpenRouterWeaveProvider {
+export class OpenRouterWeaverProvider {
   private readonly preferredModel: string | null;
   private readonly appUrl: string;
   private readonly fetchImpl: OpenRouterFetch;
@@ -158,7 +158,7 @@ export class OpenRouterWeaveProvider {
     );
   }
 
-  async healthCheck(): Promise<WeaveProviderHealth> {
+  async healthCheck(): Promise<WeaverProviderHealth> {
     const model = resolveModel(undefined, this.preferredModel);
 
     try {

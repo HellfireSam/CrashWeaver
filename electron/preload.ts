@@ -18,7 +18,7 @@ import type {
   WeavePlanRequest,
   WeavePlanResult,
   WeaveModelInfo,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
   WeaverSettings,
   VaultWriteNoteInput,
   VaultWriteNoteResult,
@@ -103,8 +103,8 @@ contextBridge.exposeInMainWorld('crashWeaver', {
   generateWeavePlan: (request: WeavePlanRequest) =>
     ipcRenderer.invoke('weave:generate-plan', request) as Promise<WeavePlanResult>,
   checkWeaveProvider: () =>
-    ipcRenderer.invoke('weave:health-check') as Promise<WeaveProviderHealth>,
-  isStubWeaveProvider: () => ipcRenderer.invoke('weave:is-stub-provider') as Promise<boolean>,
+    ipcRenderer.invoke('weave:health-check') as Promise<WeaverProviderHealth>,
+  isStubWeaverProvider: () => ipcRenderer.invoke('weave:is-stub-provider') as Promise<boolean>,
   listWeaveModels: () => ipcRenderer.invoke('weave:list-models') as Promise<WeaveModelInfo[]>,
   getWeaverSettings: () => ipcRenderer.invoke('weave:get-settings') as Promise<WeaverSettings>,
   updateWeaverSettings: (updates: Partial<WeaverSettings>) =>

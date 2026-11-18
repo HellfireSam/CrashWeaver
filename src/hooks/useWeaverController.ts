@@ -56,7 +56,7 @@ type WeaverInspectorProps = Pick<
   | 'weavePlanResult'
   | 'weaveProviderHealth'
   | 'weaveStrength'
-  | 'weaveSessions'
+  | 'weaverSessions'
   | 'weaveActiveSessionId'
   | 'weaveApplyResult'
   | 'isApplyingWeavePlan'
@@ -143,7 +143,7 @@ export function useWeaverController({
     isGeneratingWeavePlan,
     weaveEvaluatingCardUid,
     weaverSettings,
-    weaveSessions,
+    weaverSessions,
     weaveActiveSessionId,
     weaveApplyResult,
     isApplyingWeavePlan,
@@ -159,7 +159,7 @@ export function useWeaverController({
     setIsGeneratingWeavePlan,
     setWeaveEvaluatingCardUid,
     setWeaverSettings,
-    setWeaveSessions,
+    setWeaverSessions,
     setWeaveApplyResult,
     setIsApplyingWeavePlan,
     setWeaveApplyError,
@@ -212,7 +212,7 @@ export function useWeaverController({
       .catch(() => undefined);
   }, [setWeaveModel, setWeaverSettings]);
 
-  const refreshWeaveProviderHealth = useCallback(async () => {
+  const refreshWeaverProviderHealth = useCallback(async () => {
     setIsCheckingWeaveProvider(true);
 
     try {
@@ -234,7 +234,7 @@ export function useWeaverController({
     }
 
     try {
-      await refreshWeaveProviderHealth();
+      await refreshWeaverProviderHealth();
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(
@@ -244,7 +244,7 @@ export function useWeaverController({
   }, [
     activeCrashpad,
     isCrashpadEditor,
-    refreshWeaveProviderHealth,
+    refreshWeaverProviderHealth,
     setErrorMessage,
     setWeaveProviderHealth,
     vaultPath,
@@ -266,7 +266,7 @@ export function useWeaverController({
     setErrorMessage(null);
 
     try {
-      const health = await refreshWeaveProviderHealth();
+      const health = await refreshWeaverProviderHealth();
 
       if (health && !health.ok && health.errorCategory === 'auth-error') {
         setErrorMessage(
@@ -322,7 +322,7 @@ export function useWeaverController({
     crashpadWeaveCardUid,
     editorTextareaRef,
     isCrashpadEditor,
-    refreshWeaveProviderHealth,
+    refreshWeaverProviderHealth,
     setErrorMessage,
     setIsGeneratingWeavePlan,
     setStatusMessage,
@@ -432,7 +432,7 @@ export function useWeaverController({
       await window.crashWeaver.setWeaverApiKey(key);
       const updated = await window.crashWeaver.getWeaverSettings();
       setWeaverSettings(updated);
-      const health = await refreshWeaveProviderHealth().catch(() => undefined);
+      const health = await refreshWeaverProviderHealth().catch(() => undefined);
       if (health && !health.ok && health.errorCategory === 'auth-error') {
         setErrorMessage(
           'API key saved, but OpenRouter rejected it as invalid or expired. Please check your key.',
@@ -441,16 +441,16 @@ export function useWeaverController({
         setStatusMessage('OpenRouter API key saved. Weaver will now use the live provider.');
       }
     },
-    [refreshWeaveProviderHealth, setErrorMessage, setStatusMessage, setWeaverSettings],
+    [refreshWeaverProviderHealth, setErrorMessage, setStatusMessage, setWeaverSettings],
   );
 
   const handleClearWeaverApiKey = useCallback(async () => {
     await window.crashWeaver.clearWeaverApiKey();
     const updated = await window.crashWeaver.getWeaverSettings();
     setWeaverSettings(updated);
-    await refreshWeaveProviderHealth().catch(() => undefined);
+    await refreshWeaverProviderHealth().catch(() => undefined);
     setStatusMessage('OpenRouter API key removed. Weaver is using the stub provider.');
-  }, [refreshWeaveProviderHealth, setStatusMessage, setWeaverSettings]);
+  }, [refreshWeaverProviderHealth, setStatusMessage, setWeaverSettings]);
 
   const handleUpdateWeaverSettings = useCallback(
     async (updates: Partial<WeaverSettings>) => {
@@ -467,32 +467,32 @@ export function useWeaverController({
       const list = (await window.crashWeaver.listWeaverSessions(
         vaultPath ?? undefined,
       )) as WeaverSessionSummary[];
-      setWeaveSessions(list);
+      setWeaverSessions(list);
     } catch {
       // Silently fail — sessions are not critical
     }
-  }, [setWeaveSessions, vaultPath]);
+  }, [setWeaverSessions, vaultPath]);
 
   const handleDeleteWeaverSession = useCallback(
     async (sessionId: string) => {
       try {
         await window.crashWeaver.deleteWeaverSession(sessionId, vaultPath ?? undefined);
-        setWeaveSessions((previous) => previous.filter((s) => s.sessionId !== sessionId));
+        setWeaverSessions((previous) => previous.filter((s) => s.sessionId !== sessionId));
       } catch {
         // Silently fail
       }
     },
-    [setWeaveSessions, vaultPath],
+    [setWeaverSessions, vaultPath],
   );
 
   const handleClearWeaverSessions = useCallback(async () => {
     try {
       await window.crashWeaver.clearWeaverSessions(vaultPath ?? undefined);
-      setWeaveSessions([]);
+      setWeaverSessions([]);
     } catch {
       // Silently fail
     }
-  }, [setWeaveSessions, vaultPath]);
+  }, [setWeaverSessions, vaultPath]);
 
   const handleReRunFromHistory = useCallback(
     (session: WeaverSessionDetail) => {
@@ -577,7 +577,7 @@ export function useWeaverController({
     weavePlanResult,
     weaveProviderHealth,
     weaveStrength,
-    weaveSessions,
+    weaverSessions,
     weaveActiveSessionId,
     weaveApplyResult,
     isApplyingWeavePlan,

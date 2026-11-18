@@ -3,7 +3,7 @@ import type {
   WeaveKind,
   WeaveModelInfo,
   WeavePlanResult,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
   WeaveStrength,
 } from '../../electron/vault-contract';
 import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
@@ -32,7 +32,7 @@ type WeaverProposalPanelProps = {
   strength: WeaveStrength;
   intent: string;
   planResult: WeavePlanResult | null;
-  providerHealth: WeaveProviderHealth | null;
+  providerHealth: WeaverProviderHealth | null;
   sessions: WeaverSessionSummary[];
   activeSessionId: string | null;
   onClose: () => void;
@@ -546,7 +546,7 @@ export function WeaverProposalPanel({
   // Check if the stub (offline) provider is active
   useEffect(() => {
     window.crashWeaver
-      .isStubWeaveProvider()
+      .isStubWeaverProvider()
       .then(setIsStubProvider)
       .catch(() => {});
   }, []);

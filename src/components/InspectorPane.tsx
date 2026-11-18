@@ -7,7 +7,7 @@ import type {
   WeaveKind,
   WeavePlanOperation,
   WeavePlanResult,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
   WeaveStrength,
 } from '../../electron/vault-contract';
 import type { CardViewRecord, FocusWindow } from '../lib/cards';
@@ -35,9 +35,9 @@ export type InspectorPaneProps = {
   weaveEditContent: boolean;
   weaveCreateNote: boolean;
   weavePlanResult: WeavePlanResult | null;
-  weaveProviderHealth: WeaveProviderHealth | null;
+  weaveProviderHealth: WeaverProviderHealth | null;
   weaveStrength: WeaveStrength;
-  weaveSessions: WeaverSessionSummary[];
+  weaverSessions: WeaverSessionSummary[];
   weaveActiveSessionId: string | null;
   weaveApplyResult: WeaveApplyResult | null;
   isApplyingWeavePlan: boolean;
@@ -79,7 +79,7 @@ export function InspectorPane({
   weavePlanResult,
   weaveProviderHealth,
   weaveStrength,
-  weaveSessions,
+  weaverSessions,
   weaveActiveSessionId,
   weaveApplyResult,
   isApplyingWeavePlan,
@@ -421,7 +421,7 @@ export function InspectorPane({
               planResult={weavePlanResult}
               providerHealth={weaveProviderHealth}
               strength={weaveStrength}
-              sessions={weaveSessions}
+              sessions={weaverSessions}
               activeSessionId={weaveActiveSessionId}
               vaultPath={vault?.rootPath}
               onClose={() => updatePanelVisibility(isContextPanelOpen, false)}

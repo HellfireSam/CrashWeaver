@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { net } from 'electron';
-import { StubWeaveProvider } from './stubWeaveProvider';
-import { OpenRouterWeaveProvider, clearModelListCache } from './openRouterClient';
+import { StubWeaverProvider } from './stubWeaverProvider';
+import { OpenRouterWeaverProvider, clearModelListCache } from './openRouterClient';
 import { buildWeaveContextSnapshot, type WeaveContextSnapshot } from './weaveContextService';
 import { validateWeavePlanRequest, validateWeavePlanResult } from './weavePlanSchema';
 import {
@@ -26,27 +26,27 @@ import {
 import type {
   WeavePlanRequest,
   WeavePlanResult,
-  WeaveModelProvider,
+  WeaverModelProvider,
   WeaveModelInfo,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
   WeaverSettings,
   WeaverKeyStatus,
 } from '../vault-contract';
 import type { WeaveProgressCallback } from './weaveGraphState';
 
-export type { WeaveModelProvider };
+export type { WeaverModelProvider };
 
-interface InternalWeaveModelProvider {
+interface InternalWeaverModelProvider {
   generatePlan(
     request: WeavePlanRequest,
     context: WeaveContextSnapshot,
     options?: { requestLogDirectory?: string; onProgress?: WeaveProgressCallback },
   ): Promise<WeavePlanResult>;
-  healthCheck(): Promise<WeaveProviderHealth>;
+  healthCheck(): Promise<WeaverProviderHealth>;
   listModels(): Promise<WeaveModelInfo[]>;
 }
 
-let activeProvider: InternalWeaveModelProvider = new StubWeaveProvider();
+let activeProvider: InternalWeaverModelProvider = new StubWeaverProvider();
 
 async function assertVaultRoot(rootPath: string) {
   const resolvedRoot = path.resolve(rootPath);
@@ -66,12 +66,12 @@ async function assertVaultRoot(rootPath: string) {
   return resolvedRoot;
 }
 
-export function __setWeaveProviderForTests(provider: InternalWeaveModelProvider) {
+export function __setWeaveProviderForTests(provider: InternalWeaverModelProvider) {
   activeProvider = provider;
 }
 
 export function __resetWeaveProviderForTests() {
-  activeProvider = new StubWeaveProvider();
+  activeProvider = new StubWeaverProvider();
 }
 
 export async function initializeWeaveProvider(): Promise<void> {
@@ -79,18 +79,18 @@ export async function initializeWeaveProvider(): Promise<void> {
   const settings = await getWeaverSettings();
 
   if (apiKey) {
-    activeProvider = new OpenRouterWeaveProvider(apiKey, settings.preferredModel);
+    activeProvider = new OpenRouterWeaverProvider(apiKey, settings.preferredModel);
     console.log('CrashWeaver: Weaver initialized with OpenRouter provider.');
     // Pre-fetch model list in the background so the picker is warm on first open
     activeProvider.listModels().catch(() => {});
   } else {
-    activeProvider = new StubWeaveProvider();
+    activeProvider = new StubWeaverProvider();
     console.log('CrashWeaver: Weaver initialized with stub provider (no API key configured).');
   }
 }
 
 export function isStubProviderActive(): boolean {
-  return activeProvider instanceof StubWeaveProvider;
+  return activeProvider instanceof StubWeaverProvider;
 }
 
 export async function setWeaveApiKey(key: string): Promise<void> {

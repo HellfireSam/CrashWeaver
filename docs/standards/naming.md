@@ -32,9 +32,9 @@ This is the naming rule the glossary implies, stated mechanically:
 
 Before naming anything that contains "weave" or "weaver", answer one question: **is this the
 agent, or one run and its artifacts?** Agent → `weaver`; run → `weave`. There is no third case.
-A name that mixes them is wrong even when it reads well: `weaveSessions` holds Weaver session
-summaries, so it belongs to the agent; `WeaveProviderName` names provider infrastructure, so it
-belongs to the agent.
+A name that mixes them is wrong even when it reads well: state holding Weaver session summaries
+belongs to the agent and is named `weaverSessions`; a provider-name type names provider
+infrastructure, so it is `WeaverProviderName`, not `WeaveProviderName`.
 
 ### IPC channel names
 
@@ -53,8 +53,6 @@ Known violations of the rule are tracked, not silently tolerated:
 | Violation                                                                                                                                 | Ticket   |
 | ----------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels) | #20, #21 |
-| `weaveSessions` renderer state in `WeaverContext`                                                                                         | #19      |
-| Provider types named with the action prefix (`WeaveProviderName`, `WeaveModelProvider`)                                                   | #19      |
 
 ## Code conventions
 

@@ -152,7 +152,7 @@ operations that the user reviews before anything is written. End to end:
    snapshot —
    `list_candidate_notes`, `list_directory_summary`, `search_notes`, `read_note_excerpt`,
    `read_note_full`, `read_note_span` and a one-shot `refresh_candidates`. The provider is
-   `StubWeaveProvider` when no API key is configured and `OpenRouterWeaveProvider` otherwise.
+   `StubWeaverProvider` when no API key is configured and `OpenRouterWeaverProvider` otherwise.
    The returned plan is checked again by `validateWeavePlanResult` before it reaches the UI.
    Plan generation writes no note or card content, but it is not write-free on disk: it can write
    Weaver request logs under `.crashweaver/weaver-request-logs` (or a configured logs directory)

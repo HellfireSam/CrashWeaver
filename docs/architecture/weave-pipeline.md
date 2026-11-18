@@ -42,7 +42,7 @@ drives `after-selection` / `replace-selection` placements and the excerpt window
 
 `weaveService.generateWeavePlan` is the service layer: read settings, `validateWeavePlanRequest`, `assertVaultRoot`, resolve the request-log directory, attach embedding options when an OpenRouter
 key exists, `buildWeaveContextSnapshot`, delegate to the active provider's `generatePlan`, then validate the result. Provider selection happens once in `initializeWeaveProvider`:
-`OpenRouterWeaveProvider` with a key, otherwise `StubWeaveProvider`; `isStubProviderActive` drives the panel's demo badge.
+`OpenRouterWeaverProvider` with a key, otherwise `StubWeaverProvider`; `isStubProviderActive` drives the panel's demo badge.
 
 ## Context retrieval
 
@@ -125,13 +125,13 @@ for Anthropic and `aggressive` otherwise. `resolveFullModelProfile(modelId, requ
 `BUDGET_VALIDATION_BOUNDS` fixes the accepted ranges (tokens 100–32000, timeouts 5–600 s, iterations 1–20) and `validateAndClampBudgetValue` clamps out-of-range settings with a warning rather than
 failing the weave; `settingsService.ts` re-bounds the same fields through `WEAVER_BUDGET_FIELD_REGISTRY`.
 
-**OpenRouter provider.** `OpenRouterWeaveProvider.generatePlan(request, context, options)` resolves model and settings, resolves the profile, creates the tool runtime, creates a session logger
+**OpenRouter provider.** `OpenRouterWeaverProvider.generatePlan(request, context, options)` resolves model and settings, resolves the profile, creates the tool runtime, creates a session logger
 when a log directory was supplied (logging `budget-resolved` with profile, budget, and context sizes), instantiates `OpenRouterHttpClient`, and returns `runWeaveGraph(...)` — it owns no loop
-logic. `healthCheck` probes `/models` with a 10-second race and maps 401/403, 402, other non-OK statuses, and network failure onto `WeaveProviderHealth` with a matching `WeaveErrorCategory`.
+logic. `healthCheck` probes `/models` with a 10-second race and maps 401/403, 402, other non-OK statuses, and network failure onto `WeaverProviderHealth` with a matching `WeaveErrorCategory`.
 `listModels` fetches `/models` with a 15-second race, derives `costLabel` and `isFree`, sorts free models first, and caches for 30 minutes (`MODEL_LIST_CACHE_TTL_MS`); `clearModelListCache` runs
 on key changes.
 
-**Stub provider.** `StubWeaveProvider.generatePlan` ignores the snapshot and builds a fixed operation list from the request: guided insert gets an insert plus, when allowed, an edit and a
+**Stub provider.** `StubWeaverProvider.generatePlan` ignores the snapshot and builds a fixed operation list from the request: guided insert gets an insert plus, when allowed, an edit and a
 create-note; intelligent weave gets progressively more restructuring for `standard` and `go-ham`. It slices to `request.maxOperations`, sets `provider: 'stub'`, synthesises a short trace, and
 returns zero usage. `listModels` returns a curated list so the picker works without a key.
 
@@ -436,8 +436,8 @@ apply-result banner + vault re-index
 | Read-only tools                          | `electron/weaver/weaveContextService.ts`                                         | `WeaveContextToolRuntime`, `createWeaveContextToolRuntime`                                                                                          |
 | Embeddings and cache                     | `electron/weaver/weaverEmbeddingService.ts`                                      | `buildQueryEmbedding`, `getOrComputeNoteEmbedding`, `buildSimilarityMap`                                                                            |
 | Model policy and budgets                 | `electron/weaver/weaveModelProfiles.ts`                                          | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS`                                                                               |
-| Provider (production)                    | `electron/weaver/openRouterClient.ts`                                            | `OpenRouterWeaveProvider`                                                                                                                           |
-| Provider (offline)                       | `electron/weaver/stubWeaveProvider.ts`                                           | `StubWeaveProvider`                                                                                                                                 |
+| Provider (production)                    | `electron/weaver/openRouterClient.ts`                                            | `OpenRouterWeaverProvider`                                                                                                                          |
+| Provider (offline)                       | `electron/weaver/stubWeaverProvider.ts`                                          | `StubWeaverProvider`                                                                                                                                |
 | Transport                                | `electron/weaver/weaveHttpClient.ts`                                             | `OpenRouterHttpClient`                                                                                                                              |
 | Planning loop                            | `electron/weaver/weaveGraph.ts`                                                  | `runWeaveGraph`, `resolveWeaveEffectiveBudget`                                                                                                      |
 | Planning nodes                           | `electron/weaver/weaveGraphNodes.ts`                                             | `makeCallModelNode`, `makeExecuteToolNode`, `makeRepairNode`, `makeFinalizeNode`, `makeValidateNode`, `makeFailNode`                                |

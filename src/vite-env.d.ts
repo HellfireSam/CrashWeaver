@@ -19,7 +19,7 @@ import type {
   WeavePlanRequest,
   WeavePlanResult,
   WeaveModelInfo,
-  WeaveProviderHealth,
+  WeaverProviderHealth,
   WeaverSettings,
   VaultWriteNoteInput,
   VaultWriteNoteResult,
@@ -70,9 +70,9 @@ declare global {
         preferences: CrashpadDeletePreferences,
       ) => Promise<CrashpadDeletePreferences>;
       generateWeavePlan: (request: WeavePlanRequest) => Promise<WeavePlanResult>;
-      checkWeaveProvider: () => Promise<WeaveProviderHealth>;
+      checkWeaveProvider: () => Promise<WeaverProviderHealth>;
       /** Returns true when the stub (offline) provider is active. */
-      isStubWeaveProvider: () => Promise<boolean>;
+      isStubWeaverProvider: () => Promise<boolean>;
       listWeaveModels: () => Promise<WeaveModelInfo[]>;
       getWeaverSettings: () => Promise<WeaverSettings>;
       updateWeaverSettings: (updates: Partial<WeaverSettings>) => Promise<WeaverSettings>;

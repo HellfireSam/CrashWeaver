@@ -250,7 +250,7 @@ export type WeaveErrorCategory =
   | 'schema-error'
   | 'safety-error';
 
-type WeaveProviderName = 'stub' | 'openrouter';
+type WeaverProviderName = 'stub' | 'openrouter';
 
 export type WeaveInsertPlacement =
   'append-to-note' | 'prepend-to-note' | 'after-heading' | 'before-heading' | 'after-selection';
@@ -425,7 +425,7 @@ export interface WeaveReActStep {
 export interface WeavePlanResult {
   plan: WeavePlan;
   model: string;
-  provider: WeaveProviderName;
+  provider: WeaverProviderName;
   usage?: {
     promptTokens?: number;
     completionTokens?: number;
@@ -435,9 +435,9 @@ export interface WeavePlanResult {
   trace?: WeaveReActStep[];
 }
 
-export interface WeaveProviderHealth {
+export interface WeaverProviderHealth {
   ok: boolean;
-  provider: WeaveProviderName;
+  provider: WeaverProviderName;
   configured: boolean;
   model: string;
   message: string;
@@ -452,9 +452,9 @@ export interface WeaveModelInfo {
   contextLength?: number;
 }
 
-export interface WeaveModelProvider {
+export interface WeaverModelProvider {
   generatePlan(request: WeavePlanRequest): Promise<WeavePlanResult>;
-  healthCheck(): Promise<WeaveProviderHealth>;
+  healthCheck(): Promise<WeaverProviderHealth>;
   listModels(): Promise<WeaveModelInfo[]>;
 }
 

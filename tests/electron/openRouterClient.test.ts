@@ -11,7 +11,7 @@ const settingsService = require('../../dist-electron/settingsService.js');
 const vaultService = require('../../dist-electron/vaultService.js');
 const { writeVaultIndex } = require('../../dist-electron/services/vaultIndexService.js');
 const { buildWeaveContextSnapshot } = require('../../dist-electron/weaver/weaveContextService.js');
-const { OpenRouterWeaveProvider } = require('../../dist-electron/weaver/openRouterClient.js');
+const { OpenRouterWeaverProvider } = require('../../dist-electron/weaver/openRouterClient.js');
 
 describe('openRouterClient', () => {
   function createGuidedRequest(rootPath: string, overrides: Record<string, unknown> = {}) {
@@ -178,12 +178,12 @@ describe('openRouterClient', () => {
     };
   }
 
-  it('OpenRouterWeaveProvider maps auth failures to auth-error', async () => {
+  it('OpenRouterWeaverProvider maps auth failures to auth-error', async () => {
     const fixture = await createProviderFixture();
 
     try {
       const { fetchImpl } = createFetchSequence([new Response('forbidden', { status: 401 })]);
-      const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      const provider = new OpenRouterWeaverProvider('test-key', 'openai/gpt-4o', undefined, {
         fetchImpl,
       });
 
@@ -195,7 +195,7 @@ describe('openRouterClient', () => {
     }
   });
 
-  it('OpenRouterWeaveProvider surfaces provider-timeout when the chat request times out', async () => {
+  it('OpenRouterWeaverProvider surfaces provider-timeout when the chat request times out', async () => {
     const fixture = await createProviderFixture();
 
     try {
@@ -204,7 +204,7 @@ describe('openRouterClient', () => {
       abortError.name = 'AbortError';
 
       const { fetchImpl } = createFetchSequence([abortError]);
-      const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      const provider = new OpenRouterWeaverProvider('test-key', 'openai/gpt-4o', undefined, {
         fetchImpl,
       });
 
@@ -216,12 +216,12 @@ describe('openRouterClient', () => {
     }
   });
 
-  it('OpenRouterWeaveProvider reports schema-error when the model response is not JSON', async () => {
+  it('OpenRouterWeaverProvider reports schema-error when the model response is not JSON', async () => {
     const fixture = await createProviderFixture();
 
     try {
       const { fetchImpl } = createFetchSequence([createChatResponse('this is not json at all')]);
-      const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      const provider = new OpenRouterWeaverProvider('test-key', 'openai/gpt-4o', undefined, {
         fetchImpl,
       });
 
@@ -233,7 +233,7 @@ describe('openRouterClient', () => {
     }
   });
 
-  it('OpenRouterWeaveProvider completes a read-only tool loop and leaves workspace files untouched', async () => {
+  it('OpenRouterWeaverProvider completes a read-only tool loop and leaves workspace files untouched', async () => {
     const fixture = await createProviderFixture();
 
     try {
@@ -288,7 +288,7 @@ describe('openRouterClient', () => {
           }),
         ),
       ]);
-      const provider = new OpenRouterWeaveProvider('test-key', 'openai/gpt-4o', undefined, {
+      const provider = new OpenRouterWeaverProvider('test-key', 'openai/gpt-4o', undefined, {
         fetchImpl,
       });
 
