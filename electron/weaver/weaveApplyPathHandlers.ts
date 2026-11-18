@@ -23,22 +23,12 @@ import {
 import { assertNoteExists, assertWithinVault, verifyBoundaryIntegrity } from './weaveApplyGuards';
 
 // The card-to-note mutation services in `services/` are deliberately not imported
-// here. They are not the de-duplication of the note-to-card delete and rename
-// paths below — they run the opposite direction, and wiring them in would be
-// destructive (ADR-0001 in docs/adr/):
-//
-// - The paths here read the note, parse its boundary UIDs and write the card
-//   store: rename rewrites those UIDs' `referenced_in` note paths, delete prunes
-//   their entries for this note. They never touch note prose.
-// - `removeCardBoundariesAcrossReferences` and
-//   `renameCardBoundariesAcrossReferences` read a card's `referenced_in`, rewrite
-//   or strip its boundary lines in every note that references it and re-sync
-//   those notes. They never rewrite `referenced_in`.
-//
-// Calling the services from `applyDeleteNote` would strip the deleted card's
-// boundaries from every *other* note that references it while dropping the stale
-// reference pruning; calling them from `applyRenameNote` would rename card UIDs
-// inside markers instead of renaming a note path. Keep the directions separate.
+// here: they run the opposite direction to the note-to-card delete and rename
+// paths below. Wiring them in is not a de-duplication — it would strip a deleted
+// card's boundaries from every *other* note that references it while dropping
+// the reference pruning, and it would rename card UIDs inside markers instead of
+// renaming a note path. See ADR-0001 in `docs/adr/` for both directions and why
+// the swap must not be attempted.
 
 // ── Path-mutation handlers ──────────────────────────────────────────────────
 //

@@ -18,11 +18,14 @@ prunes the deleted note's entries and reports the cards it orphaned. They never 
 prose, never call `syncNoteToCardStore`, and never delete a card file.
 
 **Card → note: the reference mutation services.** `renameCardBoundariesAcrossReferences` and
-`removeCardBoundariesAcrossReferences` in `electron/services/cardReferenceMutationService.ts` run
-when a _card's UID_ is renamed or its boundaries must be removed from the notes. They read one
-card's `referenced_in`, open every note it lists, replace or strip the matching
-`%%CW_CARD_START/END%%` lines, write each note and re-sync it to the card store. They never rewrite
-`referenced_in` themselves.
+`removeCardBoundariesAcrossReferences` in `electron/services/cardReferenceMutationService.ts`, plus
+`reinsertCardBoundariesForReferences` in `cardRestoreMutationService.ts` for restore, run when a
+_card's UID_ is renamed, its boundaries must be removed from the notes, or a deleted card is
+restored. The caller reads one card's `referenced_in` and passes those note paths in; the service
+opens each named note, replaces, strips or reinserts the matching `%%CW_CARD_START/END%%` lines,
+writes the note and re-syncs it to the card store. The service itself writes no card JSON, but the
+note re-sync it triggers rewrites `referenced_in` to match the note's new boundary state — it adds
+the renamed card's reference, prunes the old one, or re-adds the restored one.
 
 Wiring the services into the handler paths is destructive rather than de-duplicating:
 
@@ -40,14 +43,15 @@ tested at its own seam: the weaver handlers are pinned by
 `tests/electron/weaveApplyService.test.ts`, the services by
 `tests/electron/cardReferenceMutationService.test.ts`.
 
-The dead-import site in `weaveApplyPathHandlers.ts` carries the short form of this warning so the
-next reader does not have to rediscover it, and the two directions are documented side by side in
+The comment above the path-mutation handlers in `weaveApplyPathHandlers.ts` carries the short form
+of this warning, so the next reader does not have to rediscover it; the full rationale is here and
+the two directions are documented side by side in
 [the data model](../architecture/data-model.md#two-mutation-directions).
 
 ## Consequences
 
 - A "duplication" remains visible in the codebase. It is deliberate, not an oversight; the comment
-  names the ticket and this ADR.
+  above the path-mutation handlers and this ADR name each other.
 - Behaviour is unchanged: no note loses boundaries it should keep and no reference pruning is
   dropped, because neither path was rewired.
 - No new test seam is introduced. If a future change genuinely needs one direction to call the
