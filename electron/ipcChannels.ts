@@ -4,14 +4,19 @@
  * Both processes read the names from here — `electron/main.ts` registers its
  * handlers against them and `electron/preload.ts` invokes them — so a channel
  * rename is a single edit and the two sides cannot spell a name differently.
- * The strings themselves are unchanged by this module; it is only the
+ * The strings themselves are not restated anywhere else; it is only the
  * declaration that moved.
  *
  * Channel names follow the naming standard: `<area>:<name>`, lower-case and
  * kebab-cased inside each part, with a request/response channel named for the
  * imperative verb the main process performs and an event channel named for the
- * event. The `as const` keeps every value a string-literal type. The area rule
- * (agent concerns use `weaver:`) is applied in #21.
+ * event. The `as const` keeps every value a string-literal type.
+ *
+ * The area follows the Weaver/weave rule: agent concerns use `weaver:` (the
+ * provider, model, settings, API key and session channels) and `weave:` is for
+ * operations on one run (plan generation and the apply step). That rule is the
+ * declaration's own comment; the handler-coverage suite proves the preload and
+ * the main process expose the same inventory.
  */
 
 export const IPC_CHANNELS = {
@@ -44,22 +49,26 @@ export const IPC_CHANNELS = {
     getDeletePreferences: 'crashpad:get-delete-preferences',
     setDeletePreferences: 'crashpad:set-delete-preferences',
   },
+  /** Agent concerns: provider, model, settings, API key and session state. */
+  weaver: {
+    healthCheck: 'weaver:health-check',
+    isStubProvider: 'weaver:is-stub-provider',
+    listModels: 'weaver:list-models',
+    getSettings: 'weaver:get-settings',
+    updateSettings: 'weaver:update-settings',
+    setPreferredModel: 'weaver:set-preferred-model',
+    getRequestLogsDirectory: 'weaver:get-request-logs-directory',
+    setRequestLogsDirectory: 'weaver:set-request-logs-directory',
+    setApiKey: 'weaver:set-api-key',
+    clearApiKey: 'weaver:clear-api-key',
+    listSessions: 'weaver:list-sessions',
+    getSession: 'weaver:get-session',
+    deleteSession: 'weaver:delete-session',
+    clearSessions: 'weaver:clear-sessions',
+  },
+  /** One run of the Weaver: plan generation and the apply step. */
   weave: {
     generatePlan: 'weave:generate-plan',
-    healthCheck: 'weave:health-check',
-    isStubProvider: 'weave:is-stub-provider',
-    listModels: 'weave:list-models',
-    getSettings: 'weave:get-settings',
-    updateSettings: 'weave:update-settings',
-    setPreferredModel: 'weave:set-preferred-model',
-    getRequestLogsDirectory: 'weave:get-request-logs-directory',
-    setRequestLogsDirectory: 'weave:set-request-logs-directory',
-    setApiKey: 'weave:set-api-key',
-    clearApiKey: 'weave:clear-api-key',
-    listSessions: 'weave:list-sessions',
-    getSession: 'weave:get-session',
-    deleteSession: 'weave:delete-session',
-    clearSessions: 'weave:clear-sessions',
     applyPlan: 'weave:apply-plan',
   },
   /** Push channels: main sends, preload subscribes. */

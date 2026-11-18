@@ -47,14 +47,14 @@ name again:
 - **Push/event channels** are `<area>:<event>`, for example `weave:plan-progress`,
   `vault:external-change`. The name is the event, not an instruction.
 - The area follows the same rule as everything else: **agent concerns use `weaver:`**, and
-  `weave:` is for operations on a run. A settings, key or session channel is an agent concern
-  even though it is reached while using the Weaver.
+  `weave:` is for operations on a run. A settings, key, provider, model or session channel is an
+  agent concern even though it is reached while using the Weaver.
 
-Known violations of the rule are tracked, not silently tolerated:
-
-| Violation                                                                                                                                 | Ticket |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels) | #21    |
+The rule holds across the tree: `electron/ipcChannels.ts` groups the channels by area, and is the
+only place a channel string appears. The inventory is asserted at runtime by
+`tests/electron/ipcChannels.test.ts`, which loads the compiled main and preload modules and proves
+that every channel the preload invokes has a registered handler, every registered handler is
+exposed, and every declared channel is used by both sides.
 
 ## Code conventions
 

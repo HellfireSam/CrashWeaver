@@ -264,7 +264,7 @@ tests but is not called by the planning loop — the graph does its own inline 8
 `session-start` plus the last `graph-complete`, and sorts newest first. `getWeaverSession` returns a `WeaverSessionDetail` with the summary, full request, `budget-resolved` payload, the plan (from
 `plan-final`, falling back to `node-validate-success`), and `steps` built by `buildSteps` from the node events. `deleteWeaverSession` unlinks one file; `clearWeaverSessions` unlinks all and
 returns the count. `weaveService.ts` wraps these as `listSessions`, `getSession`, `deleteSession`, and `clearSessions` after resolving the log directory, and `electron/main.ts` maps them to the
-`weave:list-sessions`, `weave:get-session`, `weave:delete-session`, and `weave:clear-sessions` channels. `useWeaverController` fetches the list on vault open and after each completed plan; the history view
+`weaver:list-sessions`, `weaver:get-session`, `weaver:delete-session`, and `weaver:clear-sessions` channels. `useWeaverController` fetches the list on vault open and after each completed plan; the history view
 can re-run a past session by restoring its request parameters into the composer.
 
 ## The approval gate

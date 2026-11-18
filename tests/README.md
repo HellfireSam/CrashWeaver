@@ -38,15 +38,19 @@ absence is visible rather than implied away by a green run. Each one names the t
 it where a ticket does.
 
 - **Main-process composition — `electron/main.ts`.** The service functions below it are tested
-  directly, but the composition root is not: the 39 `ipcMain.handle` registrations, window
-  creation and lifecycle, the native folder pickers, the vault watcher wiring and the
-  `crashweaver-local` protocol handler have no test; #21 adds handler coverage.
-- **Preload bridge — `electron/preload.ts`.** The channel names now come from the single
-  declaration in `electron/ipcChannels.ts` (#20), so the two sides cannot spell a name
-  differently, and the renderer's bridge type is derived from the preload, so renaming or
-  re-signaturing a bridge member is a compile error. Nothing yet asserts at runtime that every
-  exposed member has a registered main-process handler, or vice versa, and selecting a different
-  declared key at a call site would compile and hang; ticket #21.
+  directly. The handler inventory is covered: `tests/electron/ipcChannels.test.ts` loads the
+  compiled `main.js` with a stubbed `electron` module and asserts that every channel the preload
+  invokes has a registered handler, every registered handler is exposed, and every declared
+  channel is realised by both sides (#21). What remains untested is the rest of the composition
+  root: window creation and lifecycle, the native folder pickers, the vault watcher wiring and the
+  `crashweaver-local` protocol handler.
+- **Preload bridge — `electron/preload.ts`.** The channel names come from the single declaration
+  in `electron/ipcChannels.ts` (#20), so the two sides cannot spell a name differently, and the
+  renderer's bridge type is derived from the preload (#20), so renaming or re-signaturing a bridge
+  member is a compile error. The handler-coverage suite (#21) now calls every exposed bridge member
+  against a stubbed `ipcRenderer` and proves each invoked channel has a main-process handler and
+  that the preload subscribes to every declared event channel. A wrong _declared_ key selection at
+  a call site still compiles; no test can see a channel the code never passes.
 - **Renderer UI layer.** `src/App.tsx`, `src/components/**`, `src/hooks/**` and `src/state/**`
   have no tests; only the pure helpers in `src/lib/` are covered. The pure logic extracted from
   the largest module is tested — `src/lib/cardProjection.ts` (the rendered card surface) and

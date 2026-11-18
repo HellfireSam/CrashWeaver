@@ -123,29 +123,29 @@ const crashWeaverBridge = {
   generateWeavePlan: (request: WeavePlanRequest) =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.generatePlan, request) as Promise<WeavePlanResult>,
   checkWeaverProvider: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.healthCheck) as Promise<WeaverProviderHealth>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.healthCheck) as Promise<WeaverProviderHealth>,
   isStubWeaverProvider: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.isStubProvider) as Promise<boolean>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.isStubProvider) as Promise<boolean>,
   listWeaverModels: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.listModels) as Promise<WeaverModelInfo[]>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.listModels) as Promise<WeaverModelInfo[]>,
   getWeaverSettings: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.getSettings) as Promise<WeaverSettings>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.getSettings) as Promise<WeaverSettings>,
   updateWeaverSettings: (updates: Partial<WeaverSettings>) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.updateSettings, updates) as Promise<WeaverSettings>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.updateSettings, updates) as Promise<WeaverSettings>,
   setWeaverPreferredModel: (preferredModel: string | null) =>
     ipcRenderer.invoke(
-      IPC_CHANNELS.weave.setPreferredModel,
+      IPC_CHANNELS.weaver.setPreferredModel,
       preferredModel,
     ) as Promise<WeaverSettings>,
   getWeaverRequestLogsDirectory: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.getRequestLogsDirectory) as Promise<string | null>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.getRequestLogsDirectory) as Promise<string | null>,
   setWeaverRequestLogsDirectory: (directoryPath: string | null) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.setRequestLogsDirectory, directoryPath) as Promise<
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.setRequestLogsDirectory, directoryPath) as Promise<
       string | null
     >,
   setWeaverApiKey: (key: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.setApiKey, key) as Promise<void>,
-  clearWeaverApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.weave.clearApiKey) as Promise<void>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.setApiKey, key) as Promise<void>,
+  clearWeaverApiKey: () => ipcRenderer.invoke(IPC_CHANNELS.weaver.clearApiKey) as Promise<void>,
 
   // Weaver progress events (push-based, not invoke)
   onWeavePlanProgress: (callback: (event: unknown) => void) => {
@@ -159,15 +159,15 @@ const crashWeaverBridge = {
 
   // Weaver session history
   listWeaverSessions: (rootPath?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.listSessions, rootPath) as Promise<unknown[]>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.listSessions, rootPath) as Promise<unknown[]>,
   getWeaverSession: (sessionId: string, rootPath?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.getSession, sessionId, rootPath) as Promise<
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.getSession, sessionId, rootPath) as Promise<
       unknown | null
     >,
   deleteWeaverSession: (sessionId: string, rootPath?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.deleteSession, sessionId, rootPath) as Promise<boolean>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.deleteSession, sessionId, rootPath) as Promise<boolean>,
   clearWeaverSessions: (rootPath?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.clearSessions, rootPath) as Promise<number>,
+    ipcRenderer.invoke(IPC_CHANNELS.weaver.clearSessions, rootPath) as Promise<number>,
   /** Apply a list of Weaver plan operations to the vault. Returns per-operation results. */
   applyWeavePlan: (rootPath: string, operations: WeavePlanOperation[]) =>
     ipcRenderer.invoke(

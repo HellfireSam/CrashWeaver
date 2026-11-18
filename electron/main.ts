@@ -424,9 +424,9 @@ ipcMain.handle(IPC_CHANNELS.weave.generatePlan, async (event, request: WeavePlan
   return generateWeavePlan(request, onProgress);
 });
 
-ipcMain.handle(IPC_CHANNELS.weave.healthCheck, async () => checkWeaverProvider());
-ipcMain.handle(IPC_CHANNELS.weave.listModels, async () => listWeaverModels());
-ipcMain.handle(IPC_CHANNELS.weave.isStubProvider, async () => isStubProviderActive());
+ipcMain.handle(IPC_CHANNELS.weaver.healthCheck, async () => checkWeaverProvider());
+ipcMain.handle(IPC_CHANNELS.weaver.listModels, async () => listWeaverModels());
+ipcMain.handle(IPC_CHANNELS.weaver.isStubProvider, async () => isStubProviderActive());
 
 ipcMain.handle(
   IPC_CHANNELS.weave.applyPlan,
@@ -443,47 +443,47 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle(IPC_CHANNELS.weave.getSettings, async () => getWeaverSettings());
+ipcMain.handle(IPC_CHANNELS.weaver.getSettings, async () => getWeaverSettings());
 
 ipcMain.handle(
-  IPC_CHANNELS.weave.updateSettings,
+  IPC_CHANNELS.weaver.updateSettings,
   async (_event, updates: Partial<WeaverSettings>) => updateWeaverSettings(updates),
 );
 
 ipcMain.handle(
-  IPC_CHANNELS.weave.setPreferredModel,
+  IPC_CHANNELS.weaver.setPreferredModel,
   async (_event, preferredModel: string | null) => setWeaverPreferredModel(preferredModel),
 );
 
-ipcMain.handle(IPC_CHANNELS.weave.getRequestLogsDirectory, async () =>
+ipcMain.handle(IPC_CHANNELS.weaver.getRequestLogsDirectory, async () =>
   getConfiguredWeaverRequestLogsDirectory(),
 );
 
 ipcMain.handle(
-  IPC_CHANNELS.weave.setRequestLogsDirectory,
+  IPC_CHANNELS.weaver.setRequestLogsDirectory,
   async (_event, directoryPath: string | null) =>
     setConfiguredWeaverRequestLogsDirectory(directoryPath),
 );
 
-ipcMain.handle(IPC_CHANNELS.weave.setApiKey, async (_event, key: string) => setWeaveApiKey(key));
+ipcMain.handle(IPC_CHANNELS.weaver.setApiKey, async (_event, key: string) => setWeaveApiKey(key));
 
-ipcMain.handle(IPC_CHANNELS.weave.clearApiKey, async () => clearWeaveApiKey());
+ipcMain.handle(IPC_CHANNELS.weaver.clearApiKey, async () => clearWeaveApiKey());
 
-ipcMain.handle(IPC_CHANNELS.weave.listSessions, async (_event, rootPath?: string) =>
+ipcMain.handle(IPC_CHANNELS.weaver.listSessions, async (_event, rootPath?: string) =>
   listSessions(rootPath),
 );
 
 ipcMain.handle(
-  IPC_CHANNELS.weave.getSession,
+  IPC_CHANNELS.weaver.getSession,
   async (_event, sessionId: string, rootPath?: string) => getSession(sessionId, rootPath),
 );
 
 ipcMain.handle(
-  IPC_CHANNELS.weave.deleteSession,
+  IPC_CHANNELS.weaver.deleteSession,
   async (_event, sessionId: string, rootPath?: string) => deleteSession(sessionId, rootPath),
 );
 
-ipcMain.handle(IPC_CHANNELS.weave.clearSessions, async (_event, rootPath?: string) =>
+ipcMain.handle(IPC_CHANNELS.weaver.clearSessions, async (_event, rootPath?: string) =>
   clearSessions(rootPath),
 );
 

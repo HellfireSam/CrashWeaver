@@ -94,12 +94,13 @@ what is on the wire.
 
 `electron/ipcChannels.ts` declares every request/response and event channel exactly once. The
 names are a nested `as const` object, so every value is a string-literal type and the file holds
-no behaviour at all; they are grouped by area (`vault`, `cardStore`, `crashpad`, `weave`, and an
-`events` group for the two push channels). It is the only home for a channel string: `electron/main.ts` registers with
-`ipcMain.handle(IPC_CHANNELS.<area>.<name>, handler)` and `electron/preload.ts` invokes and
-subscribes with the same values, so a renamed channel is one edit and the two sides cannot spell
-it differently. The declaration imports nothing and is not part of the shared type contract,
-which stays type-only.
+no behaviour at all; they are grouped by area (`vault`, `cardStore`, `crashpad`, `weaver` for the
+agent's provider, model, settings, key and session channels, `weave` for the two channels of one
+run, and an `events` group for the two push channels). It is the only home for a channel string:
+`electron/main.ts` registers with `ipcMain.handle(IPC_CHANNELS.<area>.<name>, handler)` and
+`electron/preload.ts` invokes and subscribes with the same values, so a renamed channel is one
+edit and the two sides cannot spell it differently. The declaration imports nothing and is not
+part of the shared type contract, which stays type-only.
 
 ### Request and response
 
@@ -108,12 +109,13 @@ calls at module scope in `electron/main.ts`, so they exist before `app.whenReady
 Each handler returns a value or a promise of one, which becomes the resolved value of the
 matching `ipcRenderer.invoke` in the renderer; a thrown error rejects that promise.
 
-| Area          | Examples                                                                                                                                                                                                                             | Backed by                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| `vault:`      | `vault:select-folder`, `vault:open`, `vault:read-note`, `vault:write-note`, `vault:update-index`, `vault:list-internal-directories`, `vault:select-image-directories`, `vault:set-image-directories`                                 | `vaultService`, `dialog`                               |
-| `card-store:` | `card-store:select-folder`, `card-store:get-config`, `card-store:list-cards`, `card-store:create-card`, `card-store:save-card`, `card-store:rename-card`, `card-store:delete-card`, `card-store:restore-card`, `card-store:set-path` | `vaultService`, `settingsService`                      |
-| `crashpad:`   | `crashpad:list`, `crashpad:open`, `crashpad:create`, `crashpad:save`, `crashpad:get-delete-preferences`, `crashpad:set-delete-preferences`                                                                                           | `vaultService`, `settingsService`                      |
-| `weave:`      | `weave:generate-plan`, `weave:health-check`, `weave:list-models`, `weave:apply-plan`, `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions`                                                      | `weaveService`, `weaveApplyService`, `settingsService` |
+| Area          | Examples                                                                                                                                                                                                                                                                                                                                                                      | Backed by                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `vault:`      | `vault:select-folder`, `vault:open`, `vault:read-note`, `vault:write-note`, `vault:update-index`, `vault:list-internal-directories`, `vault:select-image-directories`, `vault:set-image-directories`                                                                                                                                                                          | `vaultService`, `dialog`            |
+| `card-store:` | `card-store:select-folder`, `card-store:get-config`, `card-store:list-cards`, `card-store:create-card`, `card-store:save-card`, `card-store:rename-card`, `card-store:delete-card`, `card-store:restore-card`, `card-store:set-path`                                                                                                                                          | `vaultService`, `settingsService`   |
+| `crashpad:`   | `crashpad:list`, `crashpad:open`, `crashpad:create`, `crashpad:save`, `crashpad:get-delete-preferences`, `crashpad:set-delete-preferences`                                                                                                                                                                                                                                    | `vaultService`, `settingsService`   |
+| `weaver:`     | `weaver:health-check`, `weaver:is-stub-provider`, `weaver:list-models`, `weaver:get-settings`, `weaver:update-settings`, `weaver:set-preferred-model`, `weaver:get-request-logs-directory`, `weaver:set-request-logs-directory`, `weaver:set-api-key`, `weaver:clear-api-key`, `weaver:list-sessions`, `weaver:get-session`, `weaver:delete-session`, `weaver:clear-sessions` | `weaveService`, `settingsService`   |
+| `weave:`      | `weave:generate-plan`, `weave:apply-plan`                                                                                                                                                                                                                                                                                                                                     | `weaveService`, `weaveApplyService` |
 
 The picker channels (`vault:select-folder`, `card-store:select-folder`,
 `vault:select-image-directories`) are the only ones that open native dialogs; they return `null`
@@ -121,6 +123,11 @@ when the user cancels, and callers treat `null` as "no change". Handlers that ca
 Vault's shape (`vault:open`, `vault:write-note`, `vault:update-index`, `card-store:set-path`,
 `vault:set-image-directories`, `weave:apply-plan`) also call `enqueueWatchVault(rootPath)`
 before returning, so the watcher reflects the current root and Card store path.
+
+The channel area is the naming standard's Weaver/weave rule applied to the boundary: agent concerns
+use `weaver:` and `weave:` is for operations on one run, so only plan generation and the apply step
+keep the run prefix. The rule is checked by the handler-coverage suite described under
+[typing across the boundary](#typing-across-the-boundary), not just by the compiler.
 
 ### Push channels
 
@@ -148,9 +155,15 @@ type on both sides; and a channel rename is a single edit in the declaration.
 
 What the compiler still cannot see is whether a channel has a registered handler on the main side,
 or whether a call site passed a different _declared_ key (`ipcRenderer.invoke` and `ipcMain.handle`
-accept any string, so a wrong-key selection compiles and hangs). Both are runtime-concern gaps;
-the handler-coverage assertion is ticket #21. Errors surface by rejection: `useWeaverController` normalises
-Weaver errors by stripping Electron's wrapper with a regex matching
+accept any string, so a wrong-key selection compiles and hangs). The first gap is now asserted at
+runtime: `tests/electron/ipcChannels.test.ts` loads the compiled `main.js` and `preload.js` with a
+stubbed `electron` module, calls every member of the exposed bridge, and compares the recorded
+channel sets with the declaration. Every channel the preload invokes must have a registered
+handler, every registered handler must be exposed, every declared request/response channel must be
+realised by both sides, and the preload must subscribe to both declared event channels. Removing a
+handler fails the suite; a wrong _declared_ key at a call site still compiles, because the suite can
+only see the channel names the two sides actually pass. Errors surface by rejection:
+`useWeaverController` normalises Weaver errors by stripping Electron's wrapper with a regex matching
 `Error invoking remote method '<channel>': Error: <message>`.
 
 ## Renderer architecture
@@ -272,7 +285,7 @@ geometry. `WEAVER_BUDGET_BOUNDS` fixes four categories — tokens (100 to 32 000
 key to its camelCase `WeaverSettings` response key and bound category. `updateWeaverSettings`
 validates each supplied value with `normalizeBoundedNumber`, which rejects non-finite or
 out-of-range numbers with a thrown `Error` and truncates fractions, so a rejected value rejects
-the `weave:update-settings` invoke and surfaces in the renderer as an error message. The registry
+the `weaver:update-settings` invoke and surfaces in the renderer as an error message. The registry
 is the one place to add a budget knob, because `readSettings`, `buildWeaverSettingsResponse` and
 `updateWeaverSettings` all loop over it.
 
@@ -283,10 +296,10 @@ security warning when OS encryption is unavailable, and the renderer sees only
 
 The renderer reads settings as part of a `VaultDescriptor` (`cardStore`, `imageDirectories`)
 returned by `vault:open` and `vault:update-index`, and through `card-store:get-config`,
-`crashpad:get-delete-preferences` and `weave:get-settings`. It writes through
+`crashpad:get-delete-preferences` and `weaver:get-settings`. It writes through
 `card-store:set-path`, `vault:set-image-directories`, `crashpad:set-delete-preferences`,
-`weave:update-settings`, `weave:set-preferred-model`, `weave:set-api-key` and
-`weave:clear-api-key`. The settings writes return the refreshed state — the two API-key channels
+`weaver:update-settings`, `weaver:set-preferred-model`, `weaver:set-api-key` and
+`weaver:clear-api-key`. The settings writes return the refreshed state — the two API-key channels
 return nothing — and the caller stores that value in context; `handleUpdateWeaverSettings` in
 `src/hooks/useWeaverController.ts` is one example. The controller also loads `getWeaverSettings` once on mount and syncs
 `weaverModel` from `preferredModel`.
