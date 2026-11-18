@@ -557,9 +557,14 @@ The grilling frontier is otherwise **empty**. In order:
      covers the rejection matrix and the untouched sibling file, the apply suite asserts the vault
      snapshot is unchanged after a traversal plan, and `restoreDeletedCard`/`renameCard` — which
      already validated — gained regression tests for a hand-edited crashpad snapshot.
-   - **Frontier is now #4** (the weave plan schema accepts boundary-marker-omitted operations; a
-     tracked gap that needs a characterisation test and a decision) and **#24** (card titles may
-     contain spaces, now unblocked feature work). **#1** stays open until both close.
+   - ~~#4 the weave plan schema accepts boundary-marker-omitted operations~~ — **DONE** in
+     `a688ec6`: the optionality is intentional and recorded in ADR-0002, with the consequence
+     stated — a marker-less `create-note` does not durably reference the card (it auto-creates a
+     whole-note reference that the next sync removes, leaving the card orphaned). The current
+     acceptance behaviour is pinned by three separate `weavePlanSchema` characterisation tests;
+     `insert-boundary-pair` still requires its markers. No schema or prompt behaviour changed.
+   - **Frontier is now #24 only** (card titles may contain spaces, unblocked feature work once the
+     rework programme finished). **#1** stays open until #24 closes.
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -622,12 +627,12 @@ landed in `846744a`, `b16e381` and `84ef564` (#26/#21), and in `17a996a` and `e1
 review, which caught the new suite kind leaving the testing standards stale and the manual-check
 claim with no owner.
 
-**Branch state:** the #15/#16/#17/#22 batch is on `origin/main` at `d803258` with CI green, and the
-#18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`) plus its review corrections (`8ed725f`,
-`daaa462`, `7c39167`, `1673db9`) is on `origin/main` too. The newest commits are the #21/#26 batch
-(`029d33d`, `5d8f105`) with its review corrections (`846744a`, `b16e381`, `84ef564`), the #23 fix
-(`9e126b8`) with its corrections (`17a996a`, `e1e3e51`), the #25 fix (`fac9dfe`) and this record
-update; they are pushed together as part of this session.
+**Branch state:** the #15/#16/#17/#22 batch is on `origin/main` at `d803258` with CI green; the
+#18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`) and its review corrections (`8ed725f`,
+`daaa462`, `7c39167`, `1673db9`) are on `origin/main` too. The newest commits are the
+#21/#26/#23/#25 batch (`029d33d`, `5d8f105`, `9e126b8`, `fac9dfe`) with its review corrections
+(`846744a`, `b16e381`, `84ef564`, `17a996a`, `e1e3e51`), the #4 decision (`a688ec6`) and this
+record update; they are pushed together as part of this session.
 
 ## 8. How to resume
 
@@ -671,5 +676,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (**#4** and **#24**; **#1** stays
-open until both close), and the pushed state of the newest commits.
+Everything else is unchanged: the closed tickets, the frontier (**#24** only; **#1** stays open
+until it closes), and the pushed state of the newest commits.
