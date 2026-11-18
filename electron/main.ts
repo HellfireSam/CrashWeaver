@@ -11,8 +11,8 @@ import {
   initializeWeaverProvider,
   isStubProviderActive,
   listWeaverModels,
-  setWeaveApiKey,
-  clearWeaveApiKey,
+  setWeaverApiKey,
+  clearWeaverApiKey,
   getWeaverSettings,
   updateWeaverSettings,
   setWeaverPreferredModel,
@@ -465,9 +465,9 @@ ipcMain.handle(
     setConfiguredWeaverRequestLogsDirectory(directoryPath),
 );
 
-ipcMain.handle(IPC_CHANNELS.weaver.setApiKey, async (_event, key: string) => setWeaveApiKey(key));
+ipcMain.handle(IPC_CHANNELS.weaver.setApiKey, async (_event, key: string) => setWeaverApiKey(key));
 
-ipcMain.handle(IPC_CHANNELS.weaver.clearApiKey, async () => clearWeaveApiKey());
+ipcMain.handle(IPC_CHANNELS.weaver.clearApiKey, async () => clearWeaverApiKey());
 
 ipcMain.handle(IPC_CHANNELS.weaver.listSessions, async (_event, rootPath?: string) =>
   listSessions(rootPath),

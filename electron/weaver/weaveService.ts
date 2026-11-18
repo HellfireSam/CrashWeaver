@@ -90,13 +90,13 @@ export function isStubProviderActive(): boolean {
   return activeProvider instanceof StubWeaverProvider;
 }
 
-export async function setWeaveApiKey(key: string): Promise<void> {
+export async function setWeaverApiKey(key: string): Promise<void> {
   await setOpenRouterApiKey(key);
   clearModelListCache();
   await initializeWeaverProvider();
 }
 
-export async function clearWeaveApiKey(): Promise<void> {
+export async function clearWeaverApiKey(): Promise<void> {
   await clearOpenRouterApiKey();
   clearModelListCache();
   await initializeWeaverProvider();
