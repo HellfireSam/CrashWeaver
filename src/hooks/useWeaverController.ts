@@ -212,7 +212,7 @@ export function useWeaverController({
       .catch(() => undefined);
   }, [setWeaveModel, setWeaverSettings]);
 
-  const refreshWeaverProviderHealth = useCallback(async () => {
+  const refreshWeaveProviderHealth = useCallback(async () => {
     setIsCheckingWeaveProvider(true);
 
     try {
@@ -234,7 +234,7 @@ export function useWeaverController({
     }
 
     try {
-      await refreshWeaverProviderHealth();
+      await refreshWeaveProviderHealth();
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(
@@ -244,7 +244,7 @@ export function useWeaverController({
   }, [
     activeCrashpad,
     isCrashpadEditor,
-    refreshWeaverProviderHealth,
+    refreshWeaveProviderHealth,
     setErrorMessage,
     setWeaveProviderHealth,
     vaultPath,
@@ -266,7 +266,7 @@ export function useWeaverController({
     setErrorMessage(null);
 
     try {
-      const health = await refreshWeaverProviderHealth();
+      const health = await refreshWeaveProviderHealth();
 
       if (health && !health.ok && health.errorCategory === 'auth-error') {
         setErrorMessage(
@@ -322,7 +322,7 @@ export function useWeaverController({
     crashpadWeaveCardUid,
     editorTextareaRef,
     isCrashpadEditor,
-    refreshWeaverProviderHealth,
+    refreshWeaveProviderHealth,
     setErrorMessage,
     setIsGeneratingWeavePlan,
     setStatusMessage,
@@ -432,7 +432,7 @@ export function useWeaverController({
       await window.crashWeaver.setWeaverApiKey(key);
       const updated = await window.crashWeaver.getWeaverSettings();
       setWeaverSettings(updated);
-      const health = await refreshWeaverProviderHealth().catch(() => undefined);
+      const health = await refreshWeaveProviderHealth().catch(() => undefined);
       if (health && !health.ok && health.errorCategory === 'auth-error') {
         setErrorMessage(
           'API key saved, but OpenRouter rejected it as invalid or expired. Please check your key.',
@@ -441,16 +441,16 @@ export function useWeaverController({
         setStatusMessage('OpenRouter API key saved. Weaver will now use the live provider.');
       }
     },
-    [refreshWeaverProviderHealth, setErrorMessage, setStatusMessage, setWeaverSettings],
+    [refreshWeaveProviderHealth, setErrorMessage, setStatusMessage, setWeaverSettings],
   );
 
   const handleClearWeaverApiKey = useCallback(async () => {
     await window.crashWeaver.clearWeaverApiKey();
     const updated = await window.crashWeaver.getWeaverSettings();
     setWeaverSettings(updated);
-    await refreshWeaverProviderHealth().catch(() => undefined);
+    await refreshWeaveProviderHealth().catch(() => undefined);
     setStatusMessage('OpenRouter API key removed. Weaver is using the stub provider.');
-  }, [refreshWeaverProviderHealth, setStatusMessage, setWeaverSettings]);
+  }, [refreshWeaveProviderHealth, setStatusMessage, setWeaverSettings]);
 
   const handleUpdateWeaverSettings = useCallback(
     async (updates: Partial<WeaverSettings>) => {

@@ -124,7 +124,7 @@ const crashWeaverBridge = {
     ipcRenderer.invoke(IPC_CHANNELS.weave.generatePlan, request) as Promise<WeavePlanResult>,
   checkWeaveProvider: () =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.healthCheck) as Promise<WeaverProviderHealth>,
-  isStubWeaverProvider: () =>
+  isStubWeaveProvider: () =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.isStubProvider) as Promise<boolean>,
   listWeaveModels: () =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.listModels) as Promise<WeaveModelInfo[]>,

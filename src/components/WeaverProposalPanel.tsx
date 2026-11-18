@@ -546,7 +546,7 @@ export function WeaverProposalPanel({
   // Check if the stub (offline) provider is active
   useEffect(() => {
     window.crashWeaver
-      .isStubWeaverProvider()
+      .isStubWeaveProvider()
       .then(setIsStubProvider)
       .catch(() => {});
   }, []);
