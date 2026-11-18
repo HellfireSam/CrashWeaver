@@ -489,12 +489,44 @@ The grilling frontier is otherwise **empty**. In order:
      cut, restored before commit. Lint warnings fell from 28 to 12 because the moved callbacks now
      list their stable setters. Gate green: 25 files / 279 tests, coverage 37.04% statements / 37.75%
      lines (from 37.09 / 37.8; the fall is the new untested UI modules).
-   - **Frontier is now #18** (remove the sixteen unimported contract exports, unblocked by #14 and
-     #15), **#19** (the Weaver/weave naming violations, unblocked by #15) and **#20** (centralise the
-     IPC channel contract and derive the renderer bridge type, unblocked by #15); **#21** needs #20.
-     Separately, **#23** (the card chip truncates titles) and **#25** (card UIDs are not validated on
-     read or in weaver apply) are unblocked product defects, and **#24** (spaces in card titles) is
-     feature work that waits for the rework to finish, as does **#4** (boundary-marker gap).
+   - ~~#18 remove the unused contract exports~~ — **DONE** in `01d43dd`, corrected in `8ed725f`: the
+     filed "sixteen unimported exports" premise had drifted after #14/#15. Re-deriving the list
+     across every `.ts`/`.tsx`/`.d.ts` outside the contract showed the ten operation aliases are now
+     imported by the split apply handlers, leaving six exports referenced only inside the contract
+     itself (`CardParseDiagnosticCode`, `WeaveProviderName` and the two request/plan pairs). They
+     cannot be deleted while exported shapes use them, so their `export` keyword is dropped and they
+     stay module-private; the sweep is recorded in the commit and the process-model contract section.
+     Review then found `WeaverModelProvider` was dead in a second way — imported by `weaveService`
+     only to be re-exported — so the correction deletes it and the barrel re-export, making the
+     "no other export is unused" claim true.
+   - ~~#19 name the agent's session and provider symbols~~ — **DONE** in `2f3e236`, corrected in
+     `daaa462`: `weaveSessions`/`setWeaveSessions` become `weaverSessions`/`setWeaverSessions`, and
+     the provider layer (`WeaveProviderName`, `WeaveProviderHealth`, `OpenRouterWeaveProvider`,
+     `StubWeaveProvider`, the internal provider interface and the `stubWeaveProvider.ts` module and
+     suite) takes the agent prefix. The naming standard reads on the corrected names and its two
+     fixed rows leave the known-violations table. Review caught two renames that were out of the
+     ticket's scope — the preload member and a refresh callback caught by substring — and they were
+     reverted; the provider, model and session identifiers that still use the action prefix were
+     filed as **#26** and re-added to the standard's tracked table rather than silently left
+     untracked.
+   - ~~#20 centralise the IPC channel contract~~ — **DONE** in `1429390`, corrected in `7c39167` and
+     `1673db9`: `electron/ipcChannels.ts` declares all 41 channel names once as a nested `as const`
+     object (39 request/response by area, plus the two push channels under `events`); `main.ts` and
+     `preload.ts` read it, and no channel literal remains at a call site. `electron/preload.ts` now
+     exports `CrashWeaverBridge = typeof crashWeaverBridge`, and `src/vite-env.d.ts` types
+     `Window.crashWeaver` from it, so the hand-written copy is gone. Mutation-checked: renaming a
+     preload member makes `tsc -b` fail at the renderer call sites, which the duplicated copies could
+     not catch. Review replaced the `channel()` helper with plain literals (`as const` already gives
+     the literal types), and the docs now state the boundary precisely: a renamed or re-signatured
+     bridge member is a compile error, while a missing handler or a wrong *declared* key at a call
+     site compiles and hangs — that runtime assertion is **#21**. The renderer boundary rule in
+     module-structure now permits the type-only `preload.ts` import it needs.
+   - **Frontier is now #21** (rename the agent-concern channels into `weaver:` and assert handler
+     coverage, unblocked by #20) and **#26** (the residual provider/model/session identifiers,
+     unblocked). Separately, **#23** (the card chip truncates titles) and **#25** (card UIDs are not
+     validated on read or in weaver apply) remain unblocked product defects; **#24** (spaces in card
+     titles) is feature work that waits for the rework to finish, as does **#4** (boundary-marker
+     gap).
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -541,12 +573,19 @@ controller hook and the controller is the one Weaver concern, and "characterise 
 because the renderer layer has no existing seam to characterise at and #15 forbids adding one, so
 the split is proven by the static equivalence check, typecheck, tests and build, with the gap named
 in `tests/README.md`. Corrections landed in `d107335` (the amended #15 commit), `d75f763` and
-`2ecce4b`.
+`2ecce4b`. For the #18/#19/#20 batch the standards axis caught a false self-contradiction in the
+renderer boundary rule (the bridge-type import it had just introduced), the dead
+`WeaverModelProvider` export, two commit subjects over the 72-character limit, stale export/dead-code
+claims in the docs, a known-violations table that had been emptied while violations remained, and
+the `channel()` helper as a middle man; the spec axis caught that a wrong *declared* key or a missing
+handler is still not a compile error (now stated precisely rather than over-claimed), and two
+identifier renames outside #19's scope. Corrections landed in `8ed725f`, `daaa462`, `7c39167` and
+`1673db9`, and the two long subjects were reworded.
 
-**Branch state:** the newest commits are on `main` in this clone and **not pushed**: the four-ticket
-batch (`102081c` #16, `0283e66` #17, `980d61d` #22, `d107335` #15), its review corrections
-(`d75f763`, `2ecce4b`) and this record update. Everything through `de713b6` (the #12 record) is on
-`origin/main`.
+**Branch state:** the #15/#16/#17/#22 batch was pushed to `origin/main` at `d803258`, and CI passed
+both jobs on it. The newest commits are the #18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`), its
+review corrections (`8ed725f`, `daaa462`, `7c39167`, `1673db9`) and this record update; they are
+pushed together as part of this session.
 
 ## 8. How to resume
 
@@ -563,9 +602,9 @@ In a new session, say:
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The newest commits (the #15/#16/#17/#22 batch, its review
-corrections and this record update) are **not pushed**; everything through `de713b6` (the #12
-record) is on `origin/main`.
+the decisions are no longer only local. The #15/#16/#17/#22 batch is on `origin/main` at `d803258`
+with CI green; the #18/#19/#20 batch, its review corrections and this record update are pushed
+together with this record.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -590,6 +629,6 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#18, #19 and #20; #21 needs #20;
-#23 and #25 are unblocked product defects; #24 and #4 wait for the rework), and the unpushed state
-of the newest commits.
+Everything else is unchanged: the closed tickets, the frontier (#21 and #26; #23 and #25 are
+unblocked product defects; #24 and #4 wait for the rework), and the pushed state of the newest
+commits.
