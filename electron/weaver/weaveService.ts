@@ -26,7 +26,7 @@ import {
 import type {
   WeavePlanRequest,
   WeavePlanResult,
-  WeaveModelInfo,
+  WeaverModelInfo,
   WeaverProviderHealth,
   WeaverSettings,
   WeaverKeyStatus,
@@ -40,7 +40,7 @@ interface InternalWeaverModelProvider {
     options?: { requestLogDirectory?: string; onProgress?: WeaveProgressCallback },
   ): Promise<WeavePlanResult>;
   healthCheck(): Promise<WeaverProviderHealth>;
-  listModels(): Promise<WeaveModelInfo[]>;
+  listModels(): Promise<WeaverModelInfo[]>;
 }
 
 let activeProvider: InternalWeaverModelProvider = new StubWeaverProvider();
@@ -63,15 +63,15 @@ async function assertVaultRoot(rootPath: string) {
   return resolvedRoot;
 }
 
-export function __setWeaveProviderForTests(provider: InternalWeaverModelProvider) {
+export function __setWeaverProviderForTests(provider: InternalWeaverModelProvider) {
   activeProvider = provider;
 }
 
-export function __resetWeaveProviderForTests() {
+export function __resetWeaverProviderForTests() {
   activeProvider = new StubWeaverProvider();
 }
 
-export async function initializeWeaveProvider(): Promise<void> {
+export async function initializeWeaverProvider(): Promise<void> {
   const apiKey = await getOpenRouterApiKeyDecrypted();
   const settings = await getWeaverSettings();
 
@@ -93,20 +93,20 @@ export function isStubProviderActive(): boolean {
 export async function setWeaveApiKey(key: string): Promise<void> {
   await setOpenRouterApiKey(key);
   clearModelListCache();
-  await initializeWeaveProvider();
+  await initializeWeaverProvider();
 }
 
 export async function clearWeaveApiKey(): Promise<void> {
   await clearOpenRouterApiKey();
   clearModelListCache();
-  await initializeWeaveProvider();
+  await initializeWeaverProvider();
 }
 
 export async function setWeaverPreferredModel(
   preferredModel: string | null,
 ): Promise<WeaverSettings> {
   const settings = await persistWeaverPreferredModel(preferredModel);
-  await initializeWeaveProvider();
+  await initializeWeaverProvider();
   return settings;
 }
 
@@ -114,7 +114,7 @@ export async function updateWeaverSettings(
   updates: Partial<WeaverSettings>,
 ): Promise<WeaverSettings> {
   const settings = await persistUpdateWeaverSettings(updates);
-  await initializeWeaveProvider();
+  await initializeWeaverProvider();
   return settings;
 }
 
@@ -135,7 +135,7 @@ export async function getWeaverKeyStatus(): Promise<WeaverKeyStatus> {
 
 export { getWeaverSettings };
 
-export async function listWeaveModels() {
+export async function listWeaverModels() {
   return activeProvider.listModels();
 }
 
@@ -181,7 +181,7 @@ export async function generateWeavePlan(
   return validateWeavePlanResult(result, normalizedRequest, settings);
 }
 
-export function checkWeaveProvider() {
+export function checkWeaverProvider() {
   return activeProvider.healthCheck();
 }
 

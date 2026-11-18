@@ -58,7 +58,7 @@ the handler.
   module is too tangled to test, split it at a boundary the domain already has (pure logic out of
   the handler is the pattern this repository uses) and let the split be the test seam.
 - **The Weaver provider seam.** The LLM layer is reached through the provider interface; a test
-  replaces the provider at the seam (`__setWeaveProviderForTests`) or supplies a fake transport,
+  replaces the provider at the seam (`__setWeaverProviderForTests`) or supplies a fake transport,
   never by making the production path reach the network.
 - **The filesystem seam in tests is a real temporary directory.** Tests use `fs.mkdtemp` under the
   OS temporary directory, not an in-memory filesystem double, so the code under test exercises

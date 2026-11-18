@@ -10,9 +10,9 @@ const {
   validateAndClampBudgetValue,
   BUDGET_VALIDATION_BOUNDS,
   DEFAULT_MODEL_BY_UI_TIER,
-} = require('../../dist-electron/weaver/weaveModelProfiles.js');
+} = require('../../dist-electron/weaver/weaverModelProfiles.js');
 
-describe('weaveModelProfiles', () => {
+describe('weaverModelProfiles', () => {
   // ── Model resolution ─────────────────────────────────────────────────────────
 
   it('resolveModel returns full OpenRouter ID when explicit model contains slash', () => {

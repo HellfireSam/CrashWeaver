@@ -1,5 +1,5 @@
 /**
- * weaveModelProfiles.ts
+ * weaverModelProfiles.ts
  *
  * Canonical model profile registry for the Weaver agent loop.
  * Combines model resolution (UI-tier shortcuts → OpenRouter IDs), model-specific
@@ -47,17 +47,17 @@ export function resolveModel(explicitModel?: string, preferredModel?: string | n
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type WeaveStructuredOutputMode = 'json_mode' | 'fences_and_braces';
+export type WeaverStructuredOutputMode = 'json_mode' | 'fences_and_braces';
 
-export type WeaveRepairStrategy = 'aggressive' | 'conservative';
+export type WeaverRepairStrategy = 'aggressive' | 'conservative';
 
-export interface WeaveFullModelProfile {
+export interface WeaverFullModelProfile {
   /** How to request/extract structured JSON from this model family. */
-  structuredOutputMode: WeaveStructuredOutputMode;
+  structuredOutputMode: WeaverStructuredOutputMode;
   /** Model-specific instructions appended to the system prompt. */
   systemPromptOverlay: string;
   /** How aggressively to attempt JSON/schema repair turns. */
-  repairStrategy: WeaveRepairStrategy;
+  repairStrategy: WeaverRepairStrategy;
   /** Max completion tokens for this request. */
   maxTokens: number;
   /** Per-request wall-clock timeout in milliseconds. */
@@ -145,7 +145,7 @@ const CLAUDE_PROVIDERS = new Set(['anthropic']);
 
 // ── Model-specific profile helpers ────────────────────────────────────────────
 
-function resolveStructuredOutputMode(modelId: string): WeaveStructuredOutputMode {
+function resolveStructuredOutputMode(modelId: string): WeaverStructuredOutputMode {
   const provider = extractProviderPrefix(modelId);
   if (JSON_MODE_PROVIDERS.has(provider)) {
     return 'json_mode';
@@ -176,14 +176,14 @@ function resolveSystemPromptOverlay(modelId: string): string {
   return 'Respond with only a raw JSON object. No prose, no markdown code fences, no surrounding text.';
 }
 
-function resolveRepairStrategy(modelId: string): WeaveRepairStrategy {
+function resolveRepairStrategy(modelId: string): WeaverRepairStrategy {
   // Claude models tend to over-generate; conservative strategy limits repair turns.
   const provider = extractProviderPrefix(modelId);
   return CLAUDE_PROVIDERS.has(provider) ? 'conservative' : 'aggressive';
 }
 
 function resolveResponseFormatParams(
-  mode: WeaveStructuredOutputMode,
+  mode: WeaverStructuredOutputMode,
 ): Record<string, unknown> | undefined {
   if (mode === 'json_mode') {
     // Enables OpenAI JSON mode — model is guaranteed to emit valid JSON.
@@ -325,7 +325,7 @@ export function resolveFullModelProfile(
   modelId: string,
   request: WeavePlanRequest,
   settings?: WeaverSettings | null,
-): WeaveFullModelProfile {
+): WeaverFullModelProfile {
   const structuredOutputMode = resolveStructuredOutputMode(modelId);
   const budget = resolveBudget(request, settings);
 
@@ -344,7 +344,7 @@ export function resolveFullModelProfile(
  */
 export function resolveModelOnlyProfile(
   modelId: string,
-): Pick<WeaveFullModelProfile, 'structuredOutputMode' | 'systemPromptOverlay' | 'repairStrategy'> {
+): Pick<WeaverFullModelProfile, 'structuredOutputMode' | 'systemPromptOverlay' | 'repairStrategy'> {
   const structuredOutputMode = resolveStructuredOutputMode(modelId);
   return {
     structuredOutputMode,

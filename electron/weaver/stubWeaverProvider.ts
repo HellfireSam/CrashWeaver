@@ -3,7 +3,7 @@ import type {
   WeavePlanOperation,
   WeavePlanRequest,
   WeavePlanResult,
-  WeaveModelInfo,
+  WeaverModelInfo,
   WeaverProviderHealth,
 } from '../vault-contract';
 
@@ -315,7 +315,7 @@ export class StubWeaverProvider {
     };
   }
 
-  async listModels(): Promise<WeaveModelInfo[]> {
+  async listModels(): Promise<WeaverModelInfo[]> {
     // Curated set returned when no live API key is configured.
     return [
       {

@@ -22,7 +22,7 @@ shape is in [the data model](./data-model.md); the Weaver's own flow is in
 Weaver services under `electron/weaver/`, and wires them to `app`, `BrowserWindow`, `dialog`,
 `ipcMain`, `net` and `protocol`. Settings persistence is reached through the Vault and Weaver
 services, which import `electron/settingsService.ts`. `app.whenReady()` calls
-`registerLocalAssetProtocol()`, `createMainWindow()` and `initializeWeaveProvider()`; the
+`registerLocalAssetProtocol()`, `createMainWindow()` and `initializeWeaverProvider()`; the
 `activate` event recreates the window when none exist; `window-all-closed` calls
 `stopVaultWatcher()` and quits unless the platform is `darwin`.
 
@@ -66,14 +66,14 @@ TypeScript projects compile the same file. The contract holds shapes, not behavi
 channel names — the channel names have their own declaration in `electron/ipcChannels.ts`. The
 table groups the shapes by what they describe:
 
-| Group                                | Representative exports                                                                                                                                                                                                           | Who uses it                                                             |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Crash Card payload and review state  | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `ReviewMetadata`                                                                                                                          | Main persists it; renderer renders it                                   |
-| UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`                                                                                                                                                                 | Main produces Diagnostics; renderer displays them                       |
-| Vault                                | `VaultDescriptor`, `VaultNoteSummary`, `VaultNoteDocument`, `VaultIndex`, `VaultIndexEntry`, `VaultWriteNoteInput`, `VaultWriteNoteResult`                                                                                       | Returned by `vault:*` channels; the descriptor lives in `VaultContext`  |
-| Crashpad                             | `CrashpadDocument`, `CrashpadSummary`, `CrashpadCardEntry`, `CrashpadDeletedCardSnapshot`, `CrashpadDeletePreferences`                                                                                                           | Main persists; renderer authors and restores                            |
-| Weaver requests, plans and results   | `WeaveKind`, `WeaveStrength`, `GuidedInsertPermissions`, `WeavePlanRequest`, `WeavePlan`, `WeaveReActStep`, `WeavePlanResult`, `WeaverProviderHealth`, `WeaveModelInfo`, `WeaveApplyResult`, `WeaverSettings`, `WeaverKeyStatus` | Renderer submits a request and reviews a plan; main runs and applies it |
-| Weave operation kinds and payloads   | `WeavePlanOperationKind`, the `*Payload` interfaces and the matching `*Operation` aliases, the `WeavePlanOperation` union                                                                                                        | Both sides: a `WeavePlanOperation[]` is posted to `weave:apply-plan`    |
+| Group                                | Representative exports                                                                                                                                                                                                            | Who uses it                                                             |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Crash Card payload and review state  | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `ReviewMetadata`                                                                                                                           | Main persists it; renderer renders it                                   |
+| UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`                                                                                                                                                                  | Main produces Diagnostics; renderer displays them                       |
+| Vault                                | `VaultDescriptor`, `VaultNoteSummary`, `VaultNoteDocument`, `VaultIndex`, `VaultIndexEntry`, `VaultWriteNoteInput`, `VaultWriteNoteResult`                                                                                        | Returned by `vault:*` channels; the descriptor lives in `VaultContext`  |
+| Crashpad                             | `CrashpadDocument`, `CrashpadSummary`, `CrashpadCardEntry`, `CrashpadDeletedCardSnapshot`, `CrashpadDeletePreferences`                                                                                                            | Main persists; renderer authors and restores                            |
+| Weaver requests, plans and results   | `WeaveKind`, `WeaveStrength`, `GuidedInsertPermissions`, `WeavePlanRequest`, `WeavePlan`, `WeaveReActStep`, `WeavePlanResult`, `WeaverProviderHealth`, `WeaverModelInfo`, `WeaveApplyResult`, `WeaverSettings`, `WeaverKeyStatus` | Renderer submits a request and reviews a plan; main runs and applies it |
+| Weave operation kinds and payloads   | `WeavePlanOperationKind`, the `*Payload` interfaces and the matching `*Operation` aliases, the `WeavePlanOperation` union                                                                                                         | Both sides: a `WeavePlanOperation[]` is posted to `weave:apply-plan`    |
 
 A sweep of the module's exports after #14/#15 found six types referenced only inside the module —
 `CardParseDiagnosticCode`, `WeaverProviderName`, the two request interfaces and the two plan
@@ -188,7 +188,7 @@ the providers, hooks and types.
 | ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
 | Vault   | `src/state/VaultContext.tsx`  | `vaultPath`, the `vault` descriptor, `vaultAlias`, `allCards`, `internalDirectories`, `crashpadSummaries`, `activeCrashpad`, `crashpadDeletePreferences`                                                                             | `useVaultState`, plus `useVaultStateValues` for values-only memos |
 | Editor  | `src/state/EditorContext.tsx` | `activeEditorKind` (`markdown`, `crashpad`, `card`), active card and Note paths, `draftPath`/`draftContent`/`savedContent`, `activeNote`, `viewMode`, `cardScope`, loading flags, `statusMessage`, `errorMessage`, `editorFontSize`  | `useEditorState`, plus `clearEditorState` for a Vault close       |
-| Weaver  | `src/state/WeaverContext.tsx` | `weaveKind`, `weaveStrength`, guided-insert permissions, `weaveIntent`, `weaveModel`, `weavePlanResult`, `weaveProviderHealth`, `weaverSettings`, `weaverSessions`, `weaveApplyResult`, apply errors and in-flight flags             | `useWeaverState`                                                  |
+| Weaver  | `src/state/WeaverContext.tsx` | `weaveKind`, `weaveStrength`, guided-insert permissions, `weaveIntent`, `weaverModel`, `weavePlanResult`, `weaverProviderHealth`, `weaverSettings`, `weaverSessions`, `weaveApplyResult`, apply errors and in-flight flags           | `useWeaverState`                                                  |
 | UI      | `src/state/UIContext.tsx`     | `expandedFolders`, `activeSidebarTab`, sidebar and Inspector visibility, `isSettingsOpen`, `openFirstNoteOnVaultOpen`, `showHiddenEntries`, `focusedCardUid`, `focusedWindow`, `activeWidgetTool`, the Crashpad undo and redo stacks | `useUIState`, plus `pushCrashpadHistory`                          |
 
 All four are in-memory only; durable state lives in the Vault or in the main-process settings
@@ -215,7 +215,7 @@ Crashpad card and the editor ref from the root.
 and the Weaver surfaces `WeaverProposalPanel`, `WeaverProgressFeed`, `WeaverOperationItem`,
 `WeaverDiffPreview`, `WeaverUnifiedDiffModal`, `WeaverConfirmDialog` and `WeaverSessionHistory`.
 A few components call `window.crashWeaver` directly rather than going through `App.tsx`:
-`WeaverProposalPanel` uses `isStubWeaveProvider`, `listWeaveModels` and `onWeavePlanProgress`,
+`WeaverProposalPanel` uses `isStubWeaverProvider`, `listWeaverModels` and `onWeavePlanProgress`,
 `WeaverSessionHistory` uses `getWeaverSession`, and `WeaverUnifiedDiffModal` uses `readNote`.
 
 `src/lib/` holds the pure helpers — `cardProjection.ts`, `cards.ts`, `crashpadHistory.ts`,
@@ -289,7 +289,7 @@ returned by `vault:open` and `vault:update-index`, and through `card-store:get-c
 `weave:clear-api-key`. The settings writes return the refreshed state — the two API-key channels
 return nothing — and the caller stores that value in context; `handleUpdateWeaverSettings` in
 `src/hooks/useWeaverController.ts` is one example. The controller also loads `getWeaverSettings` once on mount and syncs
-`weaveModel` from `preferredModel`.
+`weaverModel` from `preferredModel`.
 
 The window opens at 1320 by 860 every time. No code persists or restores window size or position;
 geometry is fixed at creation and not remembered across launches.

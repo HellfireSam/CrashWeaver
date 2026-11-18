@@ -23,22 +23,22 @@ export type InspectorPaneProps = {
   focusedWindow: FocusWindow;
   isCardsView: boolean;
   isCrashpadEditor: boolean;
-  isCheckingWeaveProvider: boolean;
+  isCheckingWeaverProvider: boolean;
   isGeneratingWeavePlan: boolean;
   isVisible: boolean;
   vault: VaultDescriptor | null;
   weaveCardUid: string | null;
   weaveEvaluatingCardUid: string | null;
   weaveIntent: string;
-  weaveModel: string;
+  weaverModel: string;
   weaveKind: WeaveKind;
   weaveEditContent: boolean;
   weaveCreateNote: boolean;
   weavePlanResult: WeavePlanResult | null;
-  weaveProviderHealth: WeaverProviderHealth | null;
+  weaverProviderHealth: WeaverProviderHealth | null;
   weaveStrength: WeaveStrength;
   weaverSessions: WeaverSessionSummary[];
-  weaveActiveSessionId: string | null;
+  weaverActiveSessionId: string | null;
   weaveApplyResult: WeaveApplyResult | null;
   isApplyingWeavePlan: boolean;
   onGenerateWeavePlan: () => Promise<void> | void;
@@ -65,22 +65,22 @@ export function InspectorPane({
   focusedWindow,
   isCardsView,
   isCrashpadEditor,
-  isCheckingWeaveProvider,
+  isCheckingWeaverProvider,
   isGeneratingWeavePlan,
   isVisible,
   vault,
   weaveCardUid,
   weaveEvaluatingCardUid,
   weaveIntent,
-  weaveModel,
+  weaverModel,
   weaveKind,
   weaveEditContent,
   weaveCreateNote,
   weavePlanResult,
-  weaveProviderHealth,
+  weaverProviderHealth,
   weaveStrength,
   weaverSessions,
-  weaveActiveSessionId,
+  weaverActiveSessionId,
   weaveApplyResult,
   isApplyingWeavePlan,
   onGenerateWeavePlan,
@@ -411,18 +411,18 @@ export function InspectorPane({
               contextLabel={activeCrashpad?.filePath ?? 'No crashpad selected'}
               emptyStateMessage={weaverEmptyStateMessage}
               evaluatingCardUid={weaveEvaluatingCardUid}
-              isCheckingHealth={isCheckingWeaveProvider}
+              isCheckingHealth={isCheckingWeaverProvider}
               isGenerating={isGeneratingWeavePlan}
               intent={weaveIntent}
-              model={weaveModel}
+              model={weaverModel}
               kind={weaveKind}
               editContentEnabled={weaveEditContent}
               createNoteEnabled={weaveCreateNote}
               planResult={weavePlanResult}
-              providerHealth={weaveProviderHealth}
+              providerHealth={weaverProviderHealth}
               strength={weaveStrength}
               sessions={weaverSessions}
-              activeSessionId={weaveActiveSessionId}
+              activeSessionId={weaverActiveSessionId}
               vaultPath={vault?.rootPath}
               onClose={() => updatePanelVisibility(isContextPanelOpen, false)}
               onGenerate={onGenerateWeavePlan}

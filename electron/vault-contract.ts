@@ -444,7 +444,7 @@ export interface WeaverProviderHealth {
   errorCategory?: WeaveErrorCategory;
 }
 
-export interface WeaveModelInfo {
+export interface WeaverModelInfo {
   id: string;
   name: string;
   costLabel: string;

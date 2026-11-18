@@ -22,7 +22,7 @@ The active Crashpad is source context only — plans target vault notes and dire
 `weavePlanSchema.ts` gives it `insert-boundary-pair` always, `edit-note-content` only with `permissions.editContent`, and `create-note` only with `permissions.createNote` — the two toggles the
 panel exposes. Intelligent weave restructures notes and folders: the same function returns all ten operation kinds, and the panel exposes **weave strength** instead.
 
-**Weave strength.** `light | standard | go-ham`. `resolveBudget` (`weaveModelProfiles.ts`) and `resolveRetrievalBudget` (`weaveContextService.ts`) turn it into token, timeout, iteration, and
+**Weave strength.** `light | standard | go-ham`. `resolveBudget` (`weaverModelProfiles.ts`) and `resolveRetrievalBudget` (`weaveContextService.ts`) turn it into token, timeout, iteration, and
 retrieval budgets; `resolveDefaultMaxOperations` into an operation cap; `getStrengthDescription` into autonomy guidance. It never changes routing: `resolveModel` reads only
 `request.preferredModel` and the persisted preference.
 
@@ -41,7 +41,7 @@ drives `after-selection` / `replace-selection` placements and the excerpt window
 | Apply call     | `src/hooks/useWeaverController.ts` | `handleApplyWeaveOperations` → `applyWeavePlan`                                    |
 
 `weaveService.generateWeavePlan` is the service layer: read settings, `validateWeavePlanRequest`, `assertVaultRoot`, resolve the request-log directory, attach embedding options when an OpenRouter
-key exists, `buildWeaveContextSnapshot`, delegate to the active provider's `generatePlan`, then validate the result. Provider selection happens once in `initializeWeaveProvider`:
+key exists, `buildWeaveContextSnapshot`, delegate to the active provider's `generatePlan`, then validate the result. Provider selection happens once in `initializeWeaverProvider`:
 `OpenRouterWeaverProvider` with a key, otherwise `StubWeaverProvider`; `isStubProviderActive` drives the panel's demo badge.
 
 ## Context retrieval
@@ -105,7 +105,7 @@ title-and-tags proxy; no code path refreshes them with full prose, despite a sou
 
 ## Model layer
 
-**Model profiles.** `weaveModelProfiles.ts` owns model resolution and the rest of model-driven execution policy. `DEFAULT_MODEL_BY_UI_TIER` maps `cw-fast` → `openai/gpt-4o-mini`, `cw-balanced` →
+**Model profiles.** `weaverModelProfiles.ts` owns model resolution and the rest of model-driven execution policy. `DEFAULT_MODEL_BY_UI_TIER` maps `cw-fast` → `openai/gpt-4o-mini`, `cw-balanced` →
 `openai/gpt-4o`, `cw-deep` → `anthropic/claude-sonnet-4-5`; `resolveModel` prefers the request model, then the persisted preference, then the balanced default, treating a value containing `/` as
 an ID and anything else as a tier. `resolveStructuredOutputMode` inspects the provider prefix: members of `JSON_MODE_PROVIDERS` (`openai`, `google`, `deepseek`, `x-ai`) get `json_mode`, everything else
 gets `fences_and_braces`; `resolveResponseFormatParams` turns `json_mode` into `responseFormatParams` `{ response_format: { type: 'json_object' } }`, which `resolveFullModelProfile` assigns.
@@ -430,12 +430,12 @@ apply-result banner + vault re-index
 
 | Stage                                    | Module                                                                           | Key export                                                                                                                                          |
 | ---------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Entry and orchestration                  | `electron/weaver/weaveService.ts`                                                | `generateWeavePlan`, `initializeWeaveProvider`                                                                                                      |
+| Entry and orchestration                  | `electron/weaver/weaveService.ts`                                                | `generateWeavePlan`, `initializeWeaverProvider`                                                                                                     |
 | Entry IPC                                | `electron/main.ts`, `electron/preload.ts`                                        | `ipcMain.handle('weave:generate-plan')`, `generateWeavePlan` bridge                                                                                 |
 | Context retrieval                        | `electron/weaver/weaveContextService.ts`                                         | `buildWeaveContextSnapshot`                                                                                                                         |
 | Read-only tools                          | `electron/weaver/weaveContextService.ts`                                         | `WeaveContextToolRuntime`, `createWeaveContextToolRuntime`                                                                                          |
 | Embeddings and cache                     | `electron/weaver/weaverEmbeddingService.ts`                                      | `buildQueryEmbedding`, `getOrComputeNoteEmbedding`, `buildSimilarityMap`                                                                            |
-| Model policy and budgets                 | `electron/weaver/weaveModelProfiles.ts`                                          | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS`                                                                               |
+| Model policy and budgets                 | `electron/weaver/weaverModelProfiles.ts`                                         | `resolveModel`, `resolveFullModelProfile`, `BUDGET_VALIDATION_BOUNDS`                                                                               |
 | Provider (production)                    | `electron/weaver/openRouterClient.ts`                                            | `OpenRouterWeaverProvider`                                                                                                                          |
 | Provider (offline)                       | `electron/weaver/stubWeaverProvider.ts`                                          | `StubWeaverProvider`                                                                                                                                |
 | Transport                                | `electron/weaver/weaveHttpClient.ts`                                             | `OpenRouterHttpClient`                                                                                                                              |

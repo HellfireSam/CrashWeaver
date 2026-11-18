@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   WeaveKind,
-  WeaveModelInfo,
+  WeaverModelInfo,
   WeavePlanResult,
   WeaverProviderHealth,
   WeaveStrength,
@@ -440,7 +440,7 @@ export function WeaverProposalPanel({
   const [view, setView] = useState<'composer' | 'history'>('composer');
   const [activeDock, setActiveDock] = useState<WeaverDockId | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ left: number; width: number } | null>(null);
-  const [modelList, setModelList] = useState<WeaveModelInfo[]>([]);
+  const [modelList, setModelList] = useState<WeaverModelInfo[]>([]);
   const [modelListLoading, setModelListLoading] = useState(false);
   const [modelSearch, setModelSearch] = useState('');
   const [otherExpanded, setOtherExpanded] = useState(false);
@@ -546,7 +546,7 @@ export function WeaverProposalPanel({
   // Check if the stub (offline) provider is active
   useEffect(() => {
     window.crashWeaver
-      .isStubWeaveProvider()
+      .isStubWeaverProvider()
       .then(setIsStubProvider)
       .catch(() => {});
   }, []);
@@ -699,7 +699,7 @@ export function WeaverProposalPanel({
         modelListFetched.current = true;
         setModelListLoading(true);
         void window.crashWeaver
-          .listWeaveModels()
+          .listWeaverModels()
           .then((list) => {
             setModelList(list);
             setModelListLoading(false);
@@ -758,7 +758,7 @@ export function WeaverProposalPanel({
         ? []
         : filtered.filter((m) => !m.isFree && !FEATURED_MODEL_IDS.has(m.id.replace(/:free$/, '')));
 
-      function ModelRow({ m }: { m: WeaveModelInfo }) {
+      function ModelRow({ m }: { m: WeaverModelInfo }) {
         const isActive = model === m.id;
         return (
           <button

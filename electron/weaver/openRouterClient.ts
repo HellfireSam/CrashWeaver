@@ -13,12 +13,12 @@ import { net } from 'electron';
 import type {
   WeavePlanRequest,
   WeavePlanResult,
-  WeaveModelInfo,
+  WeaverModelInfo,
   WeaverProviderHealth,
 } from '../vault-contract';
 import type { WeaveProgressCallback } from './weaveGraphState';
 import { getWeaverSettings } from '../settingsService';
-import { resolveModel, resolveFullModelProfile } from './weaveModelProfiles';
+import { resolveModel, resolveFullModelProfile } from './weaverModelProfiles';
 import { OpenRouterHttpClient } from './weaveHttpClient';
 import {
   createWeaveRequestSessionLogger,
@@ -34,13 +34,13 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const MODEL_LIST_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 interface ModelListCacheEntry {
-  models: WeaveModelInfo[];
+  models: WeaverModelInfo[];
   fetchedAt: number;
 }
 
 let modelListCache: ModelListCacheEntry | null = null;
 
-function getCachedModelList(now: number): WeaveModelInfo[] | null {
+function getCachedModelList(now: number): WeaverModelInfo[] | null {
   if (!modelListCache) return null;
   if (now - modelListCache.fetchedAt > MODEL_LIST_CACHE_TTL_MS) {
     modelListCache = null;
@@ -49,7 +49,7 @@ function getCachedModelList(now: number): WeaveModelInfo[] | null {
   return modelListCache.models;
 }
 
-function setCachedModelList(models: WeaveModelInfo[], now: number): void {
+function setCachedModelList(models: WeaverModelInfo[], now: number): void {
   modelListCache = { models, fetchedAt: now };
 }
 
@@ -252,7 +252,7 @@ export class OpenRouterWeaverProvider {
     }
   }
 
-  async listModels(): Promise<WeaveModelInfo[]> {
+  async listModels(): Promise<WeaverModelInfo[]> {
     const now = this.now();
     const cached = getCachedModelList(now);
     if (cached) return cached;
@@ -299,7 +299,7 @@ export class OpenRouterWeaverProvider {
             costLabel: isFree ? 'Free' : formatCostLabel(m.pricing?.prompt),
             isFree,
             contextLength: m.context_length,
-          } satisfies WeaveModelInfo;
+          } satisfies WeaverModelInfo;
         })
         .sort((a, b) => {
           if (a.isFree !== b.isFree) return a.isFree ? -1 : 1;

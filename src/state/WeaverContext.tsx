@@ -26,43 +26,43 @@ import type { WeaverSessionSummary } from '../components/WeaverSessionHistory';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-const DEFAULT_WEAVE_MODEL = 'openai/gpt-4o';
+const DEFAULT_WEAVER_MODEL = 'openai/gpt-4o';
 
 export interface WeaverState {
-  weaveModel: string;
+  weaverModel: string;
   weaveKind: WeaveKind;
   weaveEditContent: boolean;
   weaveCreateNote: boolean;
   weaveStrength: WeaveStrength;
   weaveIntent: string;
   weavePlanResult: WeavePlanResult | null;
-  weaveProviderHealth: WeaverProviderHealth | null;
-  isCheckingWeaveProvider: boolean;
+  weaverProviderHealth: WeaverProviderHealth | null;
+  isCheckingWeaverProvider: boolean;
   isGeneratingWeavePlan: boolean;
   weaveEvaluatingCardUid: string | null;
   weaverSettings: WeaverSettings | undefined;
   weaverSessions: WeaverSessionSummary[];
-  weaveActiveSessionId: string | null;
+  weaverActiveSessionId: string | null;
   weaveApplyResult: WeaveApplyResult | null;
   isApplyingWeavePlan: boolean;
   weaveApplyError: string | null;
 }
 
 export interface WeaverActions {
-  setWeaveModel: Dispatch<SetStateAction<string>>;
+  setWeaverModel: Dispatch<SetStateAction<string>>;
   setWeaveKind: Dispatch<SetStateAction<WeaveKind>>;
   setWeaveEditContent: Dispatch<SetStateAction<boolean>>;
   setWeaveCreateNote: Dispatch<SetStateAction<boolean>>;
   setWeaveStrength: Dispatch<SetStateAction<WeaveStrength>>;
   setWeaveIntent: Dispatch<SetStateAction<string>>;
   setWeavePlanResult: Dispatch<SetStateAction<WeavePlanResult | null>>;
-  setWeaveProviderHealth: Dispatch<SetStateAction<WeaverProviderHealth | null>>;
-  setIsCheckingWeaveProvider: Dispatch<SetStateAction<boolean>>;
+  setWeaverProviderHealth: Dispatch<SetStateAction<WeaverProviderHealth | null>>;
+  setIsCheckingWeaverProvider: Dispatch<SetStateAction<boolean>>;
   setIsGeneratingWeavePlan: Dispatch<SetStateAction<boolean>>;
   setWeaveEvaluatingCardUid: Dispatch<SetStateAction<string | null>>;
   setWeaverSettings: Dispatch<SetStateAction<WeaverSettings | undefined>>;
   setWeaverSessions: Dispatch<SetStateAction<WeaverSessionSummary[]>>;
-  setWeaveActiveSessionId: Dispatch<SetStateAction<string | null>>;
+  setWeaverActiveSessionId: Dispatch<SetStateAction<string | null>>;
   setWeaveApplyResult: Dispatch<SetStateAction<WeaveApplyResult | null>>;
   setIsApplyingWeavePlan: Dispatch<SetStateAction<boolean>>;
   setWeaveApplyError: Dispatch<SetStateAction<string | null>>;
@@ -75,76 +75,78 @@ export type WeaverContextValue = WeaverState & WeaverActions;
 const WeaverContext = createContext<WeaverContextValue | null>(null);
 
 export function WeaverStateProvider({ children }: { children: ReactNode }) {
-  const [weaveModel, setWeaveModel] = useState(DEFAULT_WEAVE_MODEL);
+  const [weaverModel, setWeaverModel] = useState(DEFAULT_WEAVER_MODEL);
   const [weaveKind, setWeaveKind] = useState<WeaveKind>('guided-insert');
   const [weaveEditContent, setWeaveEditContent] = useState(false);
   const [weaveCreateNote, setWeaveCreateNote] = useState(false);
   const [weaveStrength, setWeaveStrength] = useState<WeaveStrength>('standard');
   const [weaveIntent, setWeaveIntent] = useState('');
   const [weavePlanResult, setWeavePlanResult] = useState<WeavePlanResult | null>(null);
-  const [weaveProviderHealth, setWeaveProviderHealth] = useState<WeaverProviderHealth | null>(null);
-  const [isCheckingWeaveProvider, setIsCheckingWeaveProvider] = useState(false);
+  const [weaverProviderHealth, setWeaverProviderHealth] = useState<WeaverProviderHealth | null>(
+    null,
+  );
+  const [isCheckingWeaverProvider, setIsCheckingWeaverProvider] = useState(false);
   const [isGeneratingWeavePlan, setIsGeneratingWeavePlan] = useState(false);
   const [weaveEvaluatingCardUid, setWeaveEvaluatingCardUid] = useState<string | null>(null);
   const [weaverSettings, setWeaverSettings] = useState<WeaverSettings | undefined>(undefined);
   const [weaverSessions, setWeaverSessions] = useState<WeaverSessionSummary[]>([]);
-  const [weaveActiveSessionId, setWeaveActiveSessionId] = useState<string | null>(null);
+  const [weaverActiveSessionId, setWeaverActiveSessionId] = useState<string | null>(null);
   const [weaveApplyResult, setWeaveApplyResult] = useState<WeaveApplyResult | null>(null);
   const [isApplyingWeavePlan, setIsApplyingWeavePlan] = useState(false);
   const [weaveApplyError, setWeaveApplyError] = useState<string | null>(null);
 
   const value = useMemo<WeaverContextValue>(
     () => ({
-      weaveModel,
+      weaverModel,
       weaveKind,
       weaveEditContent,
       weaveCreateNote,
       weaveStrength,
       weaveIntent,
       weavePlanResult,
-      weaveProviderHealth,
-      isCheckingWeaveProvider,
+      weaverProviderHealth,
+      isCheckingWeaverProvider,
       isGeneratingWeavePlan,
       weaveEvaluatingCardUid,
       weaverSettings,
       weaverSessions,
-      weaveActiveSessionId,
+      weaverActiveSessionId,
       weaveApplyResult,
       isApplyingWeavePlan,
       weaveApplyError,
-      setWeaveModel,
+      setWeaverModel,
       setWeaveKind,
       setWeaveEditContent,
       setWeaveCreateNote,
       setWeaveStrength,
       setWeaveIntent,
       setWeavePlanResult,
-      setWeaveProviderHealth,
-      setIsCheckingWeaveProvider,
+      setWeaverProviderHealth,
+      setIsCheckingWeaverProvider,
       setIsGeneratingWeavePlan,
       setWeaveEvaluatingCardUid,
       setWeaverSettings,
       setWeaverSessions,
-      setWeaveActiveSessionId,
+      setWeaverActiveSessionId,
       setWeaveApplyResult,
       setIsApplyingWeavePlan,
       setWeaveApplyError,
     }),
     [
-      weaveModel,
+      weaverModel,
       weaveKind,
       weaveEditContent,
       weaveCreateNote,
       weaveStrength,
       weaveIntent,
       weavePlanResult,
-      weaveProviderHealth,
-      isCheckingWeaveProvider,
+      weaverProviderHealth,
+      isCheckingWeaverProvider,
       isGeneratingWeavePlan,
       weaveEvaluatingCardUid,
       weaverSettings,
       weaverSessions,
-      weaveActiveSessionId,
+      weaverActiveSessionId,
       weaveApplyResult,
       isApplyingWeavePlan,
       weaveApplyError,

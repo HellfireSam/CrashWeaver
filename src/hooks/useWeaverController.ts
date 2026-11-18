@@ -16,7 +16,7 @@ import { useEditorState } from '../state/EditorContext';
 import { useVaultState } from '../state/VaultContext';
 import { useWeaverState } from '../state/WeaverContext';
 
-const DEFAULT_WEAVE_MODEL = 'openai/gpt-4o';
+const DEFAULT_WEAVER_MODEL = 'openai/gpt-4o';
 
 /**
  * The Weaver concerns the controller still needs from the composition root:
@@ -44,20 +44,20 @@ type UseWeaverControllerOptions = {
  */
 type WeaverInspectorProps = Pick<
   InspectorPaneProps,
-  | 'isCheckingWeaveProvider'
+  | 'isCheckingWeaverProvider'
   | 'isGeneratingWeavePlan'
   | 'weaveCardUid'
   | 'weaveEvaluatingCardUid'
   | 'weaveIntent'
-  | 'weaveModel'
+  | 'weaverModel'
   | 'weaveKind'
   | 'weaveEditContent'
   | 'weaveCreateNote'
   | 'weavePlanResult'
-  | 'weaveProviderHealth'
+  | 'weaverProviderHealth'
   | 'weaveStrength'
   | 'weaverSessions'
-  | 'weaveActiveSessionId'
+  | 'weaverActiveSessionId'
   | 'weaveApplyResult'
   | 'isApplyingWeavePlan'
   | 'onGenerateWeavePlan'
@@ -131,31 +131,31 @@ export function useWeaverController({
   const { vaultPath, activeCrashpad, setVault } = useVaultState();
   const { activeNote, setStatusMessage, setErrorMessage } = useEditorState();
   const {
-    weaveModel,
+    weaverModel,
     weaveKind,
     weaveEditContent,
     weaveCreateNote,
     weaveStrength,
     weaveIntent,
     weavePlanResult,
-    weaveProviderHealth,
-    isCheckingWeaveProvider,
+    weaverProviderHealth,
+    isCheckingWeaverProvider,
     isGeneratingWeavePlan,
     weaveEvaluatingCardUid,
     weaverSettings,
     weaverSessions,
-    weaveActiveSessionId,
+    weaverActiveSessionId,
     weaveApplyResult,
     isApplyingWeavePlan,
-    setWeaveModel,
+    setWeaverModel,
     setWeaveKind,
     setWeaveEditContent,
     setWeaveCreateNote,
     setWeaveStrength,
     setWeaveIntent,
     setWeavePlanResult,
-    setWeaveProviderHealth,
-    setIsCheckingWeaveProvider,
+    setWeaverProviderHealth,
+    setIsCheckingWeaverProvider,
     setIsGeneratingWeavePlan,
     setWeaveEvaluatingCardUid,
     setWeaverSettings,
@@ -195,8 +195,8 @@ export function useWeaverController({
 
   // Sync preferred model from settings on first load
   useEffect(() => {
-    setWeaveModel(weaverSettings?.preferredModel ?? DEFAULT_WEAVE_MODEL);
-  }, [setWeaveModel, weaverSettings?.preferredModel]);
+    setWeaverModel(weaverSettings?.preferredModel ?? DEFAULT_WEAVER_MODEL);
+  }, [setWeaverModel, weaverSettings?.preferredModel]);
 
   useEffect(() => {
     void window.crashWeaver
@@ -204,37 +204,37 @@ export function useWeaverController({
       .then((settings) => {
         setWeaverSettings(settings);
         if (settings.preferredModel) {
-          setWeaveModel(settings.preferredModel);
+          setWeaverModel(settings.preferredModel);
         } else {
-          setWeaveModel(DEFAULT_WEAVE_MODEL);
+          setWeaverModel(DEFAULT_WEAVER_MODEL);
         }
       })
       .catch(() => undefined);
-  }, [setWeaveModel, setWeaverSettings]);
+  }, [setWeaverModel, setWeaverSettings]);
 
-  const refreshWeaveProviderHealth = useCallback(async () => {
-    setIsCheckingWeaveProvider(true);
+  const refreshWeaverProviderHealth = useCallback(async () => {
+    setIsCheckingWeaverProvider(true);
 
     try {
-      const health = await window.crashWeaver.checkWeaveProvider();
-      setWeaveProviderHealth(health);
+      const health = await window.crashWeaver.checkWeaverProvider();
+      setWeaverProviderHealth(health);
       return health;
     } catch (error) {
-      setWeaveProviderHealth(null);
+      setWeaverProviderHealth(null);
       throw error;
     } finally {
-      setIsCheckingWeaveProvider(false);
+      setIsCheckingWeaverProvider(false);
     }
-  }, [setIsCheckingWeaveProvider, setWeaveProviderHealth]);
+  }, [setIsCheckingWeaverProvider, setWeaverProviderHealth]);
 
   const handlePrepareWeavePanel = useCallback(async () => {
     if (!vaultPath || !isCrashpadEditor || !activeCrashpad) {
-      setWeaveProviderHealth(null);
+      setWeaverProviderHealth(null);
       return;
     }
 
     try {
-      await refreshWeaveProviderHealth();
+      await refreshWeaverProviderHealth();
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(
@@ -244,9 +244,9 @@ export function useWeaverController({
   }, [
     activeCrashpad,
     isCrashpadEditor,
-    refreshWeaveProviderHealth,
+    refreshWeaverProviderHealth,
     setErrorMessage,
-    setWeaveProviderHealth,
+    setWeaverProviderHealth,
     vaultPath,
   ]);
 
@@ -266,7 +266,7 @@ export function useWeaverController({
     setErrorMessage(null);
 
     try {
-      const health = await refreshWeaveProviderHealth();
+      const health = await refreshWeaverProviderHealth();
 
       if (health && !health.ok && health.errorCategory === 'auth-error') {
         setErrorMessage(
@@ -277,7 +277,7 @@ export function useWeaverController({
 
       const baseRequest = {
         rootPath: vaultPath,
-        preferredModel: weaveModel,
+        preferredModel: weaverModel,
         intent: weaveIntent,
         cardUid: crashpadWeaveCardUid,
         activeNotePath: activeNote?.filePath,
@@ -322,7 +322,7 @@ export function useWeaverController({
     crashpadWeaveCardUid,
     editorTextareaRef,
     isCrashpadEditor,
-    refreshWeaveProviderHealth,
+    refreshWeaverProviderHealth,
     setErrorMessage,
     setIsGeneratingWeavePlan,
     setStatusMessage,
@@ -333,7 +333,7 @@ export function useWeaverController({
     weaveEditContent,
     weaveKind,
     weaveIntent,
-    weaveModel,
+    weaverModel,
     weaveStrength,
   ]);
 
@@ -408,8 +408,8 @@ export function useWeaverController({
 
   const handleWeaveModelChange = useCallback(
     (nextModel: string) => {
-      const previousModel = weaveModel;
-      setWeaveModel(nextModel);
+      const previousModel = weaverModel;
+      setWeaverModel(nextModel);
       setErrorMessage(null);
 
       void window.crashWeaver
@@ -418,13 +418,13 @@ export function useWeaverController({
           setWeaverSettings(updated);
         })
         .catch((error) => {
-          setWeaveModel(previousModel);
+          setWeaverModel(previousModel);
           setErrorMessage(
             error instanceof Error ? error.message : 'Failed to save Weaver preferred model.',
           );
         });
     },
-    [setErrorMessage, setWeaveModel, setWeaverSettings, weaveModel],
+    [setErrorMessage, setWeaverModel, setWeaverSettings, weaverModel],
   );
 
   const handleSetWeaverApiKey = useCallback(
@@ -432,7 +432,7 @@ export function useWeaverController({
       await window.crashWeaver.setWeaverApiKey(key);
       const updated = await window.crashWeaver.getWeaverSettings();
       setWeaverSettings(updated);
-      const health = await refreshWeaveProviderHealth().catch(() => undefined);
+      const health = await refreshWeaverProviderHealth().catch(() => undefined);
       if (health && !health.ok && health.errorCategory === 'auth-error') {
         setErrorMessage(
           'API key saved, but OpenRouter rejected it as invalid or expired. Please check your key.',
@@ -441,16 +441,16 @@ export function useWeaverController({
         setStatusMessage('OpenRouter API key saved. Weaver will now use the live provider.');
       }
     },
-    [refreshWeaveProviderHealth, setErrorMessage, setStatusMessage, setWeaverSettings],
+    [refreshWeaverProviderHealth, setErrorMessage, setStatusMessage, setWeaverSettings],
   );
 
   const handleClearWeaverApiKey = useCallback(async () => {
     await window.crashWeaver.clearWeaverApiKey();
     const updated = await window.crashWeaver.getWeaverSettings();
     setWeaverSettings(updated);
-    await refreshWeaveProviderHealth().catch(() => undefined);
+    await refreshWeaverProviderHealth().catch(() => undefined);
     setStatusMessage('OpenRouter API key removed. Weaver is using the stub provider.');
-  }, [refreshWeaveProviderHealth, setStatusMessage, setWeaverSettings]);
+  }, [refreshWeaverProviderHealth, setStatusMessage, setWeaverSettings]);
 
   const handleUpdateWeaverSettings = useCallback(
     async (updates: Partial<WeaverSettings>) => {
@@ -500,7 +500,7 @@ export function useWeaverController({
       const req = session.request as Record<string, unknown>;
       if (typeof req.kind === 'string') setWeaveKind(req.kind as WeaveKind);
       if (typeof req.intent === 'string') setWeaveIntent(req.intent);
-      if (typeof req.preferredModel === 'string') setWeaveModel(req.preferredModel);
+      if (typeof req.preferredModel === 'string') setWeaverModel(req.preferredModel);
       if (req.kind === 'guided-insert') {
         const perms = req.permissions as Record<string, boolean> | undefined;
         if (perms) {
@@ -518,7 +518,7 @@ export function useWeaverController({
       setWeaveEditContent,
       setWeaveIntent,
       setWeaveKind,
-      setWeaveModel,
+      setWeaverModel,
       setWeaveStrength,
     ],
   );
@@ -565,20 +565,20 @@ export function useWeaverController({
   }, []);
 
   const inspectorProps: WeaverInspectorProps = {
-    isCheckingWeaveProvider,
+    isCheckingWeaverProvider,
     isGeneratingWeavePlan,
     weaveCardUid: crashpadWeaveCardUid,
     weaveEvaluatingCardUid,
     weaveIntent,
-    weaveModel,
+    weaverModel,
     weaveKind,
     weaveEditContent,
     weaveCreateNote,
     weavePlanResult,
-    weaveProviderHealth,
+    weaverProviderHealth,
     weaveStrength,
     weaverSessions,
-    weaveActiveSessionId,
+    weaverActiveSessionId,
     weaveApplyResult,
     isApplyingWeavePlan,
     onGenerateWeavePlan: handleGenerateWeavePlan,

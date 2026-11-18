@@ -6,11 +6,11 @@ import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron';
 import { IPC_CHANNELS } from './ipcChannels';
 import { removeNoteReferencesFromCardStore, syncNoteToCardStore } from './cardSyncService';
 import {
-  checkWeaveProvider,
+  checkWeaverProvider,
   generateWeavePlan,
-  initializeWeaveProvider,
+  initializeWeaverProvider,
   isStubProviderActive,
-  listWeaveModels,
+  listWeaverModels,
   setWeaveApiKey,
   clearWeaveApiKey,
   getWeaverSettings,
@@ -424,8 +424,8 @@ ipcMain.handle(IPC_CHANNELS.weave.generatePlan, async (event, request: WeavePlan
   return generateWeavePlan(request, onProgress);
 });
 
-ipcMain.handle(IPC_CHANNELS.weave.healthCheck, async () => checkWeaveProvider());
-ipcMain.handle(IPC_CHANNELS.weave.listModels, async () => listWeaveModels());
+ipcMain.handle(IPC_CHANNELS.weave.healthCheck, async () => checkWeaverProvider());
+ipcMain.handle(IPC_CHANNELS.weave.listModels, async () => listWeaverModels());
 ipcMain.handle(IPC_CHANNELS.weave.isStubProvider, async () => isStubProviderActive());
 
 ipcMain.handle(
@@ -500,7 +500,7 @@ ipcMain.handle(
 void app.whenReady().then(() => {
   registerLocalAssetProtocol();
   createMainWindow();
-  void initializeWeaveProvider();
+  void initializeWeaverProvider();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -20,7 +20,7 @@
 
 import type { WeavePlanRequest, WeaveStrength, WeaverSettings } from '../vault-contract';
 import type { WeaveContextSnapshot } from './weaveContextService';
-import type { WeaveFullModelProfile } from './weaveModelProfiles';
+import type { WeaverFullModelProfile } from './weaverModelProfiles';
 import type { WeaveEffectiveBudget } from './weaveGraph';
 import { resolveDefaultMaxOperations } from './weavePlanSchema';
 
@@ -382,7 +382,7 @@ The note covers OSI layers, TCP flags, and connection lifecycle. A section headi
 
 // ── LAYER 6: MODEL OVERLAY (dynamic) ─────────────────────────────────────────
 
-export function buildModelOverlayLayer(profile: WeaveFullModelProfile): string {
+export function buildModelOverlayLayer(profile: WeaverFullModelProfile): string {
   if (!profile.systemPromptOverlay) return '';
   return `# MODEL INSTRUCTIONS\n${profile.systemPromptOverlay}`.trim();
 }
@@ -400,7 +400,7 @@ export function buildModelOverlayLayer(profile: WeaveFullModelProfile): string {
  * would be rejected at schema validation time.
  */
 export function buildSystemPrompt(
-  profile: WeaveFullModelProfile,
+  profile: WeaverFullModelProfile,
   requestKind: WeavePromptRequestKind,
   maxToolCalls: number,
   maxNoteReads?: number,

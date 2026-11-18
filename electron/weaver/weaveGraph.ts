@@ -23,7 +23,7 @@ import type { WeaveRequestSessionLogger } from './weaveRequestLogger';
 import type { WeaveHttpClient } from './weaveHttpClient';
 import type { WeavePlanRequest, WeavePlanResult, WeaveErrorCategory } from '../vault-contract';
 import type { WeaveContextSnapshot } from './weaveContextService';
-import type { WeaveFullModelProfile } from './weaveModelProfiles';
+import type { WeaverFullModelProfile } from './weaverModelProfiles';
 
 export interface WeaveEffectiveBudget {
   promptToolCalls: number;
@@ -32,7 +32,7 @@ export interface WeaveEffectiveBudget {
 }
 
 export function resolveWeaveEffectiveBudget(
-  modelProfile: WeaveFullModelProfile,
+  modelProfile: WeaverFullModelProfile,
   contextSnapshot: WeaveContextSnapshot,
 ): WeaveEffectiveBudget {
   const runtimeNoteReads = contextSnapshot.retrievalBudget.maxNoteReads;
@@ -155,7 +155,7 @@ function resolveNextStep(current: WeaveGraphStep, state: WeaveAgentState): Weave
 export async function runWeaveGraph(
   request: WeavePlanRequest,
   contextSnapshot: WeaveContextSnapshot,
-  modelProfile: WeaveFullModelProfile,
+  modelProfile: WeaverFullModelProfile,
   resolvedModel: string,
   httpClient: WeaveHttpClient,
   toolRuntime: WeaveContextToolRuntime,

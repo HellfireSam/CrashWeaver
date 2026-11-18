@@ -52,10 +52,9 @@ name again:
 
 Known violations of the rule are tracked, not silently tolerated:
 
-| Violation                                                                                                                                                                                                                                                  | Ticket |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels)                                                                                                                  | #21    |
-| Provider, model and session identifiers still named with the action prefix — `weaveProviderHealth`, `checkWeaveProvider`, `listWeaveModels`, `WeaveModelInfo`, `initializeWeaveProvider`, the provider test seams, `weaveActiveSessionId` and `weaveModel` | #26    |
+| Violation                                                                                                                                 | Ticket |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `weave:get-settings`, `weave:update-settings`, `weave:set-api-key`, `weave:list-sessions` (and the other agent-concern `weave:` channels) | #21    |
 
 ## Code conventions
 
@@ -72,7 +71,7 @@ These are the conventions the code already follows; match them in new code.
 | Hook files                              | `usePascalCase.ts`             | `useEditorTabs.ts`, `useVaultLoadActions.ts`                             |
 | Other modules                           | `camelCase.ts`                 | `vaultService.ts`, `cardParser.ts`, `weavePlanSchema.ts`                 |
 | Test files                              | `<module>.test.ts`             | `vaultService.test.ts`, `markdownPreview.test.ts`                        |
-| Test-only exports                       | `__` prefix, `ForTests` suffix | `__setSettingsFilePathForTests`, `__resetWeaveProviderForTests`          |
+| Test-only exports                       | `__` prefix, `ForTests` suffix | `__setSettingsFilePathForTests`, `__resetWeaverProviderForTests`         |
 
 More rules, in the same spirit:
 

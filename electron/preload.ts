@@ -18,7 +18,7 @@ import type {
   WeavePlanOperation,
   WeavePlanRequest,
   WeavePlanResult,
-  WeaveModelInfo,
+  WeaverModelInfo,
   WeaverProviderHealth,
   WeaverSettings,
   VaultWriteNoteInput,
@@ -122,12 +122,12 @@ const crashWeaverBridge = {
     ) as Promise<CrashpadDeletePreferences>,
   generateWeavePlan: (request: WeavePlanRequest) =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.generatePlan, request) as Promise<WeavePlanResult>,
-  checkWeaveProvider: () =>
+  checkWeaverProvider: () =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.healthCheck) as Promise<WeaverProviderHealth>,
-  isStubWeaveProvider: () =>
+  isStubWeaverProvider: () =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.isStubProvider) as Promise<boolean>,
-  listWeaveModels: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.weave.listModels) as Promise<WeaveModelInfo[]>,
+  listWeaverModels: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.weave.listModels) as Promise<WeaverModelInfo[]>,
   getWeaverSettings: () =>
     ipcRenderer.invoke(IPC_CHANNELS.weave.getSettings) as Promise<WeaverSettings>,
   updateWeaverSettings: (updates: Partial<WeaverSettings>) =>

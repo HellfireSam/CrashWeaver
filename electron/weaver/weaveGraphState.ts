@@ -14,7 +14,7 @@ import type {
   WeaveReActStep,
 } from '../vault-contract';
 import type { WeaveContextSnapshot } from './weaveContextService';
-import type { WeaveFullModelProfile } from './weaveModelProfiles';
+import type { WeaverFullModelProfile } from './weaverModelProfiles';
 
 // ── Lightweight message type (replaces LangChain BaseMessage) ─────────────────
 
@@ -53,7 +53,7 @@ export interface WeaveAgentState {
   // ── Inputs (immutable after initialisation) ─────────────────────────────────
   request: WeavePlanRequest;
   contextSnapshot: WeaveContextSnapshot;
-  modelProfile: WeaveFullModelProfile;
+  modelProfile: WeaverFullModelProfile;
   resolvedModel: string;
   startTimeMs: number;
 
