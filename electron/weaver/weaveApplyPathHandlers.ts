@@ -83,13 +83,22 @@ async function renameNoteAtPath(
     const card = await readCardDocument(cardStorePath, uid);
     if (!card) continue;
 
-    const refIndex = card.referenced_in.findIndex((r) => r.note_path === fromRelative);
-    if (refIndex === -1) continue;
+    // A card is meant to hold at most one reference per note path, but the
+    // field is user-editable JSON and nothing enforces that invariant. Rewrite
+    // every matching entry: leaving a duplicate behind would point half the
+    // card at a path that no longer exists.
+    let updatedReference = false;
+    card.referenced_in = card.referenced_in.map((reference) => {
+      if (reference.note_path !== fromRelative) {
+        return reference;
+      }
 
-    card.referenced_in[refIndex] = {
-      ...card.referenced_in[refIndex],
-      note_path: toRelative,
-    };
+      updatedReference = true;
+      return { ...reference, note_path: toRelative };
+    });
+
+    if (!updatedReference) continue;
+
     await writeJsonAtomically(getCardFilePath(cardStorePath, uid), card);
   }
 

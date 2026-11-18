@@ -801,6 +801,45 @@ describe('weaveApplyService', () => {
       expect(await readCard(vault, unrelatedUid)).toEqual(unrelatedCard);
     });
 
+    it('rewrites every duplicate reference entry for a card, not only the first', async () => {
+      const uid = 'CW-DUPLICATE';
+      const noteContent = [
+        '# Old Name',
+        '',
+        formatCardStartBoundary(uid),
+        'body one',
+        formatCardEndBoundary(uid),
+        '',
+      ].join('\n');
+      const vault = await setupTestVault({ 'notes/old-name.md': noteContent });
+
+      await writeCard(
+        vault,
+        makeCard(uid, [
+          { note_path: 'notes/old-name.md', start_line: 3, end_line: 5 },
+          { note_path: 'notes/elsewhere.md', start_line: 1, end_line: 2 },
+          { note_path: 'notes/old-name.md', start_line: 9, end_line: 11 },
+        ]),
+      );
+
+      const result = await applyOperations(vault, [
+        makeOperation('rename-note', 'notes/new-name.md', {
+          fromPath: 'notes/old-name.md',
+          toPath: 'notes/new-name.md',
+          renameReason: 'Better name',
+        }),
+      ]);
+
+      expect(result.allOk).toBe(true);
+      // Every entry pointing at the renamed note moves; the unrelated entry and
+      // the order of the reference list are preserved.
+      expect((await readCard(vault, uid)).referenced_in).toEqual([
+        { note_path: 'notes/new-name.md', start_line: 3, end_line: 5 },
+        { note_path: 'notes/elsewhere.md', start_line: 1, end_line: 2 },
+        { note_path: 'notes/new-name.md', start_line: 9, end_line: 11 },
+      ]);
+    });
+
     it('renames the note even when a boundary UID has no card document', async () => {
       const noteContent = [
         '# No Card',

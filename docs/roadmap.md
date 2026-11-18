@@ -77,7 +77,6 @@ Real limitations of the current code, recorded here rather than implied away in 
   note does.
 - Weaver dry-run reports success without running the validation the real apply runs.
 - Boundary-integrity verification is not called on note delete or rename.
-- A note rename updates only the first matching reference entry per card.
 - The parser accepts interior whitespace in a boundary marker that the mutation services cannot
   match, and a Weaver-supplied block can place such a pair: it parses, but it is never stripped or
   UID-renamed afterwards.
