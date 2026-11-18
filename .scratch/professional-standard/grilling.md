@@ -521,12 +521,45 @@ The grilling frontier is otherwise **empty**. In order:
      bridge member is a compile error, while a missing handler or a wrong *declared* key at a call
      site compiles and hangs — that runtime assertion is **#21**. The renderer boundary rule in
      module-structure now permits the type-only `preload.ts` import it needs.
-   - **Frontier is now #21** (rename the agent-concern channels into `weaver:` and assert handler
-     coverage, unblocked by #20) and **#26** (the residual provider/model/session identifiers,
-     unblocked). Separately, **#23** (the card chip truncates titles) and **#25** (card UIDs are not
-     validated on read or in weaver apply) remain unblocked product defects; **#24** (spaces in card
-     titles) is feature work that waits for the rework to finish, as does **#4** (boundary-marker
-     gap).
+   - ~~#26 the residual provider, model and session identifiers~~ — **DONE** in `029d33d`, corrected
+     in `846744a`: the renderer state and setters, the `refreshWeaverProviderHealth` callback, the
+     service functions, the provider test seams, the preload members and `WeaverModelInfo` take the
+     agent prefix; `weaveModelProfiles.ts` and its suite become `weaverModelProfiles.ts`, and because
+     the ticket's own reason is that model policy is agent configuration its exported types and the
+     renderer's `DEFAULT_WEAVER_MODEL` follow. No IPC string or state shape changed. Review caught
+     `setWeaveApiKey`/`clearWeaveApiKey` still on the action prefix while the standard calls an API
+     key an agent concern; `846744a` renames them. The known-violations table is empty and removed.
+   - ~~#21 rename the agent-concern channels and assert handler coverage~~ — **DONE** in `5d8f105`,
+     corrected in `b16e381` and `84ef564`: `IPC_CHANNELS.weaver` holds the fourteen agent-concern
+     channels and `weave` keeps only plan generation and apply; no call site restates a channel. The
+     two push channels keep their areas (a run event, a vault event), and `tests/electron/ipcChannels.test.ts`
+     is the runtime assertion: it loads the compiled `main.js` and `preload.js` with a stubbed
+     `electron`, calls every exposed bridge member, and asserts each invoked channel has a handler,
+     each handler is exposed, each declared request/response channel is realised by both sides, and
+     the preload subscribes to every declared event channel. A negative-control test pins the failing
+     direction, and the suite was mutation-checked by deleting a handler from the build output.
+     Review corrected two docs that overclaimed what the suite can see, trimmed the electron stub and
+     a member-name heuristic, and updated the testing standard for the stub.
+   - ~~#23 the card chip truncates card titles~~ — **DONE** in `9e126b8`, corrected in `17a996a` and
+     `e1e3e51`: the chip is `src/components/WeaverCardChip.tsx`, all three `slice(-8)` calls are gone,
+     the chip wraps the complete title for three lines and clamps after that with the full UID in the
+     `title` tooltip, the session row stays a single ellipsized line and the detail header wraps.
+     `src/components/WeaverCardChip.test.tsx` is the repository's first component suite (per-file
+     jsdom). The manual narrow/wide clamp check could not run — this environment has no desktop
+     session — and `tests/README.md` records it as outstanding. Review made the tests one behaviour
+     each, removed an unreachable chip modifier, and updated the testing/naming/module-structure
+     standards for the component-suite form.
+   - ~~#25 card UIDs are not validated on read or in weaver apply~~ — **DONE** in `fac9dfe`:
+     `getCardFilePath` calls `assertValidCardUid`, so the single UID-to-path hop fails closed and every
+     read, exists, write and delete inherits it; `weavePlanSchema.normalizeCardUid` rejects a traversal
+     UID at normalisation; `applyCreateNote` and `applyInsertBoundaryPair` validate the payload UID
+     before building boundaries, writing a note or touching the store. New `cardStoreService.test.ts`
+     covers the rejection matrix and the untouched sibling file, the apply suite asserts the vault
+     snapshot is unchanged after a traversal plan, and `restoreDeletedCard`/`renameCard` — which
+     already validated — gained regression tests for a hand-edited crashpad snapshot.
+   - **Frontier is now #4** (the weave plan schema accepts boundary-marker-omitted operations; a
+     tracked gap that needs a characterisation test and a decision) and **#24** (card titles may
+     contain spaces, now unblocked feature work). **#1** stays open until both close.
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -580,12 +613,21 @@ claims in the docs, a known-violations table that had been emptied while violati
 the `channel()` helper as a middle man; the spec axis caught that a wrong *declared* key or a missing
 handler is still not a compile error (now stated precisely rather than over-claimed), and two
 identifier renames outside #19's scope. Corrections landed in `8ed725f`, `daaa462`, `7c39167` and
-`1673db9`, and the two long subjects were reworded.
+`1673db9`, and the two long subjects were reworded. For the #21/#26 batch the standards axis caught
+documentation that overclaimed what the new runtime assertion can see (the area rule is a review
+convention), the service-layer API-key functions still on the action prefix, and a stale
+`ipcChannels.ts` header; the spec axis confirmed the table renames and the no-literal rule, and
+pressed on the "two event channels" line, which is answered in #21's close comment. Corrections
+landed in `846744a`, `b16e381` and `84ef564` (#26/#21), and in `17a996a` and `e1e3e51` for the #23
+review, which caught the new suite kind leaving the testing standards stale and the manual-check
+claim with no owner.
 
-**Branch state:** the #15/#16/#17/#22 batch was pushed to `origin/main` at `d803258`, and CI passed
-both jobs on it. The newest commits are the #18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`), its
-review corrections (`8ed725f`, `daaa462`, `7c39167`, `1673db9`) and this record update; they are
-pushed together as part of this session.
+**Branch state:** the #15/#16/#17/#22 batch is on `origin/main` at `d803258` with CI green, and the
+#18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`) plus its review corrections (`8ed725f`,
+`daaa462`, `7c39167`, `1673db9`) is on `origin/main` too. The newest commits are the #21/#26 batch
+(`029d33d`, `5d8f105`) with its review corrections (`846744a`, `b16e381`, `84ef564`), the #23 fix
+(`9e126b8`) with its corrections (`17a996a`, `e1e3e51`), the #25 fix (`fac9dfe`) and this record
+update; they are pushed together as part of this session.
 
 ## 8. How to resume
 
@@ -603,8 +645,8 @@ In a new session, say:
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
 would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
 the decisions are no longer only local. The #15/#16/#17/#22 batch is on `origin/main` at `d803258`
-with CI green; the #18/#19/#20 batch, its review corrections and this record update are pushed
-together with this record.
+with CI green; the #18/#19/#20 batch is on `origin/main` too, and the #21/#26/#23/#25 batch, its
+review corrections and this record update are pushed together with this record.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -629,6 +671,5 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (#21 and #26; #23 and #25 are
-unblocked product defects; #24 and #4 wait for the rework), and the pushed state of the newest
-commits.
+Everything else is unchanged: the closed tickets, the frontier (**#4** and **#24**; **#1** stays
+open until both close), and the pushed state of the newest commits.
