@@ -50,11 +50,14 @@ name again:
   `weave:` is for operations on a run. A settings, key, provider, model or session channel is an
   agent concern even though it is reached while using the Weaver.
 
-The rule holds across the tree: `electron/ipcChannels.ts` groups the channels by area, and is the
-only place a channel string appears. The inventory is asserted at runtime by
-`tests/electron/ipcChannels.test.ts`, which loads the compiled main and preload modules and proves
-that every channel the preload invokes has a registered handler, every registered handler is
-exposed, and every declared channel is used by both sides.
+No violations of the rule are currently recorded. `electron/ipcChannels.ts` is the only place a
+channel string appears, and `tests/electron/ipcChannels.test.ts` asserts the request/response
+inventory at runtime: it loads the compiled main and preload modules and proves that every channel
+the preload invokes has a registered handler and every registered handler is exposed. The push
+channels have no main-process handler, so the suite instead asserts that the preload subscribes to
+every declared event channel; what main sends on them is not observable in a Node test. The area
+itself is a review convention — the suite proves the two sides agree with the declaration, not that
+a declared area is the right one.
 
 ## Code conventions
 

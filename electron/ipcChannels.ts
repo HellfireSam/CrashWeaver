@@ -4,8 +4,7 @@
  * Both processes read the names from here — `electron/main.ts` registers its
  * handlers against them and `electron/preload.ts` invokes them — so a channel
  * rename is a single edit and the two sides cannot spell a name differently.
- * The strings themselves are not restated anywhere else; it is only the
- * declaration that moved.
+ * The strings themselves are not restated anywhere else.
  *
  * Channel names follow the naming standard: `<area>:<name>`, lower-case and
  * kebab-cased inside each part, with a request/response channel named for the
@@ -14,9 +13,9 @@
  *
  * The area follows the Weaver/weave rule: agent concerns use `weaver:` (the
  * provider, model, settings, API key and session channels) and `weave:` is for
- * operations on one run (plan generation and the apply step). That rule is the
- * declaration's own comment; the handler-coverage suite proves the preload and
- * the main process expose the same inventory.
+ * one run — plan generation, the apply step and the run's progress event. The
+ * grouping is a review convention; `tests/electron/ipcChannels.test.ts` proves
+ * both sides realise the same inventory at runtime.
  */
 
 export const IPC_CHANNELS = {

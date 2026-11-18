@@ -125,9 +125,13 @@ Vault's shape (`vault:open`, `vault:write-note`, `vault:update-index`, `card-sto
 before returning, so the watcher reflects the current root and Card store path.
 
 The channel area is the naming standard's Weaver/weave rule applied to the boundary: agent concerns
-use `weaver:` and `weave:` is for operations on one run, so only plan generation and the apply step
-keep the run prefix. The rule is checked by the handler-coverage suite described under
-[typing across the boundary](#typing-across-the-boundary), not just by the compiler.
+use `weaver:`, and `weave:` covers one run — plan generation, the apply step, and the progress event
+of that run. The two push channels keep their areas for the same reason: `weave:plan-progress` is a
+run event and `vault:external-change` is a vault event, so neither is an agent concern. The
+inventory is asserted at runtime under
+[typing across the boundary](#typing-across-the-boundary), not just by the compiler; the area rule
+itself is a review convention, because a declared channel and its area move together in the
+declaration.
 
 ### Push channels
 
