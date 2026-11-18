@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 // The main-process suites run against the compiled CommonJS output, not the
 // TypeScript source, so `npm test` builds the main process first.
@@ -18,30 +18,21 @@ type RecordedIpcSurface = {
   subscribed: string[];
 };
 
+/**
+ * Only the `electron` surface the module load and the bridge exercise touch.
+ * The application lifecycle is not run (`app.whenReady` never settles), so the
+ * window, dialog and storage members those paths would need are absent.
+ */
 type ElectronStub = {
-  app: {
-    whenReady: () => Promise<never>;
-    on: () => void;
-    getPath: () => string;
-    getAppPath: () => string;
-    quit: () => void;
-  };
-  BrowserWindow: new () => unknown;
-  dialog: { showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }> };
-  ipcMain: { handle: (channel: string) => void; removeHandler: () => void };
+  app: { whenReady: () => Promise<never>; on: () => void };
+  ipcMain: { handle: (channel: string) => void };
   ipcRenderer: {
     invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
     on: (channel: string) => void;
     removeListener: () => void;
   };
-  net: { fetch: () => Promise<never> };
-  protocol: { registerSchemesAsPrivileged: () => void; handle: () => void };
+  protocol: { registerSchemesAsPrivileged: () => void };
   contextBridge: { exposeInMainWorld: (name: string, bridge: object) => void };
-  safeStorage: {
-    isEncryptionAvailable: () => boolean;
-    encryptString: () => Buffer;
-    decryptString: () => string;
-  };
 };
 
 type NodeModuleWithLoad = {
@@ -52,8 +43,11 @@ type NodeModuleWithLoad = {
  * Loads the compiled main and preload modules with a stubbed `electron`, then
  * calls every member the preload exposed so its channels are recorded.
  *
- * `app.whenReady` never resolves on purpose: the module load registers the
- * handlers and the bridge, and the application lifecycle must not run.
+ * Stubbing `electron` is necessary rather than convenient: under plain Node its
+ * module resolves to the path of the Electron binary, so the two entry modules
+ * cannot load for real. The stub records the channels instead of crossing the
+ * process boundary, and `app.whenReady` never resolves so the application
+ * lifecycle does not run.
  */
 function recordIpcSurface(): RecordedIpcSurface {
   const surface: RecordedIpcSurface = { handled: [], invoked: [], subscribed: [] };
@@ -63,19 +57,9 @@ function recordIpcSurface(): RecordedIpcSurface {
     app: {
       whenReady: () => new Promise<never>(() => {}),
       on: () => {},
-      getPath: () => '/tmp/crashweaver-ipc-coverage-test-userData',
-      getAppPath: () => '/tmp/crashweaver-ipc-coverage-test-app',
-      quit: () => {},
     },
-    BrowserWindow: class {
-      static getAllWindows(): unknown[] {
-        return [];
-      }
-    },
-    dialog: { showOpenDialog: async () => ({ canceled: true, filePaths: [] }) },
     ipcMain: {
       handle: (channel: string) => surface.handled.push(channel),
-      removeHandler: () => {},
     },
     ipcRenderer: {
       invoke: (channel: string) => {
@@ -85,21 +69,11 @@ function recordIpcSurface(): RecordedIpcSurface {
       on: (channel: string) => surface.subscribed.push(channel),
       removeListener: () => {},
     },
-    net: {
-      fetch: async () => {
-        throw new Error('The IPC coverage suite must not reach the network.');
-      },
-    },
-    protocol: { registerSchemesAsPrivileged: () => {}, handle: () => {} },
+    protocol: { registerSchemesAsPrivileged: () => {} },
     contextBridge: {
       exposeInMainWorld: (_name: string, exposedBridge: object) => {
         bridge = exposedBridge as Record<string, unknown>;
       },
-    },
-    safeStorage: {
-      isEncryptionAvailable: () => false,
-      encryptString: () => Buffer.from(''),
-      decryptString: () => '',
     },
   };
 
@@ -123,16 +97,12 @@ function recordIpcSurface(): RecordedIpcSurface {
 
   const exposedBridge: Record<string, unknown> = bridge;
 
-  for (const [memberName, member] of Object.entries(exposedBridge)) {
+  for (const member of Object.values(exposedBridge)) {
     if (typeof member !== 'function') continue;
-
-    if (memberName.startsWith('on')) {
-      // Subscription members take the caller's listener and attach it.
-      member(() => {});
-    } else {
-      // Request members forward their arguments; the stubbed invoke ignores them.
-      member();
-    }
+    // Request members forward their arguments to the stubbed `invoke`, which
+    // ignores them; subscription members attach a listener whose callback the
+    // stubbed `on` never calls. Both can be exercised with no arguments.
+    member();
   }
 
   return surface;
@@ -161,8 +131,12 @@ function difference(left: readonly string[], right: readonly string[]): string[]
   return channelSet(left.filter((channel) => !rightSet.has(channel)));
 }
 
-describe('IPC channel inventory', () => {
-  const surface = recordIpcSurface();
+describe('the IPC channel inventory', () => {
+  let surface: RecordedIpcSurface;
+
+  beforeAll(() => {
+    surface = recordIpcSurface();
+  });
 
   it('every channel the preload invokes has a registered main-process handler', () => {
     expect(difference(surface.invoked, surface.handled)).toEqual([]);
@@ -178,5 +152,15 @@ describe('IPC channel inventory', () => {
 
   it('the preload subscribes to every declared event channel', () => {
     expect(channelSet(surface.subscribed)).toEqual(channelSet(declaredEventChannels));
+  });
+
+  it('the assertion reports a channel whose handler was removed', () => {
+    // The positive assertions only fail if this difference detects a missing
+    // handler, so the negative control proves the comparison does.
+    const handledWithoutOne = surface.handled.filter(
+      (channel) => channel !== 'weave:generate-plan',
+    );
+
+    expect(difference(surface.invoked, handledWithoutOne)).toEqual(['weave:generate-plan']);
   });
 });
