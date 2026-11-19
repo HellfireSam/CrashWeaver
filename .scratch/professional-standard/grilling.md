@@ -549,14 +549,22 @@ The grilling frontier is otherwise **empty**. In order:
      session — and `tests/README.md` records it as outstanding. Review made the tests one behaviour
      each, removed an unreachable chip modifier, and updated the testing/naming/module-structure
      standards for the component-suite form.
-   - ~~#25 card UIDs are not validated on read or in weaver apply~~ — **DONE** in `fac9dfe`:
-     `getCardFilePath` calls `assertValidCardUid`, so the single UID-to-path hop fails closed and every
-     read, exists, write and delete inherits it; `weavePlanSchema.normalizeCardUid` rejects a traversal
-     UID at normalisation; `applyCreateNote` and `applyInsertBoundaryPair` validate the payload UID
-     before building boundaries, writing a note or touching the store. New `cardStoreService.test.ts`
-     covers the rejection matrix and the untouched sibling file, the apply suite asserts the vault
-     snapshot is unchanged after a traversal plan, and `restoreDeletedCard`/`renameCard` — which
-     already validated — gained regression tests for a hand-edited crashpad snapshot.
+   - ~~#25 card UIDs are not validated on read or in weaver apply~~ — **DONE** in `fac9dfe`, corrected
+     after review: `getCardFilePath` calls `assertValidCardUid`, so the single UID-to-path hop fails
+     closed and every UID-addressed read, exists, write and delete inherits it;
+     `weavePlanSchema.normalizeCardUid` rejects a traversal UID at normalisation and keeps the payload
+     field name in the message; `applyCreateNote` and `applyInsertBoundaryPair` validate the payload
+     UID before building boundaries, writing a note or touching the store. Review caught a real
+     regression: `listCardDocuments` deliberately lists hand-dropped filenames outside the grammar,
+     and the sync/rebuild then fed those derived UIDs to the guarded builder, so one stray card file
+     broke every note write. `isValidCardUid` in `cardStoreService` now lets the sync and index rebuild
+     skip an unaddressable card instead of failing, and `cardSyncService.test.ts` pins both paths.
+     `cardStoreService.test.ts` splits the rejection matrix across the path builder, read, exists,
+     write, delete, reference upsert and reference removal; `vaultService.test.ts` covers
+     save/rename/delete; the apply and schema suites cover a traversal plan and both plan payloads;
+     `restoreDeletedCard` gained the hand-edited-crashpad regression test (`renameCard` takes the
+     traversal UID through the validator, now also tested). ADR-0002's consequence sentence about
+     `end_line` and the prompts' example was corrected.
    - ~~#4 the weave plan schema accepts boundary-marker-omitted operations~~ — **DONE** in
      `a688ec6`: the optionality is intentional and recorded in ADR-0002, with the consequence
      stated — a marker-less `create-note` does not durably reference the card (it auto-creates a
@@ -625,14 +633,18 @@ convention), the service-layer API-key functions still on the action prefix, and
 pressed on the "two event channels" line, which is answered in #21's close comment. Corrections
 landed in `846744a`, `b16e381` and `84ef564` (#26/#21), and in `17a996a` and `e1e3e51` for the #23
 review, which caught the new suite kind leaving the testing standards stale and the manual-check
-claim with no owner.
+claim with no owner. For #25/#4 the spec axis caught the real regression described under #25 — the
+read-tolerant card listing now feeding unaddressable UIDs into the guarded builder — and the
+standards axis caught overclaims in the data model ("no second copy of the rule"; the listing bypass)
+and in ADR-0002 (`end_line` is 3, not the note's line count; the prompts' create-note example does
+not emit a companion insert). Corrections are the commit that follows `a688ec6`.
 
 **Branch state:** the #15/#16/#17/#22 batch is on `origin/main` at `d803258` with CI green; the
 #18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`) and its review corrections (`8ed725f`,
 `daaa462`, `7c39167`, `1673db9`) are on `origin/main` too. The newest commits are the
 #21/#26/#23/#25 batch (`029d33d`, `5d8f105`, `9e126b8`, `fac9dfe`) with its review corrections
-(`846744a`, `b16e381`, `84ef564`, `17a996a`, `e1e3e51`), the #4 decision (`a688ec6`) and this
-record update; they are pushed together as part of this session.
+(`846744a`, `b16e381`, `84ef564`, `17a996a`, `e1e3e51`), the #4 decision (`a688ec6`), the
+#25/#4 review corrections and this record update; they are pushed together as part of this session.
 
 ## 8. How to resume
 
