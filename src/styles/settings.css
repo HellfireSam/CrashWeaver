@@ -1,21 +1,29 @@
+/*
+ * The settings modal: the overlay, the two-column settings grid and the shared
+ * section / callout / label primitives used inside it.
+ */
+
 .settingsOverlay {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(12, 14, 20, 0.58);
+  background: rgba(4, 5, 7, 0.66);
+  backdrop-filter: blur(3px);
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
 .settingsModal {
-  width: min(840px, 100%);
-  background: #1f232d;
+  width: min(980px, 100%);
+  max-height: min(88vh, 820px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--bg-panel);
   border: 1px solid var(--border-strong);
-  border-radius: 0.7rem;
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.45);
-  max-height: min(88vh, 760px);
-  overflow: auto;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
 .settingsHeader {
@@ -23,39 +31,53 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.8rem;
-  padding: 0.95rem 1rem;
+  padding: 1rem 1.2rem;
   border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+}
+
+.settingsHeader .panelTitle {
+  margin-bottom: 0.15rem;
 }
 
 .settingsHeader h2 {
-  margin: 0.08rem 0 0;
-  font-size: 1.08rem;
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .settingsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.15rem 1.2rem 1.4rem;
+  overflow: auto;
+  align-content: start;
 }
 
 .settingSection {
   border: 1px solid var(--border-soft);
-  border-radius: 0.6rem;
-  background: #222631;
-  padding: 0.85rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  padding: 1rem;
+}
+
+.settingSection > .panelTitle:first-child {
+  margin-bottom: 0.8rem;
 }
 
 .settingCallout {
   border: 1px solid var(--border-soft);
-  border-radius: 0.7rem;
-  background: rgba(37, 39, 48, 0.82);
-  padding: 0.95rem 1rem;
+  border-left: 2px solid var(--accent-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+  padding: 0.85rem 0.9rem;
   margin-top: 1rem;
 }
 
 .settingCallout .actionButton {
-  margin-top: 0.75rem;
+  margin-top: 0.7rem;
 }
 
 .settingsActionRow {
@@ -67,20 +89,52 @@
 
 .settingLabel {
   display: block;
-  font-size: 0.84rem;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
   color: var(--text-muted);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.settingSection .notePathInput + .settingLabel,
+.settingSection .detailValue + .settingLabel {
+  margin-top: 0.9rem;
 }
 
 .rangeInput {
   width: 100%;
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.5rem;
 }
 
 .toggleRow {
   display: flex;
   gap: 0.55rem;
   align-items: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  padding: 0.22rem 0;
+  cursor: pointer;
+}
+
+.toggleRow + .toggleRow {
+  margin-top: 0.15rem;
+}
+
+.settingSection .detailKey {
+  margin-top: 0.7rem;
+}
+
+.settingSection .detailKey:first-of-type {
+  margin-top: 0;
+}
+
+.settingSection .detailValue {
+  margin-top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 880px) {
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
 }

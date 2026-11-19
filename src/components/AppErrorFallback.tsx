@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { AppIcon } from './AppIcon';
 
 interface AppErrorFallbackProps {
   error: Error;
@@ -31,24 +32,43 @@ export function AppErrorFallback({ error, onReset }: AppErrorFallbackProps) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         height: '100vh',
-        padding: '2rem',
-        fontFamily: 'system-ui, sans-serif',
-        backgroundColor: 'var(--cw-bg, #1e1e1e)',
-        color: 'var(--cw-fg, #cccccc)',
-        gap: '1rem',
+        padding: '2.5rem',
+        fontFamily: 'var(--font-ui, system-ui, sans-serif)',
+        backgroundColor: 'var(--bg-app, #0b0c0e)',
+        color: 'var(--text-primary, #ececee)',
+        gap: '0.85rem',
       }}
     >
-      <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Something went wrong in CrashWeaver</h1>
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '2.4rem',
+          height: '2.4rem',
+          borderRadius: '8px',
+          backgroundColor: 'var(--error-wash, rgba(224, 122, 114, 0.1))',
+          color: 'var(--error-strong, #f2928a)',
+          fontSize: '1.2rem',
+        }}
+      >
+        <AppIcon name="alert-triangle" />
+      </span>
+
+      <h1 style={{ fontSize: '1.35rem', fontWeight: 600, margin: 0 }}>
+        Something went wrong in CrashWeaver
+      </h1>
 
       <p
         style={{
-          maxWidth: '42rem',
-          textAlign: 'center',
-          color: 'var(--cw-muted, #888)',
-          lineHeight: 1.5,
+          maxWidth: '46rem',
+          color: 'var(--text-muted, #8d9199)',
+          lineHeight: 1.6,
+          margin: 0,
         }}
       >
         An unexpected render error occurred. Your vault files have not been modified. You can try
@@ -58,13 +78,14 @@ export function AppErrorFallback({ error, onReset }: AppErrorFallbackProps) {
 
       <div
         style={{
-          maxWidth: '42rem',
+          maxWidth: '46rem',
           width: '100%',
-          padding: '1rem',
-          backgroundColor: 'var(--cw-surface, #2d2d2d)',
-          borderRadius: '6px',
-          border: '1px solid var(--cw-border, #444)',
-          fontFamily: 'monospace',
+          padding: '0.9rem 1rem',
+          backgroundColor: 'var(--bg-panel, #121417)',
+          borderRadius: '8px',
+          border: '1px solid var(--border-soft, #24272d)',
+          color: 'var(--error-strong, #f2928a)',
+          fontFamily: 'var(--font-mono, monospace)',
           fontSize: '0.8rem',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
@@ -75,34 +96,20 @@ export function AppErrorFallback({ error, onReset }: AppErrorFallbackProps) {
         {error.message}
       </div>
 
-      <div style={{ display: 'flex', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
         <button
           type="button"
+          className="actionButton primary"
           onClick={onReset}
-          style={{
-            padding: '0.5rem 1.25rem',
-            backgroundColor: 'var(--cw-accent, #007acc)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-          }}
+          style={{ minHeight: '2rem', padding: '0.4rem 1rem' }}
         >
           Reload
         </button>
         <button
           type="button"
+          className="actionButton"
           onClick={handleCopy}
-          style={{
-            padding: '0.5rem 1.25rem',
-            backgroundColor: 'var(--cw-surface, #2d2d2d)',
-            color: 'var(--cw-fg, #ccc)',
-            border: '1px solid var(--cw-border, #444)',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-          }}
+          style={{ minHeight: '2rem', padding: '0.4rem 1rem' }}
         >
           Copy details
         </button>

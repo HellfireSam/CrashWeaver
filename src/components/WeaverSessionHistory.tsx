@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { AppIcon, type AppIconName } from './AppIcon';
 import { WeaverOperationItem } from './WeaverOperationItem';
 import type { WeavePlanOperation } from '../../electron/vault-contract';
 
@@ -121,22 +122,22 @@ function formatToolName(toolName: string): string {
   }
 }
 
-function getStepIcon(step: WeaverSessionStep): string {
+function getStepIcon(step: WeaverSessionStep): AppIconName {
   switch (step.event) {
     case 'node-call-model':
-      return step.actionType === 'tool' ? '🤔' : '📋';
+      return step.actionType === 'tool' ? 'sparkles' : 'clipboard-check';
     case 'node-execute-tool':
-      return step.toolOk ? '🔍' : '⚠️';
+      return step.toolOk ? 'wrench' : 'alert-triangle';
     case 'node-repair':
-      return '🔧';
+      return 'wrench';
     case 'node-finalize':
-      return '📋';
+      return 'flag';
     case 'node-validate-success':
-      return '✅';
+      return 'check-circle';
     case 'plan-final':
-      return '✨';
+      return 'sparkles';
     default:
-      return '•';
+      return 'chevron-right';
   }
 }
 
@@ -294,26 +295,34 @@ export function WeaverSessionHistory({
               setSessionDetail(null);
             }}
           >
-            ← Back to History
+            <AppIcon name="arrow-left" /> Back to History
           </button>
           <button
             type="button"
             className="weaverSessionDeleteBtn"
             onClick={() => handleDelete(selectedSessionId)}
             title="Delete this session"
+            aria-label="Delete this session"
           >
-            🗑
+            <AppIcon name="trash" />
           </button>
         </div>
 
         <div className="weaverSessionDetailBody">
           <div className="weaverSessionDetailStatus">
             <span className={`weaverSessionStatusIcon ${sessionDetail.success ? 'ok' : 'error'}`}>
-              {isGenerating && sessionDetail.sessionId === activeSessionId
-                ? '⏳'
-                : sessionDetail.success
-                  ? '✅'
-                  : '❌'}
+              <AppIcon
+                name={
+                  isGenerating && sessionDetail.sessionId === activeSessionId
+                    ? 'loader'
+                    : sessionDetail.success
+                      ? 'check-circle'
+                      : 'alert-circle'
+                }
+                className={
+                  isGenerating && sessionDetail.sessionId === activeSessionId ? 'spin' : undefined
+                }
+              />
             </span>
             <span className="weaverSessionDetailKind">
               {getRequestKindLabel(sessionDetail.requestKind)} · {sessionDetail.cardUid}
@@ -352,7 +361,9 @@ export function WeaverSessionHistory({
                 {sessionDetail.steps.map((step, idx, arr) => (
                   <div key={step.index} className={`weaverStepEntry ${step.event}`}>
                     <div className="weaverStepMarker">
-                      <span className="weaverStepIcon">{getStepIcon(step)}</span>
+                      <span className="weaverStepIcon">
+                        <AppIcon name={getStepIcon(step)} />
+                      </span>
                       {idx < arr.length - 1 ? <span className="weaverStepConnector" /> : null}
                     </div>
                     <div className="weaverStepContent">
@@ -477,7 +488,7 @@ export function WeaverSessionHistory({
               setSessionDetail(null);
             }}
           >
-            ← Back to History
+            <AppIcon name="arrow-left" /> Back to History
           </button>
         </div>
         <div className="weaverSessionLoading">Loading session…</div>
@@ -524,11 +535,18 @@ export function WeaverSessionHistory({
                 >
                   <span className="weaverSessionRowStatus">
                     <span className={`weaverSessionStatusIcon ${session.success ? 'ok' : 'error'}`}>
-                      {session.sessionId === activeSessionId && isGenerating
-                        ? '⏳'
-                        : session.success
-                          ? '✅'
-                          : '❌'}
+                      <AppIcon
+                        name={
+                          session.sessionId === activeSessionId && isGenerating
+                            ? 'loader'
+                            : session.success
+                              ? 'check-circle'
+                              : 'alert-circle'
+                        }
+                        className={
+                          session.sessionId === activeSessionId && isGenerating ? 'spin' : undefined
+                        }
+                      />
                     </span>
                   </span>
                   <span
@@ -545,7 +563,7 @@ export function WeaverSessionHistory({
                   <span className="weaverSessionRowModel">{session.model.split('/').pop()}</span>
                   <span className="weaverSessionRowMeta">
                     {session.success
-                      ? `${session.operations ?? '?'} ops · ${session.latencyMs ?? '?'}ms`
+                      ? `${session.operations ?? '?'} ${session.operations === 1 ? 'op' : 'ops'} · ${session.latencyMs ?? '?'}ms`
                       : session.errorMessage
                         ? session.errorMessage.slice(0, 40)
                         : 'Failed'}
@@ -561,7 +579,7 @@ export function WeaverSessionHistory({
                       handleDelete(session.sessionId);
                     }}
                   >
-                    🗑
+                    <AppIcon name="trash" />
                   </span>
                 </button>
               ))}

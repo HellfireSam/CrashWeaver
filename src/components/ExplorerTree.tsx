@@ -11,6 +11,7 @@ import { FixedSizeList as List } from 'react-window';
 import type { CSSProperties } from 'react';
 import type { ExplorerNode } from '../lib/explorerTree';
 import { flattenVisibleNodes, type FlatTreeRow } from '../lib/explorerTree';
+import { AppIcon } from './AppIcon';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -70,7 +71,9 @@ function TreeRow({ index, style, data }: { index: number; style: CSSProperties; 
           aria-expanded={isExpanded}
           title={node.path}
         >
-          <span className="treeGlyph">{isExpanded ? '▾' : '▸'}</span>
+          <span className="treeGlyph">
+            <AppIcon name={isExpanded ? 'chevron-down' : 'chevron-right'} />
+          </span>
           <span className="treeName">{node.name}</span>
         </button>
       </div>
@@ -86,7 +89,9 @@ function TreeRow({ index, style, data }: { index: number; style: CSSProperties; 
         disabled={isReading}
         title={node.path}
       >
-        <span className="treeGlyph">•</span>
+        <span className="treeGlyph">
+          <AppIcon name="file-text" />
+        </span>
         <span className="treeName">{formatTreeFileLabel(node)}</span>
       </button>
     </div>

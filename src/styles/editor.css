@@ -1,3 +1,8 @@
+/*
+ * The editor surface: tab strip, view-mode tabs, the source header, the editor
+ * and markdown preview, and the status bar.
+ */
+
 .editorPane {
   min-height: 0;
   min-width: 0;
@@ -6,72 +11,74 @@
 }
 
 .editorCanvas {
-  width: min(980px, 100%);
+  width: 100%;
   height: 100%;
-  margin: 0 auto;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
   min-width: 0;
-  border-left: 1px solid var(--border-soft);
-  border-right: 1px solid var(--border-soft);
 }
 
-/* View-mode tab bar */
-.viewModeBar {
-  min-height: 0;
-  min-width: 0;
-}
-
-.viewModeTabs {
-  display: flex;
-  gap: 0;
-  padding: 0 0.2rem;
-  border-bottom: 1px solid var(--border-soft);
-}
+/* ── Tab strip ──────────────────────────────────────────────────────────── */
 
 .editorTabsBar {
   display: flex;
-  gap: 0.3rem;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.15rem;
   overflow-x: auto;
-  padding: 0.45rem 0.8rem 0.35rem;
-  border-bottom: 1px solid var(--border-soft);
+  padding: 0.3rem 0.55rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
 }
 
 .editorTabShell {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
-  border-radius: 0.5rem;
+  gap: 0.05rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  background: #232630;
-  padding-right: 0.18rem;
+  padding-right: 0.1rem;
+  transition:
+    background var(--duration) var(--ease),
+    border-color var(--duration) var(--ease);
+}
+
+.editorTabShell:hover {
+  background: var(--bg-hover);
 }
 
 .editorTabShell.active {
-  border-color: rgba(127, 156, 245, 0.32);
-  background: #2c3040;
+  background: var(--bg-base);
+  border-color: var(--border-soft);
 }
 
 .editorTabShell.dragTarget {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(127, 156, 245, 0.24);
+  box-shadow: 0 0 0 1px var(--accent-soft);
 }
 
 .editorTab {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   max-width: 220px;
-  border-radius: 0.45rem;
-  border: 1px solid transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
-  padding: 0.35rem 0.6rem;
+  padding: 0.28rem 0.5rem;
   cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: color var(--duration) var(--ease);
 }
 
 .editorTab:hover {
+  color: var(--text-secondary);
+}
+
+.editorTabShell.active .editorTab {
   color: var(--text-primary);
 }
 
@@ -82,55 +89,100 @@
 }
 
 .editorTabDirty {
-  color: var(--accent);
-  font-weight: 700;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  flex: 0 0 auto;
+  font-size: 0;
+  line-height: 0;
 }
 
 .editorTabClose {
-  width: 1.6rem;
-  height: 1.6rem;
-  border: 1px solid transparent;
-  border-radius: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--text-subtle);
   cursor: pointer;
+  font-size: 0.78rem;
+  opacity: 0;
+  transition:
+    opacity var(--duration) var(--ease),
+    background var(--duration) var(--ease),
+    color var(--duration) var(--ease);
+}
+
+.editorTabShell:hover .editorTabClose,
+.editorTabShell.active .editorTabClose,
+.editorTabClose:focus-visible {
+  opacity: 1;
 }
 
 .editorTabClose:hover {
-  border-color: rgba(242, 133, 133, 0.3);
-  color: var(--error);
-  background: rgba(242, 133, 133, 0.08);
+  background: var(--error-wash);
+  color: var(--error-strong);
+}
+
+/* ── View-mode tabs ─────────────────────────────────────────────────────── */
+
+.viewModeBar {
+  min-height: 0;
+  min-width: 0;
+}
+
+.viewModeTabs {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0 0.55rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
 }
 
 .viewModeTab {
+  position: relative;
   background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 0;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 0.84rem;
-  padding: 0.55rem 1rem 0.45rem;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  padding: 0.45rem 0.6rem 0.4rem;
+  transition: color var(--duration) var(--ease);
 }
 
 .viewModeTab:hover {
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .viewModeTab.active {
   color: var(--text-primary);
-  border-bottom-color: var(--accent-soft);
 }
 
-/* Source-mode header */
+.viewModeTab.active::after {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: -1px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+/* ── Source header ──────────────────────────────────────────────────────── */
+
 .editorSourceHeader {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.65rem 0.8rem;
-  border-bottom: 1px solid var(--border-soft);
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
   flex-wrap: wrap;
 }
 
@@ -148,41 +200,52 @@
 
 .editorActionWidget {
   display: inline-flex;
-  gap: 0.3rem;
-  padding: 0.2rem;
+  gap: 0.05rem;
+  padding: 0.12rem;
   border: 1px solid var(--border-soft);
-  border-radius: 0.6rem;
-  background: #232733;
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
 }
 
 .editorIconButton {
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid transparent;
-  border-radius: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 0;
+  border-radius: var(--radius-xs);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  font-size: 0.9rem;
+  transition:
+    background var(--duration) var(--ease),
+    color var(--duration) var(--ease);
 }
 
 .editorIconButton:hover:enabled {
-  border-color: var(--accent-soft);
+  background: var(--bg-hover);
   color: var(--text-primary);
-  background: #2e3343;
 }
 
 .editorIconButton:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
-/* Markdown preview panel */
+/* ── Markdown preview ───────────────────────────────────────────────────── */
+
 .markdownPreview {
   overflow: auto;
-  padding: 1.4rem 1.5rem;
+  padding: 1.9rem clamp(1.4rem, calc((100% - 860px) / 2), 6rem) 3rem;
   color: var(--text-primary);
   font-size: var(--editor-font-size, 15px);
-  line-height: 1.75;
+  line-height: var(--line-height-relaxed);
+}
+
+.markdownPreview > :first-child {
+  margin-top: 0;
 }
 
 .markdownPreview h1,
@@ -192,87 +255,106 @@
 .markdownPreview h5,
 .markdownPreview h6 {
   color: var(--text-primary);
-  margin-top: 1.4em;
-  margin-bottom: 0.4em;
-  line-height: 1.3;
+  margin: 1.8em 0 0.55em;
+  line-height: var(--line-height-tight);
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .markdownPreview h1 {
   font-size: 1.75rem;
-  border-bottom: 1px solid var(--border-soft);
-  padding-bottom: 0.3em;
+  margin-top: 0.2em;
 }
 
 .markdownPreview h2 {
-  font-size: 1.4rem;
-  border-bottom: 1px solid var(--border-soft);
-  padding-bottom: 0.2em;
+  font-size: 1.35rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .markdownPreview h3 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
+}
+
+.markdownPreview h4 {
+  font-size: 0.98rem;
+  color: var(--text-secondary);
 }
 
 .markdownPreview p {
-  margin: 0.7em 0;
+  margin: 0.8em 0;
 }
 
 .markdownPreview ul,
 .markdownPreview ol {
-  padding-left: 1.6em;
-  margin: 0.6em 0;
+  padding-left: 1.4em;
+  margin: 0.7em 0;
 }
 
 .markdownPreview li {
-  margin: 0.25em 0;
+  margin: 0.28em 0;
+}
+
+.markdownPreview li::marker {
+  color: var(--text-subtle);
 }
 
 .markdownPreview code {
-  background: var(--bg-input);
-  border: 1px solid var(--border-soft);
-  border-radius: 0.3em;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
   font-family: var(--font-mono);
-  font-size: 0.88em;
-  padding: 0.1em 0.35em;
+  font-size: 0.87em;
+  padding: 0.08em 0.34em;
+  color: var(--accent-strong);
 }
 
 .markdownPreview pre {
-  background: var(--bg-input);
-  border: 1px solid var(--border-soft);
-  border-radius: 0.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
   overflow-x: auto;
-  padding: 1rem;
+  padding: 0.9rem 1rem;
   margin: 1em 0;
+  line-height: 1.6;
 }
 
 .markdownPreview pre code {
   background: transparent;
   border: none;
   padding: 0;
-  font-size: 0.9em;
+  font-size: 0.88em;
+  color: var(--text-secondary);
 }
 
 .markdownPreview blockquote {
-  border-left: 3px solid var(--accent-soft);
-  color: var(--text-muted);
+  border-left: 2px solid var(--accent-soft);
+  color: var(--text-secondary);
   margin: 1em 0;
-  padding: 0.2em 1em;
+  padding: 0.2em 0 0.2em 1em;
 }
 
 .markdownPreview a {
-  color: var(--accent-soft);
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(224, 178, 92, 0.3);
+}
+
+.markdownPreview a:hover {
+  border-bottom-color: var(--accent);
 }
 
 .markdownPreview hr {
   border: none;
-  border-top: 1px solid var(--border-soft);
-  margin: 1.5em 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: 2em 0;
 }
 
 .markdownPreview table {
   border-collapse: collapse;
   width: 100%;
   margin: 1em 0;
+  font-size: 0.94em;
 }
 
 .markdownPreview th,
@@ -283,9 +365,18 @@
 }
 
 .markdownPreview th {
-  background: var(--bg-input);
+  background: var(--bg-panel);
   color: var(--text-primary);
+  font-weight: 600;
 }
+
+.markdownPreview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+/* ── Source textarea ────────────────────────────────────────────────────── */
 
 .editorForm {
   min-height: 0;
@@ -297,46 +388,72 @@
   height: 100%;
   border: 0;
   resize: none;
-  padding: 1.2rem 1.15rem;
+  padding: 1.4rem clamp(1.4rem, calc((100% - 860px) / 2), 6rem);
   color: var(--text-primary);
   background: var(--bg-base);
   font-size: var(--editor-font-size, 15px);
-  line-height: 1.7;
+  line-height: var(--line-height-relaxed);
   font-family: var(--font-mono);
+  tab-size: 2;
+}
+
+.editorTextArea::placeholder {
+  color: var(--text-subtle);
 }
 
 .editorTextArea:focus {
-  outline: 2px solid rgba(127, 156, 245, 0.2);
-  border-color: var(--accent-soft);
+  outline: none;
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
+
+.statusBar {
+  min-height: 1.65rem;
+  min-width: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
 }
 
 .statusText,
 .errorText {
   margin: 0;
   min-width: 0;
-  padding: 0.45rem 0.9rem 0.5rem;
-  font-size: 0.82rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.7rem;
+  font-size: var(--font-size-xs);
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.statusBar {
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-  border-top: 1px solid transparent;
-}
-
-.statusBar:has(p) {
-  border-top-color: var(--border-soft);
+.statusText::before,
+.errorText::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: var(--radius-pill);
+  flex: 0 0 auto;
 }
 
 .statusText {
-  color: var(--success);
+  color: var(--text-muted);
+}
+
+.statusText::before {
+  background: var(--success);
 }
 
 .errorText {
-  color: var(--error);
+  color: var(--error-strong);
+}
+
+.errorText::before {
+  background: var(--error);
 }

@@ -8,6 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WeaverConfirmDialog } from './components/WeaverConfirmDialog';
 import { projectCards, selectDefaultWeaveCardUid, selectFocusedCard } from './lib/cardProjection';
 import { formatCardRestoreStatus } from './lib/crashpadStatus';
+import { DEFAULT_DRAFT_CONTENT, DEFAULT_DRAFT_PATH } from './lib/draftDefaults';
 import { computeLayoutStyle } from './lib/layout';
 import { useCardDetailState } from './hooks/useCardDetailState';
 import { useCrashpadActions } from './hooks/useCrashpadActions';
@@ -35,17 +36,6 @@ import { useWeaverController } from './hooks/useWeaverController';
 import { useVaultState } from './state/VaultContext';
 import { useEditorState } from './state/EditorContext';
 import { useUIState } from './state/UIContext';
-
-// ── Constants / helpers that don't belong in state ───────────────────────────
-
-const DEFAULT_DRAFT_PATH = 'Inbox/Stage-2-scratch.md';
-const DEFAULT_DRAFT_CONTENT = [
-  '# Stage 2 Scratch Note',
-  '',
-  'CrashWeaver vault write validation note.',
-  '',
-  '#stage2 #vault',
-].join('\n');
 
 export default function App() {
   // ── Consume shared state from contexts (replaces 47 useState calls) ──────
@@ -703,6 +693,8 @@ export default function App() {
         activeMarkdownViewState={activeMarkdownViewState}
         onMarkdownTabViewStateChange={updateMarkdownTabViewState}
         onOpenNote={handleOpenNote}
+        onOpenVault={() => void handleSelectVault()}
+        onOpenSettings={openSettings}
       />
 
       <div

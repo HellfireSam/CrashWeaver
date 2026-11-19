@@ -17,20 +17,12 @@ import {
 } from 'react';
 import type { VaultNoteDocument } from '../../electron/vault-contract';
 import type { CardScope } from '../lib/cards';
+import { DEFAULT_DRAFT_CONTENT, DEFAULT_DRAFT_PATH } from '../lib/draftDefaults';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type EditorDocumentKind = 'markdown' | 'crashpad' | 'card' | 'review';
 export type MarkdownViewMode = 'source' | 'preview' | 'cards';
-
-const DEFAULT_DRAFT_PATH = 'Inbox/Stage-2-scratch.md';
-const DEFAULT_DRAFT_CONTENT = [
-  '# Stage 2 Scratch Note',
-  '',
-  'CrashWeaver vault write validation note.',
-  '',
-  '#stage2 #vault',
-].join('\n');
 
 export interface EditorState {
   activeEditorKind: EditorDocumentKind;

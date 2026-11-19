@@ -11,6 +11,7 @@ import { useCrashpadCardEditor } from '../hooks/useCrashpadCardEditor';
 import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll';
 import { useStoredScrollSync } from '../hooks/useStoredScrollSync';
 import { renderMarkdownPreview } from '../lib/markdownPreview';
+import { AppIcon } from './AppIcon';
 
 type CrashpadWorkspaceProps = {
   activeCrashpad: CrashpadDocument | null;
@@ -539,7 +540,7 @@ export function CrashpadWorkspace({
                                     aria-label={`Remove QnA pair ${index + 1}`}
                                     onClick={() => removeQaPair(index)}
                                   >
-                                    ×
+                                    <AppIcon name="x" />
                                   </button>
                                 </li>
                               ))}

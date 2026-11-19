@@ -10,9 +10,11 @@ import { renderMarkdownPreview } from '../lib/markdownPreview';
 import { useEditorState } from '../state/EditorContext';
 import { useUIState } from '../state/UIContext';
 import { useVaultState } from '../state/VaultContext';
+import { AppIcon } from './AppIcon';
 import { CardsWorkspace } from './CardsWorkspace';
 import { CrashpadWorkspace } from './CrashpadWorkspace';
 import { ReviewWorkspace } from './ReviewWorkspace';
+import { WelcomeSurface } from './WelcomeSurface';
 
 type EditorTabsBinding = {
   displayTabs: string[];
@@ -81,6 +83,8 @@ type EditorSurfaceProps = {
     nextState: Partial<MarkdownTabViewState>,
   ) => void;
   onOpenNote: (filePath: string) => Promise<void>;
+  onOpenVault: () => void;
+  onOpenSettings: () => void;
 };
 
 /**
@@ -107,6 +111,8 @@ export function EditorSurface({
   activeMarkdownViewState,
   onMarkdownTabViewStateChange,
   onOpenNote,
+  onOpenVault,
+  onOpenSettings,
 }: EditorSurfaceProps) {
   const {
     selectedNotePath,
@@ -116,6 +122,7 @@ export function EditorSurface({
     viewMode,
     cardScope,
     isSaving,
+    isPicking,
     statusMessage,
     errorMessage,
     setDraftPath,
@@ -155,6 +162,20 @@ export function EditorSurface({
   function handleRedo() {
     textareaRef.current?.focus();
     document.execCommand('redo');
+  }
+
+  // With no vault there is nothing to edit yet: show the welcome surface
+  // instead of an empty tab strip over a default draft.
+  if (!vaultPath) {
+    return (
+      <section className="editorPane" ref={editorPaneRef}>
+        <WelcomeSurface
+          onOpenVault={onOpenVault}
+          onOpenSettings={onOpenSettings}
+          isOpening={isPicking}
+        />
+      </section>
+    );
   }
 
   // A review session replaces the editor body: it has no tab, no view-mode bar
@@ -213,12 +234,13 @@ export function EditorSurface({
                     type="button"
                     className="editorTabClose"
                     title={`Close ${getFileName(tabPath)}`}
+                    aria-label={`Close ${getFileName(tabPath)}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       void tabs.onCloseTab(tabPath);
                     }}
                   >
-                    ×
+                    <AppIcon name="x" />
                   </button>
                 </div>
               );
@@ -278,7 +300,9 @@ export function EditorSurface({
                 value={draftPath}
                 onChange={(event) => setDraftPath(event.target.value)}
                 onFocus={() => setFocusedWindow('source-editor')}
-                placeholder="Inbox/Stage-2-scratch.md"
+                placeholder="Untitled.md"
+                aria-label="Note path to save to"
+                title="The path this note saves to. Saving to a new path creates a second note; it does not rename this one."
               />
               <div className="sourceActions">
                 <div className="editorActionWidget" aria-label="Editor actions">
@@ -286,26 +310,29 @@ export function EditorSurface({
                     type="button"
                     className="editorIconButton"
                     title="Undo (Ctrl+Z)"
+                    aria-label="Undo"
                     onClick={handleUndo}
                   >
-                    ↺
+                    <AppIcon name="undo" />
                   </button>
                   <button
                     type="button"
                     className="editorIconButton"
                     title="Redo (Ctrl+Shift+Z)"
+                    aria-label="Redo"
                     onClick={handleRedo}
                   >
-                    ↻
+                    <AppIcon name="redo" />
                   </button>
                   <button
                     type="button"
                     className="editorIconButton"
                     title="Save (Ctrl+S)"
+                    aria-label="Save note"
                     onClick={() => void noteSave.saveCurrentNote()}
                     disabled={!vaultPath || isSaving}
                   >
-                    ⤓
+                    <AppIcon name="save" />
                   </button>
                 </div>
                 <button
