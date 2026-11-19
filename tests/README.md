@@ -57,10 +57,12 @@ it where a ticket does.
   the `event.sender.send` and `webContents.send` calls — is not observable in a Node test, and a
   wrong _declared_ key selection at a call site still compiles; no test can see a channel the code
   never passes.
-- **Renderer UI layer.** The pure helpers in `src/lib/` and two components are covered:
-  `src/components/WeaverCardChip.test.tsx` asserts the card chip's rendered title, and
+- **Renderer UI layer.** The pure helpers in `src/lib/` and three components are covered:
+  `src/components/WeaverCardChip.test.tsx` asserts the card chip's rendered title,
   `src/components/ReviewWorkspace.test.tsx` renders the review surface and asserts its card,
-  per-response intervals, click and keyboard ratings, and completion state; both run under jsdom
+  per-response intervals, click and keyboard ratings, and completion state, and
+  `src/components/WelcomeSurface.test.tsx` asserts the no-vault surface's copy, its two actions and
+  its choosing-folder state; all three run under jsdom
   (`// @vitest-environment jsdom`). The rest of `src/components/**`, `src/App.tsx`, `src/hooks/**`
   and `src/state/**` have no tests, including `src/hooks/useReviewSession.ts`, whose queue and
   preview/rating orchestration is exercised only through the review main-process suites and by
