@@ -571,8 +571,25 @@ The grilling frontier is otherwise **empty**. In order:
      whole-note reference that the next sync removes, leaving the card orphaned). The current
      acceptance behaviour is pinned by three separate `weavePlanSchema` characterisation tests;
      `insert-boundary-pair` still requires its markers. No schema or prompt behaviour changed.
-   - **Frontier is now #24 only** (card titles may contain spaces, unblocked feature work once the
-     rework programme finished). **#1** stays open until #24 closes.
+   - ~~#24 card titles may contain spaces~~ — **DONE** in `b4d7945`, corrected in `ff0cb28`:
+     `electron/cardUid.ts` is the one dependency-free grammar (the Windows-filename-safe alphabet
+     `[A-Za-z0-9_\- ]`, the 100-character cap after trimming, trim/normalise, `assertValidCardUid`,
+     `isValidCardUid` and `areCardUidsEqual`). The card store and `cardParser` both read it; the
+     parser builds its boundary patterns from the alphabet, trims the captured title and validates
+     it with `isValidCardUid`, so the two accept exactly the same titles. Identity folds ASCII
+     case: `createCard` and `renameCard` answer duplicates through `findCardByFoldedUid` (which
+     reads a matched card through the guarded reader, so a corrupt match fails closed and cannot
+     spawn a case variant), and `renameCardDocument` performs a case-only rename through a
+     backup/temp sequence rather than write-then-unlink, which would destroy the card on
+     Windows/macOS. Renderer: attach/duplicate checks fold case and echo the stored casing, both
+     title inputs cap at 100 and show a spaced placeholder, and the cards rail and crashpad history
+     keep the typed casing through `.detailUid`. Docs, prompts and tests were updated; the grammar
+     gained `cardUid.test.ts` and the parser `cardParser.test.ts`. Boundary pairing stays exact-case
+     and the residual edge is recorded as a known limitation in boundary-format, card-schema,
+     data-model and tests/README. Verified in the headless harness: create, display and case-only
+     rename of `Three-way handshake` through the real UI.
+   - **The frontier is empty.** #24 was the last open ticket in the rework programme, and **#1
+     closes with it**.
 
 Each ticket landed so far went through the two-axis `/code-review` before being recorded, and its
 findings were corrected first. For #10 and #9 that meant bringing the commit subjects and types
@@ -637,14 +654,22 @@ claim with no owner. For #25/#4 the spec axis caught the real regression describ
 read-tolerant card listing now feeding unaddressable UIDs into the guarded builder — and the
 standards axis caught overclaims in the data model ("no second copy of the rule"; the listing bypass)
 and in ADR-0002 (`end_line` is 3, not the note's line count; the prompts' create-note example does
-not emit a companion insert). Corrections are the commit that follows `a688ec6`.
+not emit a companion insert). Corrections are the commit that follows `a688ec6`. For #24 the standards axis caught an
+untracked renderer test gap, the test-only `CARD_UID_PATTERN` export and the literal `100` repeated
+in the renderer inputs; the spec axis caught the parser's missing cap validation (a long boundary
+broke note open instead of reporting a diagnostic), the fail-open folded duplicate check through the
+tolerant listing, the missing prompt assertion and exact-case boundary pairing. All but the
+deliberately out-of-scope pairing fold were corrected in `ff0cb28`; the fold is recorded as a known
+limitation, and the `CARD_UID_PATTERN` export is required by #24's own spec.
 
 **Branch state:** the #15/#16/#17/#22 batch is on `origin/main` at `d803258` with CI green; the
 #18/#19/#20 batch (`01d43dd`, `2f3e236`, `1429390`) and its review corrections (`8ed725f`,
 `daaa462`, `7c39167`, `1673db9`) are on `origin/main` too. The newest commits are the
 #21/#26/#23/#25 batch (`029d33d`, `5d8f105`, `9e126b8`, `fac9dfe`) with its review corrections
-(`846744a`, `b16e381`, `84ef564`, `17a996a`, `e1e3e51`), the #4 decision (`a688ec6`), the
-#25/#4 review corrections and this record update; they are pushed together as part of this session.
+(`846744a`, `b16e381`, `84ef564`, `17a996a`, `e1e3e51`), the #4 decision (`a688ec6`), the #25/#4
+corrections (`9c9a38e`, `08a9b66`), the #27 boot fix (`ceabe19`), the #24 feature (`b4d7945`) with
+its review corrections (`ff0cb28`) and this record update; they are pushed together as part of this
+session. The rework programme is complete: #1 closes with #24.
 
 ## 8. How to resume
 
@@ -660,10 +685,10 @@ In a new session, say:
 
 **Durability:** this file is committed to the local clone's git history, so it survives working-tree
 changes. It does **not** survive loss of this workspace or a fresh clone elsewhere — only a `git push`
-would do that. `gh` is authenticated (Q19 cleared) and the spec plus all 21 tickets live on GitHub, so
-the decisions are no longer only local. The #15/#16/#17/#22 batch is on `origin/main` at `d803258`
-with CI green; the #18/#19/#20 batch is on `origin/main` too, and the #21/#26/#23/#25 batch, its
-review corrections and this record update are pushed together with this record.
+would do that. `gh` is authenticated (Q19 cleared) and the spec plus every ticket live on GitHub, so
+the decisions are no longer only local. The whole rework, including #24 and its review corrections,
+is pushed to `origin/main` with this record; #1 is closed, so there is no frontier to resume from
+this file's rework record — later sessions start from the roadmap and the issue tracker.
 
 ## 9. Post-implementation owner decisions (2026-10-11)
 
@@ -688,8 +713,8 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 | C2 | Window geometry is fixed and not persisted; documented as current behaviour. |
 | C3 | Crashpad creation by name is intended alongside rename and delete; the daily crashpad remains the only path today. |
 
-Everything else is unchanged: the closed tickets, the frontier (**#24** only; **#1** stays open
-until it closes), and the pushed state of the newest commits.
+Everything else is unchanged: the closed tickets, the completed frontier (**#24** was the last open
+ticket, and **#1** closed with it), and the pushed state of the newest commits.
 
 ## 10. Headless launch harness (added 2026-11-19)
 
@@ -707,3 +732,11 @@ and documents the trade-off in `docs/architecture/process-model.md`. The native 
 vault/card-store pickers are **not** automated by the harness yet; driving them with `xdotool` was
 attempted and is flaky, and patching `dialog.showOpenDialog` through Electron's main-process
 inspector is the recommended next step if a test needs a vault opened.
+
+After #24 closed, the harness verified its UI requirements end to end. With the folder picker
+patched through the main-process inspector (option 2 above) and the fixture vault copied outside the
+repo, the real UI created `Three-way handshake`, wrote the verbatim `<uid>.json` file and body,
+showed the inputs' `maxLength` and spaced placeholder, displayed the typed casing in `.detailUid`
+labels, and renamed `My Card` → `my card` leaving exactly one file whose filename, body, crashpad
+entry and labels all used the new casing. The picker patch is the recommended route and needed no
+production-code change.
