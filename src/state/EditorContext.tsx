@@ -20,7 +20,7 @@ import type { CardScope } from '../lib/cards';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type EditorDocumentKind = 'markdown' | 'crashpad' | 'card';
+export type EditorDocumentKind = 'markdown' | 'crashpad' | 'card' | 'review';
 export type MarkdownViewMode = 'source' | 'preview' | 'cards';
 
 const DEFAULT_DRAFT_PATH = 'Inbox/Stage-2-scratch.md';

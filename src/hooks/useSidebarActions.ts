@@ -3,17 +3,9 @@ import type { Dispatch, SetStateAction } from 'react';
 
 type UseSidebarActionsOptions = {
   setExpandedFolders: Dispatch<SetStateAction<Record<string, boolean>>>;
-  setActiveWidgetTool: (tool: 'explorer' | 'daily-crashpad' | 'extensions') => void;
-  setStatusMessage: (message: string | null) => void;
-  setErrorMessage: (message: string | null) => void;
 };
 
-export function useSidebarActions({
-  setExpandedFolders,
-  setActiveWidgetTool,
-  setStatusMessage,
-  setErrorMessage,
-}: UseSidebarActionsOptions) {
+export function useSidebarActions({ setExpandedFolders }: UseSidebarActionsOptions) {
   const handleToggleFolder = useCallback(
     (folderPath: string) => {
       setExpandedFolders((previous) => ({
@@ -24,14 +16,7 @@ export function useSidebarActions({
     [setExpandedFolders],
   );
 
-  const handleOpenExtensionsPlaceholder = useCallback(() => {
-    setActiveWidgetTool('extensions');
-    setStatusMessage('Widget extensions will be added here in a later stage.');
-    setErrorMessage(null);
-  }, [setActiveWidgetTool, setErrorMessage, setStatusMessage]);
-
   return {
     handleToggleFolder,
-    handleOpenExtensionsPlaceholder,
   };
 }

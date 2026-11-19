@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import type { DragEvent, FormEvent, MutableRefObject, RefObject } from 'react';
 import type { CardDocument, CardRestoreMode } from '../../electron/vault-contract';
 import type { CrashpadTabViewState, MarkdownTabViewState } from '../hooks/useEditorTabViewState';
+import type { ReviewSession } from '../hooks/useReviewSession';
 import { useStoredScrollSync } from '../hooks/useStoredScrollSync';
 import type { CardDetailTab, CardViewRecord } from '../lib/cards';
 import { getFileName } from '../lib/cards';
@@ -11,6 +12,7 @@ import { useUIState } from '../state/UIContext';
 import { useVaultState } from '../state/VaultContext';
 import { CardsWorkspace } from './CardsWorkspace';
 import { CrashpadWorkspace } from './CrashpadWorkspace';
+import { ReviewWorkspace } from './ReviewWorkspace';
 
 type EditorTabsBinding = {
   displayTabs: string[];
@@ -65,8 +67,10 @@ type EditorSurfaceProps = {
   isMarkdownEditor: boolean;
   isCrashpadEditor: boolean;
   isCardEditor: boolean;
+  isReviewEditor: boolean;
   visibleCards: CardViewRecord[];
   focusedCard: CardViewRecord | null;
+  review: ReviewSession;
   tabs: EditorTabsBinding;
   noteSave: NoteSaveBinding;
   cardDetail: CardDetailBinding;
@@ -92,8 +96,10 @@ export function EditorSurface({
   isMarkdownEditor,
   isCrashpadEditor,
   isCardEditor,
+  isReviewEditor,
   visibleCards,
   focusedCard,
+  review,
   tabs,
   noteSave,
   cardDetail,
@@ -149,6 +155,28 @@ export function EditorSurface({
   function handleRedo() {
     textareaRef.current?.focus();
     document.execCommand('redo');
+  }
+
+  // A review session replaces the editor body: it has no tab, no view-mode bar
+  // and no note draft, so it renders its own canvas rather than threading
+  // through every markdown/cards branch below.
+  if (isReviewEditor) {
+    return (
+      <section className="editorPane" ref={editorPaneRef}>
+        <div className="editorCanvas">
+          <div className="viewModeBar" aria-hidden="true" />
+          <ReviewWorkspace
+            review={review}
+            vaultPath={vaultPath}
+            imageDirectories={imageDirectories}
+          />
+          <div className="statusBar">
+            {statusMessage ? <p className="statusText">{statusMessage}</p> : null}
+            {errorMessage ? <p className="errorText">{errorMessage}</p> : null}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (

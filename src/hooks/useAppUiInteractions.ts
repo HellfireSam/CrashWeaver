@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+import type { WidgetTool } from '../state/UIContext';
 
 type UseAppUiInteractionsOptions = {
   isSettingsOpenRef: MutableRefObject<boolean>;
@@ -10,7 +11,7 @@ type UseAppUiInteractionsOptions = {
   setIsSettingsOpen: (open: boolean) => void;
   setIsSidebarVisible: Dispatch<SetStateAction<boolean>>;
   setActiveSidebarTab: (tab: 'explorer' | 'search') => void;
-  setActiveWidgetTool: (tool: 'explorer' | 'daily-crashpad' | 'extensions') => void;
+  setActiveWidgetTool: (tool: WidgetTool) => void;
   focusSettings: () => void;
   focusExplorer: () => void;
 };

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { CrashpadDocument } from '../../electron/vault-contract';
 import { getErrorMessage } from '../lib/errorUtils';
+import type { WidgetTool } from '../state/UIContext';
 
 function getTodayDateStamp() {
   const today = new Date();
@@ -22,7 +23,7 @@ type UseDailyCrashpadActionsOptions = {
   ) => Promise<CrashpadDocument | null>;
   openCrashpadInEditor: (rootPath: string, crashpadId: string) => Promise<CrashpadDocument>;
   setIsReading: (reading: boolean) => void;
-  setActiveWidgetTool: (tool: 'explorer' | 'daily-crashpad' | 'extensions') => void;
+  setActiveWidgetTool: (tool: WidgetTool) => void;
   setFocusedWindow: (window: 'explorer' | 'cards-list' | 'card-detail' | 'settings') => void;
   setStatusMessage: (message: string | null) => void;
   setErrorMessage: (message: string | null) => void;

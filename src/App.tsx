@@ -28,6 +28,7 @@ import { useVaultLoadActions } from './hooks/useVaultLoadActions';
 import { useVaultLifecycleActions } from './hooks/useVaultLifecycleActions';
 import { useEditorTabs } from './hooks/useEditorTabs';
 import { usePaneLayout } from './hooks/usePaneLayout';
+import { useReviewSession } from './hooks/useReviewSession';
 import { useWeaverController } from './hooks/useWeaverController';
 
 // ── Shared state contexts (replaces 47 local useState calls) ─────────────────
@@ -111,6 +112,7 @@ export default function App() {
     isSettingsOpen,
     openFirstNoteOnVaultOpen,
     showHiddenEntries,
+    activeWidgetTool,
     focusedCardUid,
     focusedWindow,
     crashpadPast,
@@ -459,11 +461,8 @@ export default function App() {
     openNoteInEditor,
   });
 
-  const { handleToggleFolder, handleOpenExtensionsPlaceholder } = useSidebarActions({
+  const { handleToggleFolder } = useSidebarActions({
     setExpandedFolders,
-    setActiveWidgetTool,
-    setStatusMessage,
-    setErrorMessage,
   });
 
   const { saveCurrentNote, handleSaveNote, handleDiscard } = useNoteSaveActions({
@@ -525,6 +524,27 @@ export default function App() {
     refreshCrashpadCatalog,
   });
 
+  const review = useReviewSession({
+    vaultPath,
+    allCards,
+    activeEditorKind,
+    activeWidgetTool,
+    setAllCards,
+    setActiveEditorKind,
+    setActiveWidgetTool,
+    setStatusMessage,
+    setErrorMessage,
+  });
+
+  const handleOpenReview = () => {
+    if (hasUnsavedChanges) {
+      setStatusMessage('Save or discard current changes before starting a review.');
+      return;
+    }
+
+    review.startReview();
+  };
+
   // ── External vault change subscription (chokidar → renderer) ───────────
 
   useEffect(() => {
@@ -573,7 +593,7 @@ export default function App() {
       onOpenSettings={openSettings}
       onToggleExplorerPane={handleToggleExplorerPane}
       onOpenDailyCrashpad={() => void handleOpenDailyCrashpad()}
-      onOpenExtensionsPlaceholder={handleOpenExtensionsPlaceholder}
+      onOpenReview={handleOpenReview}
       overlays={
         <>
           {weaver.pendingDestructiveOps ? (
@@ -633,8 +653,10 @@ export default function App() {
         isMarkdownEditor={isMarkdownEditor}
         isCrashpadEditor={isCrashpadEditor}
         isCardEditor={isCardEditor}
+        isReviewEditor={activeEditorKind === 'review' && review.isActive}
         visibleCards={visibleCards}
         focusedCard={focusedCard}
+        review={review}
         tabs={{
           displayTabs,
           currentEditorPath,

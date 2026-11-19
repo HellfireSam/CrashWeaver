@@ -9,7 +9,7 @@ type AppChromeProps = {
   onOpenSettings: () => void;
   onToggleExplorerPane: () => void;
   onOpenDailyCrashpad: () => void;
-  onOpenExtensionsPlaceholder: () => void;
+  onOpenReview: () => void;
   /** The layout grid's surfaces: sidebar, splitters, editor and inspector. */
   children: ReactNode;
   /** Dialogs rendered inside the app shell after the layout grid. */
@@ -27,7 +27,7 @@ export function AppChrome({
   onOpenSettings,
   onToggleExplorerPane,
   onOpenDailyCrashpad,
-  onOpenExtensionsPlaceholder,
+  onOpenReview,
   children,
   overlays,
 }: AppChromeProps) {
@@ -71,11 +71,12 @@ export function AppChrome({
           </button>
           <button
             type="button"
-            className={`widgetButton ${activeWidgetTool === 'extensions' ? 'active' : ''}`}
-            title="Extensions placeholder"
-            onClick={onOpenExtensionsPlaceholder}
+            className={`widgetButton ${activeWidgetTool === 'review' ? 'active' : ''}`}
+            title="Review due cards"
+            onClick={onOpenReview}
+            disabled={!vaultPath}
           >
-            +
+            RV
           </button>
         </aside>
 

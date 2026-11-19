@@ -1,0 +1,120 @@
+/* Card review session */
+.reviewWorkspace {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 1rem 1.15rem 1.25rem;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.reviewHeader > * {
+  min-width: 0;
+}
+
+.reviewProgress {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.reviewComplete {
+  margin-top: 1rem;
+}
+
+.reviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+
+.reviewCardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.reviewCardHeader h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.reviewCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.reviewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reviewSection .cardContentMarkdown {
+  max-height: none;
+}
+
+.reviewRatingBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.reviewRatingButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.reviewRatingButton:hover:not(:disabled) {
+  border-color: var(--accent-soft);
+}
+
+.reviewRatingButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.reviewRatingLabel {
+  font-weight: 600;
+}
+
+.reviewRatingInterval {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.reviewRatingKey {
+  color: var(--text-subtle);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .reviewRatingBar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

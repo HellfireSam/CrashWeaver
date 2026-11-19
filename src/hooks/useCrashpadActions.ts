@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import type { EditorDocumentKind } from '../state/EditorContext';
 import type {
   CrashpadDeletePreferences,
   CrashpadDocument,
@@ -36,7 +37,7 @@ type UseCrashpadActionsOptions = {
   setCrashpadSummaries: Dispatch<SetStateAction<CrashpadSummary[]>>;
   setCrashpadDeletePreferences: Dispatch<SetStateAction<CrashpadDeletePreferences>>;
   setActiveCrashpad: Dispatch<SetStateAction<CrashpadDocument | null>>;
-  setActiveEditorKind: Dispatch<SetStateAction<'markdown' | 'crashpad' | 'card'>>;
+  setActiveEditorKind: Dispatch<SetStateAction<EditorDocumentKind>>;
   setActiveCardFilePath: Dispatch<SetStateAction<string>>;
   setActiveCardFileUid: Dispatch<SetStateAction<string | null>>;
   setSelectedExplorerPath: Dispatch<SetStateAction<string>>;
