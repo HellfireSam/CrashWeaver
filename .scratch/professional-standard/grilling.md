@@ -690,3 +690,20 @@ for each lives in `.scratch/professional-standard/docs-open-questions.md`; the d
 
 Everything else is unchanged: the closed tickets, the frontier (**#24** only; **#1** stays open
 until it closes), and the pushed state of the newest commits.
+
+## 10. Headless launch harness (added 2026-11-19)
+
+The Electron app can now be launched in this container for real UI testing:
+`/root/crashweaver-headless/` holds `launch.sh` (Xvfb `:99` + openbox + built app on
+`--remote-debugging-port=9222`), `probe.mjs`, `screenshot.mjs`, `eval.mjs` (CDP) and `stop.sh`;
+see its `README.md`. Setup needs the Debian GTK/NSS libraries plus `xvfb`, `openbox`, `xdotool`
+and `imagemagick`; the container runs as root, so Electron gets `--no-sandbox --disable-gpu
+--disable-dev-shm-usage`.
+
+Launching it immediately found **#27**: the app booted to the error boundary because Electron
+20+ sandboxes the renderer by default and a sandboxed preload cannot `require('./ipcChannels')`,
+which #20 introduced. `ceabe19` sets `webPreferences.sandbox: false` (contextIsolation stays on)
+and documents the trade-off in `docs/architecture/process-model.md`. The native GTK
+vault/card-store pickers are **not** automated by the harness yet; driving them with `xdotool` was
+attempted and is flaky, and patching `dialog.showOpenDialog` through Electron's main-process
+inspector is the recommended next step if a test needs a vault opened.
