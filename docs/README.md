@@ -35,6 +35,8 @@ only; everything superseded lives in [the archive](./archive/README.md).
 - [Card insert templates](./reference/card-insert-templates.md)
 - [Review scheduling](./reference/review-scheduling.md) — the card's scheduling state, the four
   responses, due dates and the review queue
+- [Interface and visual system](./reference/interface.md) — the shell, design tokens, iconography
+  and where each stylesheet lives
 
 ## Guides
 

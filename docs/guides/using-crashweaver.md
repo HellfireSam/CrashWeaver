@@ -10,10 +10,13 @@ the [weave pipeline](../architecture/weave-pipeline.md) for what happens behind 
 
 ## 1. Open a vault
 
-1. Click the gear button (⚙, tooltip "Open settings") in the top-right utility strip.
-2. In **Vault Settings**, under **Vault actions**, click **Open Vault** (it reads **Change Vault**
-   once a vault is loaded) and pick the folder.
-3. Read the status bar below the editor: `Vault opened and .crashweaver/index.json synchronized.`
+With no vault open the editor pane shows the **welcome surface**: the app's one primary action,
+**Open a vault**, plus a secondary **Settings** button and a one-line explanation of the app.
+
+1. Click **Open a vault** on the welcome surface, or the settings button (tooltip "Open settings")
+   in the title bar's top-right and then **Open Vault** under **Vault actions** (it reads **Change
+   Vault** once a vault is loaded); pick the folder.
+2. Read the status bar below the editor: `Vault opened and .crashweaver/index.json synchronized.`
    followed by a rebuild summary such as
    `Card rebuild: 42 notes, 3 card updates, 0 stale references removed, 1 diagnostics.`
 
@@ -29,25 +32,28 @@ Directories** and **Use Vault Root Only** configure where cards and images live.
 
 ## 2. The shell
 
-The window is a widget rail, a left sidebar, the editor surface and the right panel.
+The window is a title bar, a widget rail, a left sidebar, the editor surface and the right panel.
+Every control is an icon with a tooltip and an accessible name.
 
-| Region                 | What it shows                                                                                                                                           | Collapse / resize                                                                        |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Widget rail (far left) | `☰` "Toggle explorer pane", `CP` "Open daily Crashpad", `RV` "Review due cards"                                                                        | `☰` toggles the sidebar; `CP` and `RV` are disabled until a vault is open               |
-| Sidebar                | Tabs **Explorer** and **Vault**                                                                                                                         | `☰`, or drag the splitter whose accessible name is `Resize explorer pane`               |
-| Editor pane            | Tab strip, view-mode tabs, active surface                                                                                                               | Drag either splitter                                                                     |
-| Right Panel            | **Info** and **LLM** toggle buttons, context sub-panel above the Weaver panel, and the top-right strip's `≣` "Toggle right panel" / `⚙` "Open settings" | `≣`, or the `×` on a sub-panel; settings closes on **Close**, Escape, or a click outside |
+| Region                 | What it shows                                                                                                             | Collapse / resize                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Title bar (top)        | The brand, the open vault's alias, and **Toggle right panel** / **Open settings**                                         | Settings closes on **Close**, Escape, or a click outside                              |
+| Widget rail (far left) | **Toggle explorer pane**, **Open daily Crashpad** (layers icon), **Review due cards** (repeat icon)                       | The pane toggle toggles the sidebar; the other two are disabled until a vault is open |
+| Sidebar                | Tabs **Explorer** and **Vault**                                                                                           | The pane toggle, or drag the splitter whose accessible name is `Resize explorer pane` |
+| Editor pane            | Tab strip, view-mode tabs, active surface                                                                                 | Drag either splitter                                                                  |
+| Right Panel            | **Info** and **LLM** toggle buttons, context sub-panel above the Weaver panel, and the title bar's **Toggle right panel** | **Toggle right panel**, or the close icon on a sub-panel                              |
 
-The **Explorer** tab (`Files`, `ExplorerTree`) is a virtualized tree: folders expand with `▸`/`▾`, files open with a
-click, and the selected row is highlighted. Notes are listed without `.md`, crashpads without
-`.crashpad.json`, cards by UID. `.crashweaver/` is always shown; other dot-files appear only when
-**Reveal hidden files and directories in the tree** is enabled. With no vault loaded it reads
+The **Explorer** tab (`Files`, `ExplorerTree`) is a virtualized tree: folders expand with a chevron
+icon, files open with a click, and the selected row is highlighted with an accent bar. Notes are
+listed without `.md`, crashpads without `.crashpad.json`, cards by UID. `.crashweaver/` is always
+shown; other dot-files appear only when **Reveal hidden files and directories in the tree** is
+enabled. With no vault loaded it reads
 `Select a vault to load markdown notes and crashpad files.` The **Vault** tab (`Vault Info`)
 summarizes **Path**, **Card store**, **Markdown files**, **Crashpads**, **Indexed entries** and
 **Last rebuild**. The **Info** half of the right panel adapts to focus and resizes against the
 Weaver half with the splitter whose accessible name is `Resize right panel sections`; the Context
-sub-panel's `×` is disabled while it is the last one open, while the Weaver panel's close control
-has no disabled state and quietly does nothing.
+sub-panel's close icon is disabled while it is the last one open, while the Weaver panel's close
+control has no disabled state and quietly does nothing.
 
 ## 3. Notes: open, edit, save, preview
 
@@ -55,13 +61,13 @@ has no disabled state and quietly does nothing.
 2. Choose **Source**, **Preview** or **Cards** with the view-mode tabs above the editor. In
    **Source**, type into the editor (`Write markdown...`), or change the path field at the top to
    save the draft elsewhere — a path that does not exist yet is created on save.
-3. Save with the `⤓` button (tooltip "Save (Ctrl+S)") or **Ctrl+S** / **Cmd+S**; the status bar
+3. Save with the save button (tooltip "Save (Ctrl+S)") or **Ctrl+S** / **Cmd+S**; the status bar
    reports `Saved <path> and refreshed .crashweaver/index.json. Card sync: x created, y updated,
 z removed.` **Reset** (tooltip "Discard changes") drops the draft and restores the last saved
    content.
 
-Tabs accumulate as you open files: a dirty tab shows `*`, `×` closes it (tooltip `Close <name>`),
-and tabs can be dragged into a new order. CrashWeaver refuses to lose work — switching dirty notes
+Tabs accumulate as you open files: a dirty tab shows an accent dot, its close icon appears on
+hover (tooltip `Close <name>`), and tabs can be dragged into a new order. CrashWeaver refuses to lose work — switching dirty notes
 or tabs reports `Save or discard current changes before switching notes or tabs.`, closing the active
 dirty tab reports `... before closing the active tab.`, and **Reset** stays disabled until there is
 something to discard.
@@ -87,8 +93,8 @@ card store; a deleted card's snapshot embeds the full card in the crashpad file 
 
 ### Open or create a crashpad
 
-1. Open a crashpad file from the Explorer tree, or click `CP` in the widget rail (tooltip "Open
-   daily Crashpad"). `CP` opens today's **daily crashpad** at
+1. Open a crashpad file from the Explorer tree, or click the layers icon in the widget rail
+   (tooltip "Open daily Crashpad"). It opens today's **daily crashpad** at
    `.crashweaver/crashpads/<YYYY-MM-DD>.crashpad.json`, creating it if needed, and reports
    `Loaded daily crashpad <YYYY-MM-DD>.` The sidebar's **Vault** tab shows a crashpad count; the
    crashpad files themselves are listed in the Explorer tree and open from there.
@@ -157,9 +163,10 @@ The Weaver lives in the right panel's **LLM** sub-panel. It needs an open crashp
 card; the focused card is the one it works from (otherwise the first card in the crashpad), and its
 chip shows the card's full title.
 
-1. The header shows the provider, or a `Demo Mode` badge when no OpenRouter key is configured — the
-   offline stub provider still generates plans — and an inline dot reading `Checking…` or
-   `Unavailable`.
+1. The header shows the provider with an inline status dot, or a `Demo Mode` badge when no
+   OpenRouter key is configured — the offline stub provider still generates plans. The dot reads
+   `Not connected` until a crashpad is open and the provider check has run, then `Checking…`,
+   `openrouter` or `Unavailable`.
 2. Pick a model with the model button (tooltip `Model: <name>`): search with `Search models`, choose
    from the featured list or expand **Other Models**, and use the gear to open `openrouter.ai/keys`.
 3. Pick a workflow with the workflow button (tooltip `Workflow: <name>`): **Guided Insert** ("Insert
@@ -179,20 +186,21 @@ Weaver session in the right panel.`
 
 While it runs, **Live Progress** (`WeaverProgressFeed`) streams the run: `Thinking`, tool steps such as `Read full note` or
 `Search notes` with their target, `Repair: <type> (attempt n)`, `Validating…`, and finally
-`Done — N ops · Mms`, under a header showing the model and the tool-call budget. Tool steps expand
-with **Tool arguments**, the feed collapses with `−` / `＋`, and problems appear as chips such as
-`Reads exhausted` or `Tool args invalid`. The finished plan also carries the run as a **ReAct trace**
-— a step timeline (`N steps`, or `✨ Done — N ops · Mms`) expandable to replay those thoughts, tool
-calls and observations.
+`Done — N op(s) · Mms`, under a header showing the model and the tool-call budget. Each step is a
+small icon (sparkles for thinking, a wrench for a tool call, a check for validation). Tool steps
+expand with **Tool arguments**, the feed collapses with the minus/plus icon buttons, and problems
+appear as chips such as `Reads exhausted` or `Tool args invalid`. The finished plan also carries the
+run as a **ReAct trace** — a step timeline (`N steps`, or `Done — N op(s) · Mms`) expandable to
+replay those thoughts, tool calls and observations.
 
 The clock button (tooltip "Session history") opens past runs grouped into **Today**, **Yesterday**,
-**This Week** and **Older**, filterable with `Filter sessions…`. Each row shows `Guided` or
-`Intelligent`, the card, the intent, the model, `N ops · Mms` (or the error) and how long ago it ran;
-open one for its status, latency, **Thinking Steps (N)**, **Plan Summary**, **Operations (N)** and
+**This Week** and **Older**, filterable with `Filter sessions…`. Each row lays out the status icon,
+`Guided`/`Intelligent`, the time, the card, the intent, and `N op(s) · Mms` (or the error); open one
+for its status, latency, **Thinking Steps (N)**, **Plan Summary**, **Operations (N)** and
 **Raw Plan JSON**, then **Re-run with Same Settings**
-(`Re-loaded settings from session. Press Generate to re-run.`). The `🗑` on a row deletes that session
-and **Clear All Sessions** deletes them all, while `+` ("New session — clears current proposal")
-starts fresh (`Started a new Weaver session.`).
+(`Re-loaded settings from session. Press Generate to re-run.`). The trash icon on a row deletes that
+session and **Clear All Sessions** deletes them all, while the plus button ("New session — clears
+current proposal") starts fresh (`Started a new Weaver session.`).
 
 ### Budgets
 
@@ -216,11 +224,12 @@ note**, **Edit note content**, **Create vault note**, **Rename note**, **Move no
 
 1. Expand a row (`WeaverOperationItem`) with its chevron for the rationale and an inline preview (boundary insertion, a line
    diff for content edits, a new-note preview, an old-path → new-path arrow for renames and moves, a
-   `⚠` block for deletions), or click the row to open the unified diff overlay
+   warning block for deletions), or click the row to open the unified diff overlay
    (`WeaverUnifiedDiffModal`). The overlay reloads the target note and shows the whole file
    (`@@ full file diff @@`) with `+`/`−` counts, scrolled to the first change; close it with `×`
    ("Close diff view").
-2. Accept with `✓` ("Accept this change") or reject with `✕` ("Reject this change"); clicking again
+2. Accept with the check icon ("Accept this change") or reject with the cross icon ("Reject this
+   change"); clicking again
    clears the choice, and an applied row shows an **Applied** badge instead of buttons.
 3. Click **Apply accepted (N)** or **Apply all (except rejected)**; while it runs the button reads
    `Applying…`.
@@ -229,7 +238,7 @@ note**, **Edit note content**, **Create vault note**, **Rename note**, **Move no
    changes cannot be undone automatically." and that files and directories will be permanently
    renamed, moved or deleted, and requires `I understand these changes will modify my vault files
 (<kinds>)` before **Apply N changes** becomes clickable. **Cancel** abandons the apply.
-5. Read the result banner: `N applied, M failed` with `✓` or `⚠`, plus each failure's operation kind,
+5. Read the result banner: `N applied, M failed` with a check or warning icon, plus each failure's operation kind,
    target path and error message, and any warnings. A fully successful apply reports
    `Applied N Weaver operation(s) successfully.` and refreshes the vault, card catalog and crashpad
    catalog. Apply stops at the first failure: later operations come back as `Skipped due to previous
@@ -242,7 +251,7 @@ details.`
 note, and only the review loop writes them. [Review scheduling](../reference/review-scheduling.md)
 has the formulas.
 
-1. Click `RV` in the widget rail (tooltip **Review due cards**). If the open note has unsaved
+1. Click the repeat icon in the widget rail (tooltip **Review due cards**). If the open note has unsaved
    changes the app refuses with `Save or discard current changes before starting a review.`;
    otherwise the editor pane becomes the review session and the status bar reports
    `Reviewing N due cards.`
@@ -268,10 +277,11 @@ The status bar below the editor carries status and error messages; the crashpad 
 
 | Situation                                                              | What you see                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| No vault open                                                          | Explorer reads `Select a vault to load markdown notes and crashpad files.`; `CP` and `RV` are disabled; saving, refreshing and card-store actions report `Select a vault before ...` / `Open a vault before ...`; the Weaver panel says `Open a crashpad to start a Weaver session in the right panel.`                                                                                                                                                                                                                                                |
+| No vault open                                                          | The editor pane shows the welcome surface; Explorer reads `Select a vault to load markdown notes and crashpad files.`; the crashpad and review rail buttons are disabled; saving, refreshing and card-store actions report `Select a vault before ...` / `Open a vault before ...`; the Weaver panel says `Open a crashpad to start a Weaver session in the right panel.` and its status reads `Not connected`.                                                                                                                                        |
 | No crashpad or no card for a weave                                     | `Open an active crashpad before using Weaver.` or `Attach or focus a crashpad card before generating a Weaver proposal.`                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Missing target note during apply                                       | That operation fails with `Note not found: <path>`, later operations are skipped, and the failure is listed in the apply result                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Target text moved since the plan was generated                         | `Target text not found in note "<path>". The note may have been modified since the plan was generated.`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| The chosen model is unavailable from your region                       | `This model is not available from your region. Choose a different model in the Weaver model picker. (...)`                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | An operation would escape the vault                                    | `Path escapes vault root: <path>`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | An edit would break the boundary pairs                                 | The write is refused and the operation fails with `Boundary integrity check failed for <path>: [<code>] <message>`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | A heading named in an operation no longer exists                       | Not fatal: the insert falls back to the start or end of the note, and the apply result carries a warning such as `Heading "<h>" not found; appended to end of note.`                                                                                                                                                                                                                                                                                                                                                                                   |

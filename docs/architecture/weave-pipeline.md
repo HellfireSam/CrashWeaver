@@ -237,7 +237,7 @@ kinds and kinds the request may not emit, and requires a non-empty rationale, ta
 grammar when the operation is normalised, so a traversal UID is rejected before apply; `insert-boundary-pair` requires `cardUid` equal to the
 focused card, a valid placement, `headingText` for heading placements, `selectedText` for `after-selection`, and — via `assertBoundaryBlockIncludesCard` — the exact `%%CW_CARD_START uid:<uid>%%`
 and `%%CW_CARD_END uid:<uid>%%` markers; `create-note` requires the focused `cardUid` and, via `assertCreateNoteHasSubstantiveContent`, a trimmed length of at least 20 characters (leading and
-trailing whitespace is trimmed, internal whitespace counts; markers inside the content are optional and no longer injected — see [ADR-0002](../adr/0002-boundary-markers-optional-in-create-note.md) for that decision and the reference consequence); rename and move kinds require `targetPath` to equal `payload.toPath`
+trailing whitespace is trimmed, internal whitespace counts; markers inside the content are optional and no longer injected — see [ADR-0002](../adr/0002-boundary-markers-optional-in-create-note.md) for that decision and the reference consequence). The prompts require that content not repeat `payload.title` as a heading, because the apply handler writes that title as the note's first H1; rename and move kinds require `targetPath` to equal `payload.toPath`
 with valid source and destination paths of the right flavour; delete and create-directory payloads need a non-empty reason or purpose.
 
 **What happens on invalid model output.** Nothing reaches the vault. Inside the loop a failure throws in `makeValidateNode`, which routes it to schema repair with the validator's message when a
