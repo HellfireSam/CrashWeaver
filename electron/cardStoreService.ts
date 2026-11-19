@@ -2,10 +2,17 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { areCardUidsEqual, assertValidCardUid } from './cardUid';
+import {
+  CARD_EASE_FACTOR_DEFAULT,
+  CARD_EASE_FACTOR_MIN,
+  CARD_FAMILIARITY_MAX,
+} from './services/reviewScheduling';
+import { isCalendarDate } from './utils/calendarDate';
 import { getFsErrorCode } from './utils/fsErrors';
 import { writeJsonAtomically } from './utils/jsonFile';
 import type {
   CardDocument,
+  CardMetadata,
   CardNoteReference,
   CardQaPair,
   ParsedCrashCard,
@@ -15,6 +22,44 @@ function toStringArray(value: unknown) {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [];
+}
+
+/** The scheduling defaults every new card starts from. */
+function createDefaultCardMetadata(): CardMetadata {
+  return {
+    familiarity: 0,
+    next_review: null,
+    interval_days: 0,
+    ease_factor: CARD_EASE_FACTOR_DEFAULT,
+  };
+}
+
+function normalizeFamiliarity(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.min(CARD_FAMILIARITY_MAX, Math.max(0, Math.round(value)));
+}
+
+function normalizeNextReview(value: unknown) {
+  return typeof value === 'string' && isCalendarDate(value) ? value : null;
+}
+
+function normalizeIntervalDays(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.trunc(value));
+}
+
+function normalizeEaseFactor(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return CARD_EASE_FACTOR_DEFAULT;
+  }
+
+  return Math.max(CARD_EASE_FACTOR_MIN, Math.round(value * 100) / 100);
 }
 
 function toCardReferences(value: unknown): CardNoteReference[] {
@@ -52,10 +97,7 @@ function createDefaultCardDocument(uid: string, blockContent: string): CardDocum
     uid,
     type: [],
     raw_content: blockContent.trim(),
-    metadata: {
-      familiarity: 0,
-      next_review: null,
-    },
+    metadata: createDefaultCardMetadata(),
     memory_tricks: {
       memory_technique: '',
       qa_pairs: [],
@@ -83,8 +125,10 @@ function coerceCardDocument(uid: string, value: unknown, fallbackBlockContent = 
         ? data.raw_content
         : fallbackBlockContent.trim(),
     metadata: {
-      familiarity: typeof metadata.familiarity === 'number' ? metadata.familiarity : 0,
-      next_review: typeof metadata.next_review === 'string' ? metadata.next_review : null,
+      familiarity: normalizeFamiliarity(metadata.familiarity),
+      next_review: normalizeNextReview(metadata.next_review),
+      interval_days: normalizeIntervalDays(metadata.interval_days),
+      ease_factor: normalizeEaseFactor(metadata.ease_factor),
     },
     memory_tricks: {
       memory_technique:

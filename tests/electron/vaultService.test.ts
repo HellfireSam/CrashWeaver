@@ -165,7 +165,7 @@ describe('vaultService', () => {
               uid: '../evil',
               type: [],
               raw_content: 'Q\nA',
-              metadata: { familiarity: 0, next_review: null },
+              metadata: { familiarity: 0, next_review: null, interval_days: 0, ease_factor: 2.5 },
               memory_tricks: { memory_technique: '', qa_pairs: [] },
               referenced_in: [],
             },
@@ -202,6 +202,8 @@ describe('vaultService', () => {
           metadata: {
             familiarity: 0,
             next_review: null,
+            interval_days: 0,
+            ease_factor: 2.5,
           },
           memory_tricks: {
             memory_technique: '',
@@ -263,6 +265,8 @@ describe('vaultService', () => {
           metadata: {
             familiarity: 0,
             next_review: null,
+            interval_days: 0,
+            ease_factor: 2.5,
           },
           memory_tricks: {
             memory_technique: '',
@@ -320,6 +324,8 @@ describe('vaultService', () => {
           metadata: {
             familiarity: 0,
             next_review: null,
+            interval_days: 0,
+            ease_factor: 2.5,
           },
           memory_tricks: {
             memory_technique: '',

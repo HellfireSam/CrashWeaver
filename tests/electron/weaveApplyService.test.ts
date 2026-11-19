@@ -128,7 +128,7 @@ describe('weaveApplyService', () => {
       uid,
       type: [],
       raw_content: `${uid} payload`,
-      metadata: { familiarity: 0, next_review: null },
+      metadata: { familiarity: 0, next_review: null, interval_days: 0, ease_factor: 2.5 },
       memory_tricks: { memory_technique: '', qa_pairs: [] },
       referenced_in: referencedIn,
       ...overrides,
@@ -662,7 +662,7 @@ describe('weaveApplyService', () => {
         uid: 'CW-NEW',
         type: [],
         raw_content: '',
-        metadata: { familiarity: 0, next_review: null },
+        metadata: { familiarity: 0, next_review: null, interval_days: 0, ease_factor: 2.5 },
         memory_tricks: { memory_technique: '', qa_pairs: [] },
         referenced_in: [{ note_path: 'notes/deep/new-note.md', start_line: 1, end_line: 3 }],
       });

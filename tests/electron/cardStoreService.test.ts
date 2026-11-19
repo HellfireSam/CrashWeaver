@@ -225,4 +225,85 @@ describe('cardStoreService', () => {
 
     await expect(findCardByFoldedUid(cardStorePath, 'my card')).rejects.toThrow();
   });
+
+  it('fills the scheduling defaults for a card file that predates them', async () => {
+    const { cardStorePath } = await setupCardStore();
+    const legacyCard = {
+      uid: 'Legacy card',
+      type: [],
+      raw_content: 'old shape',
+      metadata: { familiarity: 0, next_review: null },
+      memory_tricks: { memory_technique: '', qa_pairs: [] },
+      referenced_in: [],
+    };
+    await fs.writeFile(
+      path.join(cardStorePath, 'Legacy card.json'),
+      JSON.stringify(legacyCard),
+      'utf8',
+    );
+
+    const card = await readCardDocument(cardStorePath, 'Legacy card');
+
+    expect(card.metadata).toEqual({
+      familiarity: 0,
+      next_review: null,
+      interval_days: 0,
+      ease_factor: 2.5,
+    });
+  });
+
+  it('normalises hand-edited scheduling state on read', async () => {
+    const { cardStorePath } = await setupCardStore();
+    await fs.writeFile(
+      path.join(cardStorePath, 'Odd state.json'),
+      JSON.stringify({
+        uid: 'Odd state',
+        type: [],
+        raw_content: '',
+        metadata: {
+          familiarity: 'many',
+          next_review: '2026-13-01',
+          interval_days: 'four',
+          ease_factor: 0.2,
+        },
+        memory_tricks: { memory_technique: '', qa_pairs: [] },
+        referenced_in: [],
+      }),
+      'utf8',
+    );
+
+    const card = await readCardDocument(cardStorePath, 'Odd state');
+
+    expect(card.metadata).toEqual({
+      familiarity: 0,
+      next_review: null,
+      interval_days: 0,
+      ease_factor: 1.3,
+    });
+  });
+
+  it('normalises scheduling state before writing it', async () => {
+    const { cardStorePath } = await setupCardStore();
+
+    const written = await writeCardDocument(cardStorePath, {
+      ...createCardDocument('Odd state'),
+      metadata: {
+        familiarity: 9,
+        next_review: 'soon',
+        interval_days: 4.9,
+        ease_factor: 0.2,
+      },
+    });
+
+    expect(written.metadata).toEqual({
+      familiarity: 4,
+      next_review: null,
+      interval_days: 4,
+      ease_factor: 1.3,
+    });
+    const onDisk = JSON.parse(
+      await fs.readFile(path.join(cardStorePath, 'Odd state.json'), 'utf8'),
+    );
+    expect(onDisk.metadata).toEqual(written.metadata);
+  });
 });

@@ -1,15 +1,8 @@
-export interface ReviewMetadata {
-  familiarity: number;
-  lastReviewedAt: string | null;
-  nextReviewAt: string | null;
-  intervalDays: number;
-  repetition: number;
-  easeFactor: number;
-}
-
 export interface CardMetadata {
   familiarity: number;
   next_review: string | null;
+  interval_days: number;
+  ease_factor: number;
 }
 
 export interface CardQaPair {
@@ -35,6 +28,18 @@ export interface CardDocument {
   metadata: CardMetadata;
   memory_tricks: CardMemoryTricks;
   referenced_in: CardNoteReference[];
+}
+
+/** The four responses a Review can record, in ascending familiarity order. */
+export type CardReviewResponse = 'again' | 'hard' | 'good' | 'easy';
+
+/**
+ * A card plus the resulting interval for each response, so the review surface
+ * can show what each button will do before the user picks one.
+ */
+export interface CardReviewSnapshot {
+  card: CardDocument;
+  intervalDaysByResponse: Record<CardReviewResponse, number>;
 }
 
 export type CrashpadCardOrigin = 'existing' | 'new';
@@ -175,11 +180,10 @@ export interface VaultIndexEntry {
   title: string;
   tags: string[];
   updatedAt: string;
-  review: ReviewMetadata;
 }
 
 export interface VaultIndex {
-  version: 1;
+  version: 2;
   updatedAt: string;
   entries: VaultIndexEntry[];
 }
