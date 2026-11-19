@@ -84,6 +84,12 @@ Ordered by user impact. Each names the file where the cause is observable.
     editor Save icon is unchanged for dirty/saved, and the status bar keeps stale text (`Reviewing 18
     due cards.` after the session completed).
 
+## Screenshots
+
+The final state from the built app under the harness: [welcome](screenshots/welcome.png),
+[editor](screenshots/editor.png), [review](screenshots/review.png), [settings](screenshots/settings.png)
+and [session history](screenshots/session-history.png).
+
 ## What the follow-up pass changed
 
 The same session continued into the visual and state pass below. Status against the list:
