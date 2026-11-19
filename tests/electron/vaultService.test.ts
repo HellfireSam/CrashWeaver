@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 // The main-process suites run against the compiled CommonJS output, not the
 // TypeScript source, so `npm test` builds the main process first.
@@ -428,5 +428,54 @@ describe('vaultService', () => {
       settingsService.__setSettingsFilePathForTests(null);
       settingsService.__resetSettingsMutationQueueForTests();
     }
+  });
+
+  describe('card UID validation', () => {
+    const tempDirs: string[] = [];
+
+    afterEach(async () => {
+      settingsService.__setSettingsFilePathForTests(null);
+      settingsService.__resetSettingsMutationQueueForTests();
+      await Promise.all(
+        tempDirs.splice(0).map((tempDir) => fs.rm(tempDir, { recursive: true, force: true })),
+      );
+    });
+
+    async function setupVault() {
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-vault-uid-'));
+      tempDirs.push(tempDir);
+      const settingsPath = path.join(tempDir, 'crashweaver-settings.json');
+      const rootPath = path.join(tempDir, 'vault-root');
+      await fs.mkdir(rootPath, { recursive: true });
+      settingsService.__resetSettingsMutationQueueForTests();
+      settingsService.__setSettingsFilePathForTests(settingsPath);
+      return rootPath;
+    }
+
+    it('saveCard rejects a traversal UID before writing anything', async () => {
+      const rootPath = await setupVault();
+      const card = await vaultService.createCard(rootPath, 'CW-001');
+
+      await expect(vaultService.saveCard(rootPath, { ...card, uid: '../evil' })).rejects.toThrow(
+        /Card title \/ ID/,
+      );
+    });
+
+    it('renameCard rejects a traversal previous UID', async () => {
+      const rootPath = await setupVault();
+      const card = await vaultService.createCard(rootPath, 'CW-001');
+
+      await expect(
+        vaultService.renameCard(rootPath, '../evil', { ...card, uid: 'CW-002' }),
+      ).rejects.toThrow(/Card title \/ ID/);
+    });
+
+    it('deleteCard rejects a traversal UID', async () => {
+      const rootPath = await setupVault();
+
+      await expect(
+        vaultService.deleteCard(rootPath, '../evil', { removeNoteBoundaries: false }),
+      ).rejects.toThrow(/Card title \/ ID/);
+    });
   });
 });

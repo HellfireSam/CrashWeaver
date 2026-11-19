@@ -96,10 +96,13 @@ function coerceCardDocument(uid: string, value: unknown, fallbackBlockContent = 
 }
 
 /**
- * The single UID-to-path hop. Every read and write of a card file goes through
- * here, so validating the UID here means no caller can build a path outside the
- * card store — a weave plan or hand-edited crashpad naming `../evil` fails
- * closed instead of escaping. Callers must not add a second path builder.
+ * The single UID-to-path hop. Every UID-addressed read and write of a card file
+ * goes through here, so validating the UID here means no caller can build a path
+ * outside the card store — a weave plan or hand-edited crashpad naming `../evil`
+ * fails closed instead of escaping. `listCardDocuments` is the deliberate
+ * exception: it lists files by name and must tolerate a hand-dropped filename
+ * outside the grammar, so it never builds a path from a UID. Callers must not
+ * add a second path builder.
  */
 export function getCardFilePath(cardStorePath: string, uid: string) {
   return path.join(cardStorePath, `${assertValidCardUid(uid)}.json`);
@@ -293,6 +296,21 @@ export function assertValidCardUid(uid: string) {
   }
 
   return normalizedUid;
+}
+
+/**
+ * True when the UID can be addressed through `getCardFilePath`. A hand-dropped
+ * card file can have any basename; callers that enumerate such files use this
+ * to skip the ones the guarded path builder would refuse rather than failing
+ * the whole operation.
+ */
+export function isValidCardUid(uid: string): boolean {
+  try {
+    assertValidCardUid(uid);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function createCardDocument(uid: string): CardDocument {

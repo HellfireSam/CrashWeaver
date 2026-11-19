@@ -120,13 +120,19 @@ card's identity and its filename. `assertValidCardUid` trims it and rejects an e
 use only letters, numbers, underscores, or dashes.`); that pattern also makes a UID unusable as
 a traversal vector.
 
-`getCardFilePath` is the single UID-to-path hop and it calls that validator, so every card
-read, existence check, write and delete fails closed on a UID that could escape the store: a
+`getCardFilePath` is the single UID-to-path hop and it calls that validator, so every UID-addressed
+card read, existence check, write and delete fails closed on a UID that could escape the store: a
 hand-edited crashpad, a note UID or a weave plan naming `../evil` never produces a path at all.
-The same grammar is checked earlier where the UID arrives — `weavePlanSchema` validates it
-during plan normalisation, and the apply handlers validate a create or insert payload UID
-before they build boundaries, write a note or touch the store. There is no second path builder
-and no second copy of the rule.
+The same grammar is checked earlier where the UID arrives — `weavePlanSchema` validates it during
+plan normalisation, and the apply handlers validate a create or insert payload UID before they
+build boundaries, write a note or touch the store.
+
+There is no second UID-to-path builder. `listCardDocuments` is the deliberate exception: it
+enumerates files by name and derives each UID from the basename, so a hand-dropped filename outside
+the grammar stays listable; the sync and index rebuild skip such a card instead of failing the
+whole operation, because the guarded builder cannot address it. `cardParser` carries the boundary
+grammar's alphabet, which is the same rule read in the other direction; it is not a validator, and
+the two copies are kept in step by hand until #24 introduces the one shared grammar module.
 
 The default store is `<vault>/.crashweaver/cards` (`getDefaultCardStorePath`).
 `getCardStoreConfig` returns the per-vault override recorded in `cardStoreByVault` keyed

@@ -35,14 +35,16 @@ boundaries already exists and is validated.
   - **The focused card already exists** — the sync that follows the write finds no boundary in the
     new note, so the note does not reference the card at all. The note is prose-only.
   - **The card does not exist yet** — `applyCreateNote` auto-creates the card document and gives it
-    a `referenced_in` entry spanning the whole new note (lines 1 to the note's line count).
+    a `referenced_in` entry for lines 1 to 3 of the new note (the heading line, the blank line and
+    the content element as `applyCreateNote` counts them).
 - That auto-created reference is not durable. The note carries no UID boundary, so it never appears
   in the parsed card list; the next sync of the note — an in-app note write, or any
   `updateIndex` / vault-index rebuild — compares the cards referencing the note with the parsed
   cards and removes the reference it cannot see. The card file stays on disk, orphaned.
 - A plan that wants the created note to durably reference the card must either put the boundary
-  pair in the `create-note` content or emit an `insert-boundary-pair` operation for that note. The
-  prompts' worked example does the latter where needed.
+  pair in the `create-note` content or emit a separate `insert-boundary-pair` operation for that
+  note. The prompts' create-note example adds no pair, so it produces exactly this orphan shape;
+  nothing in the schema or prompts asks for a companion insert operation.
 - The plan schema cannot reject a marker-less `create-note` as wrong: the review that turns the
   plan into a durable note is the user's approval gate, not schema validation. A review UI that
   wants to warn about this shape has to compare the plan's intent with the card's references

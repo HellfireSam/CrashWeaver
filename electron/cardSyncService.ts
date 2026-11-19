@@ -16,6 +16,7 @@ import {
   removeCardReference,
   upsertCardReference,
   getCardFilePath,
+  isValidCardUid,
 } from './cardStoreService';
 
 function createDiagnostic(line: number, uid: string, message: string): CardParseDiagnostic {
@@ -122,6 +123,14 @@ export async function syncParsedCrashCards(
         continue;
       }
 
+      // A hand-dropped card file can have a basename outside the UID grammar.
+      // It cannot be addressed through the guarded UID-to-path hop, so leave
+      // its reference alone rather than failing the whole note sync; the
+      // listing stays tolerant of such files by design.
+      if (!isValidCardUid(card.uid)) {
+        continue;
+      }
+
       const result = await removeCardReference(cardStorePath, card.uid, parsedNote.notePath);
 
       if (result.removed) {
@@ -136,7 +145,7 @@ export async function syncParsedCrashCards(
     }
   } else {
     for (const card of existingCards) {
-      if (uniqueCardsByUid.has(card.uid)) {
+      if (uniqueCardsByUid.has(card.uid) || !isValidCardUid(card.uid)) {
         continue;
       }
 
@@ -235,6 +244,13 @@ export async function rebuildCardStoreFromNotes(
   const cards = await listCardDocuments(cardStorePath);
 
   for (const card of cards) {
+    // Same tolerance as the note sync: a hand-dropped filename outside the UID
+    // grammar cannot be addressed through the guarded path builder, so its
+    // references are left alone rather than failing the whole rebuild.
+    if (!isValidCardUid(card.uid)) {
+      continue;
+    }
+
     for (const reference of card.referenced_in) {
       if (activeNotePaths.has(reference.note_path)) {
         continue;

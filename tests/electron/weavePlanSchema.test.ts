@@ -103,7 +103,7 @@ describe('weavePlanSchema', () => {
   // The create-note characterisation. Boundary markers are optional in a
   // create-note payload's content (see ADR-0002); only the trimmed prose floor
   // is enforced. These tests exist to fail if that acceptance behaviour changes.
-  function guidedCreateNoteResult(content: string) {
+  function guidedCreateNoteResult(content: string, payloadOverrides: Record<string, unknown> = {}) {
     return {
       plan: {
         kind: 'guided-insert',
@@ -117,6 +117,7 @@ describe('weavePlanSchema', () => {
               cardUid: 'CW-001',
               title: 'New graph note',
               content,
+              ...payloadOverrides,
             },
             rationale: 'The focused card needs a note of its own.',
           },
@@ -248,13 +249,22 @@ describe('weavePlanSchema', () => {
     ]);
   });
 
-  it('rejects a traversal card UID when the plan is normalised', async () => {
-    const rootPath = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-weave-schema-'));
-    const request = validateWeavePlanRequest(
-      createGuidedRequest(rootPath, {
-        permissions: { editContent: false, createNote: true },
-      }),
-    );
+  it('rejects a traversal card UID when a create-note plan is normalised', async () => {
+    const request = await guidedCreateRequest();
+
+    expect(() =>
+      validateWeavePlanResult(
+        guidedCreateNoteResult('Substantive prose that would otherwise be accepted.', {
+          cardUid: '../evil',
+          title: 'Evil',
+        }),
+        request,
+      ),
+    ).toThrow(/Create-note payload\.cardUid is invalid: Card title \/ ID must use only letters/);
+  });
+
+  it('rejects a traversal card UID when an insert-boundary-pair plan is normalised', async () => {
+    const request = await guidedCreateRequest();
 
     expect(() =>
       validateWeavePlanResult(
@@ -262,15 +272,15 @@ describe('weavePlanSchema', () => {
           plan: {
             kind: 'guided-insert',
             permissions: { editContent: false, createNote: true },
-            summary: 'Create a note for a card whose UID escapes the card store.',
+            summary: 'Insert a boundary pair for a card whose UID escapes the card store.',
             operations: [
               {
-                kind: 'create-note',
-                targetPath: 'notes/evil.md',
+                kind: 'insert-boundary-pair',
+                targetPath: 'notes/graph.md',
                 payload: {
                   cardUid: '../evil',
-                  title: 'Evil',
-                  content: 'Substantive prose that would otherwise be accepted by create-note.',
+                  placement: 'append-to-note',
+                  boundaryBlock: '%%CW_CARD_START uid:../evil%%',
                 },
                 rationale: 'The traversal must be rejected during normalisation.',
               },
@@ -284,6 +294,8 @@ describe('weavePlanSchema', () => {
         },
         request,
       ),
-    ).toThrow(/Card title \/ ID must use only letters, numbers/);
+    ).toThrow(
+      /Insert-boundary-pair payload\.cardUid is invalid: Card title \/ ID must use only letters/,
+    );
   });
 });

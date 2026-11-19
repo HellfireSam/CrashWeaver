@@ -145,8 +145,16 @@ function normalizeGuidedInsertPermissions(value: unknown): GuidedInsertPermissio
 
 function normalizeCardUid(value: unknown, label: string) {
   // Grammar is checked here so a traversal UID is rejected when the plan is
-  // normalised, not when apply reaches the card store.
-  return assertValidCardUid(normalizeNonEmptyString(value, label));
+  // normalised, not when apply reaches the card store. Keep the field label in
+  // the message so schema repair knows which payload value to fix.
+  const normalizedUid = normalizeNonEmptyString(value, label);
+
+  try {
+    return assertValidCardUid(normalizedUid);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`${label} is invalid: ${reason}`, { cause: error });
+  }
 }
 
 function assertBoundaryBlockIncludesCard(boundaryBlock: string, cardUid: string, label: string) {
