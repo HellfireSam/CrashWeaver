@@ -168,8 +168,10 @@ function buildSteps(events: JsonLineEvent[]): WeaverSessionStep[] {
       case 'node-validate-success':
         step.plan = p;
         {
+          // `operations` is the validated plan's operation count in this
+          // event's payload; tolerate the array form used by older logs.
           const ops = (p as Record<string, unknown>).operations;
-          const count = Array.isArray(ops) ? ops.length : '?';
+          const count = typeof ops === 'number' ? ops : Array.isArray(ops) ? ops.length : '?';
           step.thought = `Plan validated — ${count} operations ready`;
         }
         break;
