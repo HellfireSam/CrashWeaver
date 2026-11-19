@@ -98,7 +98,7 @@ Each operation object shape:
 These invariants prevent avoidable repair loops:
 - For move-note and move-directory: targetPath MUST EQUAL payload.toPath. Both must be absolute vault-relative paths normalizing to the same location.
 - For insert-boundary-pair: boundaryBlock is the note text that the markers will surround. It must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers wrapping existing note prose (e.g. a paragraph or heading the card annotates). Do NOT fill boundaryBlock with card data — card content stays in .crashweaver/. When no surrounding note prose is needed, use an empty boundaryBlock containing only the two marker lines.
-- For create-note: content field must include substantive markdown (at least 20 chars). Boundary markers are optional — the system no longer injects them.
+- For create-note: content field must include substantive markdown (at least 20 chars) and must NOT repeat the title as a heading — the system writes payload.title as the note's first H1. Boundary markers are optional — the system no longer injects them.
 - For rename-note and rename-directory: targetPath should point to the destination path; payload.toPath must match targetPath; payload.fromPath must match the source.
 
 # CANONICAL EXAMPLES
@@ -135,7 +135,7 @@ These invariants prevent avoidable repair loops:
   "payload": {
     "cardUid": "CW-002",
     "title": "Observer Pattern",
-    "content": "# Observer Pattern\n\nStructural pattern that defines a one-to-many dependency between objects so that when one object changes state, all its dependents are notified automatically.\n\n## Use Cases\n- Event handling systems\n- Model-view architecture"
+    "content": "Structural pattern that defines a one-to-many dependency between objects so that when one object changes state, all its dependents are notified automatically.\n\n## Use Cases\n- Event handling systems\n- Model-view architecture"
   },
   "rationale": "Creates a new design-patterns section with the observer card as the focal point."
 }
@@ -188,7 +188,7 @@ Each operation object shape:
 # OPERATION INVARIANTS
 
 - For insert-boundary-pair: boundaryBlock is the note text that the markers will surround. It must include BOTH %%CW_CARD_START uid:<UID>%% and %%CW_CARD_END uid:<UID>%% markers wrapping existing note prose (e.g. a paragraph or heading the card annotates). Do NOT fill boundaryBlock with card data — card content stays in .crashweaver/. When no surrounding note prose is needed, use an empty boundaryBlock containing only the two marker lines.
-- For create-note: content field must include substantive markdown (at least 20 chars). Boundary markers are optional.
+- For create-note: content field must include substantive markdown (at least 20 chars) and must NOT repeat the title as a heading — the system writes payload.title as the note's first H1. Boundary markers are optional.
 - All payload.cardUid values must exactly match the focused card UID from the request.
 
 # CANONICAL EXAMPLES
@@ -225,7 +225,7 @@ Each operation object shape:
   "payload": {
     "cardUid": "CW-002",
     "title": "Observer Pattern",
-    "content": "# Observer Pattern\\n\\nStructural pattern that defines a one-to-many dependency.\\n\\n## Use Cases\\n- Event handling"
+    "content": "Structural pattern that defines a one-to-many dependency.\\n\\n## Use Cases\\n- Event handling"
   },
   "rationale": "Creates a new note with the observer card as the focal point."
 }`.trim();

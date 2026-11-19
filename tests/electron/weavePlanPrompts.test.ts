@@ -47,6 +47,12 @@ describe('weavePlanPrompts', () => {
     expect(message).toMatch(/Do not create new notes|Do not emit create-note/i);
   });
 
+  it('guided create-note asks for content that does not repeat the title heading', () => {
+    const message = buildSystemPrompt(profile, 'guided-insert', 2, 1);
+
+    expect(message).toMatch(/must NOT repeat the title as a heading/i);
+  });
+
   it('system instruction frames crashpad as source-only and create-note as substantive', () => {
     const instruction = buildSystemPrompt(profile, 2, 1);
 

@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef, useState } from 'react';
 import { diffLines } from 'diff';
+import { AppIcon } from './AppIcon';
 import type {
   WeavePlanOperation,
   InsertBoundaryPairPayload,
@@ -492,7 +493,9 @@ function DeleteNoteDiffView({ payload }: { payload: DeleteNotePayload }) {
         </div>
       </div>
       <p className="uwe-diffReason">{payload.deleteReason}</p>
-      <div className="uwe-diffWarning">⚠ This file will be permanently deleted.</div>
+      <div className="uwe-diffWarning">
+        <AppIcon name="alert-triangle" /> This file will be permanently deleted.
+      </div>
     </>
   );
 }
@@ -531,7 +534,8 @@ function DeleteDirectoryDiffView({ payload }: { payload: DeleteDirectoryPayload 
       </div>
       <p className="uwe-diffReason">{payload.deleteReason}</p>
       <div className="uwe-diffWarning">
-        ⚠ This directory and all its contents will be permanently deleted.
+        <AppIcon name="alert-triangle" /> This directory and all its contents will be permanently
+        deleted.
       </div>
     </>
   );

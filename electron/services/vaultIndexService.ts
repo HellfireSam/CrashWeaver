@@ -3,25 +3,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { writeTextAtomically } from '../utils/jsonFile';
-import type {
-  ReviewMetadata,
-  VaultIndex,
-  VaultIndexEntry,
-  VaultNoteDocument,
-} from '../vault-contract';
+import type { VaultIndex, VaultIndexEntry, VaultNoteDocument } from '../vault-contract';
 
 const MARKDOWN_EXTENSION = '.md';
-
-function createDefaultReviewMetadata(): ReviewMetadata {
-  return {
-    familiarity: 0,
-    lastReviewedAt: null,
-    nextReviewAt: null,
-    intervalDays: 0,
-    repetition: 0,
-    easeFactor: 2.5,
-  };
-}
 
 function createEntryId(filePath: string) {
   return createHash('sha1').update(filePath).digest('hex').slice(0, 16);
@@ -47,11 +31,10 @@ function coerceStoredIndex(value: Partial<VaultIndex>): VaultIndex | null {
         ? entry.tags.filter((tag): tag is string => typeof tag === 'string')
         : [],
       updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : new Date().toISOString(),
-      review: entry.review ?? createDefaultReviewMetadata(),
     }));
 
   return {
-    version: 1,
+    version: 2,
     updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : new Date().toISOString(),
     entries,
   };
@@ -105,13 +88,12 @@ function buildIndex(notes: VaultNoteDocument[], existingIndex: VaultIndex | null
         title: note.title,
         tags: note.tags,
         updatedAt: note.modifiedAt,
-        review: previousEntry?.review ?? createDefaultReviewMetadata(),
       };
     })
     .sort((left, right) => left.filePath.localeCompare(right.filePath));
 
   return {
-    version: 1,
+    version: 2,
     updatedAt: new Date().toISOString(),
     entries,
   };

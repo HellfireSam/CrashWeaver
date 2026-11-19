@@ -7,6 +7,8 @@ import type {
   CardRenameResult,
   CardRestoreOptions,
   CardRestoreResult,
+  CardReviewResponse,
+  CardReviewSnapshot,
   CardStoreConfig,
   CrashpadDeletePreferences,
   CrashpadDeletedCardSnapshot,
@@ -60,6 +62,19 @@ const crashWeaverBridge = {
     ipcRenderer.invoke(IPC_CHANNELS.cardStore.createCard, rootPath, uid) as Promise<CardDocument>,
   saveCard: (rootPath: string, card: CardDocument) =>
     ipcRenderer.invoke(IPC_CHANNELS.cardStore.saveCard, rootPath, card) as Promise<CardDocument>,
+  previewCardReview: (rootPath: string, uid: string) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.review.previewCard,
+      rootPath,
+      uid,
+    ) as Promise<CardReviewSnapshot>,
+  scheduleCardReview: (rootPath: string, uid: string, response: CardReviewResponse) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.review.scheduleCard,
+      rootPath,
+      uid,
+      response,
+    ) as Promise<CardReviewSnapshot>,
   renameCard: (rootPath: string, previousUid: string, card: CardDocument) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.cardStore.renameCard,

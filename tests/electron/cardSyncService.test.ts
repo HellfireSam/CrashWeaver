@@ -36,7 +36,7 @@ describe('cardSyncService', () => {
       uid: 'my%card',
       type: [],
       raw_content: '',
-      metadata: { familiarity: 0, next_review: null },
+      metadata: { familiarity: 0, next_review: null, interval_days: 0, ease_factor: 2.5 },
       memory_tricks: { memory_technique: '', qa_pairs: [] },
       referenced_in: [{ note_path: 'notes/graph.md', start_line: 1, end_line: 2 }],
     };
@@ -60,7 +60,7 @@ describe('cardSyncService', () => {
       uid: 'my%card',
       type: [],
       raw_content: '',
-      metadata: { familiarity: 0, next_review: null },
+      metadata: { familiarity: 0, next_review: null, interval_days: 0, ease_factor: 2.5 },
       memory_tricks: { memory_technique: '', qa_pairs: [] },
       // The reference names a note that no longer exists, so a rebuild that
       // prunes stale references would try to write this card's file.

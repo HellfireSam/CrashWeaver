@@ -24,12 +24,14 @@ import {
   clearSessions,
 } from './weaver/weaveService';
 import { applyWeaveOperations } from './weaver/weaveApplyService';
+import { previewCardReview, scheduleCardReview } from './reviewService';
 import { getFsErrorCode } from './utils/fsErrors';
 import { toPosixPath } from './utils/paths';
 import type {
   CardDeleteOptions,
   CardDocument,
   CardRestoreOptions,
+  CardReviewResponse,
   CrashpadDeletePreferences,
   CrashpadDeletedCardSnapshot,
   CrashpadDocument,
@@ -397,6 +399,16 @@ ipcMain.handle(
     await enqueueWatchVault(rootPath);
     return vault;
   },
+);
+
+ipcMain.handle(IPC_CHANNELS.review.previewCard, async (_event, rootPath: string, uid: string) =>
+  previewCardReview(rootPath, uid),
+);
+
+ipcMain.handle(
+  IPC_CHANNELS.review.scheduleCard,
+  async (_event, rootPath: string, uid: string, response: CardReviewResponse) =>
+    scheduleCardReview(rootPath, uid, response),
 );
 
 ipcMain.handle(

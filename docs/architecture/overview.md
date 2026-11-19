@@ -2,9 +2,9 @@
 
 CrashWeaver is an Electron desktop app for working with an Obsidian vault as a knowledge base of
 Crash Cards. The user's notes stay ordinary markdown; each card's full payload lives in a separate
-card store; and the Weaver, an LLM agent, reads the vault and proposes changes that the user
-accepts or rejects at an approval gate before anything is written. Scheduling state exists for a
-future review loop; that loop is not built yet.
+card store; the Weaver, an LLM agent, reads the vault and proposes changes that the user accepts or
+rejects at an approval gate before anything is written; and a review loop schedules each card's
+next review from the Familiarity the user selects when the card is due.
 
 The vocabulary in this document is the vocabulary of
 [the domain glossary](../../CONTEXT.md). The three companion architecture documents hold the
@@ -34,9 +34,9 @@ all gone is an orphaned card.
 | Crashpad     | `electron/crashpadService.ts`, `src/components/CrashpadWorkspace.tsx`                     | The authoring surface where cards are composed and arranged before being woven into notes |
 
 Categorisation is a card's `type` list; mnemonic aids are `memory_tricks` — one memory technique
-phrase plus question/answer pairs. Familiarity and next review are the scheduling state carried
-in `CardMetadata`: the fields exist and are preserved across index rebuilds, but no review loop
-consumes them yet. The renderer is where a card is seen and edited:
+phrase plus question/answer pairs. Familiarity, Next review, `interval_days` and `ease_factor` are
+the scheduling state carried in `CardMetadata`; only the review loop writes them, and the card
+metadata panel displays them read-only. The renderer is where a card is seen and edited:
 `src/components/CardsWorkspace.tsx` browses cards, `src/components/CrashpadWorkspace.tsx`
 composes them, and `src/components/InspectorPane.tsx` shows the focused card's detail.
 
@@ -94,7 +94,7 @@ vault-root guard.
 | Note        | `<vault>/**.md`                                                    | `electron/vaultService.ts`'s `writeNote`; the boundary-mutation services (`renameCardBoundariesAcrossReferences`, `removeCardBoundariesAcrossReferences`, `reinsertCardBoundariesForReferences`); `electron/weaver/weaveApplyNoteHandlers.ts` and `electron/weaver/weaveApplyPathHandlers.ts` | Prose plus UID boundaries; parsed cards and diagnostics                                                                                                                                                                             |
 | Card store  | `<cardStorePath>/<uid>.json`, default `<vault>/.crashweaver/cards` | `electron/cardStoreService.ts`; `electron/weaver/weaveApplyNoteHandlers.ts`'s `applyCreateNote`; `electron/weaver/weaveApplyPathHandlers.ts`'s reference rewrites                                                                                                                             | The card's full payload: `type`, `raw_content`, `metadata`, `memory_tricks`, `referenced_in`                                                                                                                                        |
 | Crashpad    | `<vault>/.crashweaver/crashpads/<id>.crashpad.json`                | `electron/crashpadService.ts`                                                                                                                                                                                                                                                                 | The authoring surface: card entries with `origin` `existing` or `new`, plus deleted-card snapshots                                                                                                                                  |
-| Vault index | `<vault>/.crashweaver/index.json`                                  | `electron/services/vaultIndexService.ts` via `electron/vaultService.ts`'s `writeIndex`                                                                                                                                                                                                        | The note catalog with title, tags and review metadata                                                                                                                                                                               |
+| Vault index | `<vault>/.crashweaver/index.json`                                  | `electron/services/vaultIndexService.ts` via `electron/vaultService.ts`'s `writeIndex`                                                                                                                                                                                                        | The note catalog with title, tags and timestamps; version 2, and no review state                                                                                                                                                    |
 | Settings    | `crashweaver-settings.json` under Electron's `userData`            | `electron/settingsService.ts`                                                                                                                                                                                                                                                                 | Per-vault card-store path, image directories, crashpad delete preferences, Weaver settings and the API key — encrypted with Electron's `safeStorage`, or stored with a `plain:` prefix when Electron reports encryption unavailable |
 
 A note's boundary markers are the only structural markup the app writes into the user's prose.
@@ -128,6 +128,33 @@ API key live under Electron's `userData`, outside the vault.
 [Data model](./data-model.md) covers the schemas, the boundary grammar, references and
 diagnostics in full; [Boundary format](../reference/boundary-format.md) is the format
 reference.
+
+## The review loop
+
+The review loop turns a card's scheduling state into its Next review. It is separate from a weave:
+no note is written and the Weaver is not involved.
+
+1. **Start a session.** The widget rail's `RV` button (the entry that replaced the extensions
+   placeholder) asks `useReviewSession` for the Due cards: every card in the card store whose
+   `next_review` is missing or today-or-earlier, new cards first and then most overdue. Opening a
+   review while a note has unsaved changes is refused by the same save-or-discard guard the other
+   surfaces use.
+2. **Read the card.** The editor pane shows `ReviewWorkspace` instead of the editor: the card's
+   rendered content, memory technique, QnA prompts with the reveal control, and its first note
+   Reference. Each rating button shows the interval it would produce.
+3. **Rate it.** `useReviewSession` calls `window.crashWeaver.scheduleCardReview`, which is the
+   `review:schedule-card` channel handled by `electron/reviewService.ts`. The main process re-reads
+   the card, applies `electron/services/reviewScheduling.ts` (four responses, SM-2-OSR) and writes
+   the card's new `CardMetadata`; the returned card updates the renderer catalog. Again leaves the
+   card due today and requeues it at the end of the session.
+4. **Finish.** When the queue empties the surface shows a summary and a Done control; every rating
+   was already persisted, so leaving early loses nothing. The session restores the editor surface
+   and widget tool it was entered from.
+
+A `review:preview-card` call supplies the per-response intervals before a rating is chosen. The
+formulas, date rules and queue rules are in
+[Review scheduling](../reference/review-scheduling.md); the algorithm decision is
+[ADR-0004](../adr/0004-sm2-osr-review-scheduling.md).
 
 ## The life of one weave
 
@@ -193,7 +220,7 @@ schema validation, the diff UI and per-kind apply semantics in full.
 
 | Path                                                  | Contents                                                                                                                                                                                                                                                                                                       |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `electron/`                                           | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the IPC channel declaration (`ipcChannels.ts`), the shared contract (`vault-contract.ts`), and the vault services: cards, notes, boundaries, crashpads, settings, index                                                                     |
+| `electron/`                                           | Main process entry (`main.ts`), the preload bridge (`preload.ts`), the IPC channel declaration (`ipcChannels.ts`), the shared contract (`vault-contract.ts`), the vault services (cards, notes, boundaries, crashpads, settings, index) and the review service with its pure scheduling function               |
 | `electron/weaver/`                                    | The Weaver: service facade, context retrieval, ReAct graph and nodes, prompts, plan schema, providers, model profiles, request logging and session history                                                                                                                                                     |
 | `src/`                                                | The renderer: `App.tsx`, `components/`, `hooks/`, `state/` contexts, and `lib/` helpers                                                                                                                                                                                                                        |
 | `tests/electron/`                                     | Test suites for the main-process services and the Weaver, run under Vitest against the compiled `dist-electron/` output                                                                                                                                                                                        |

@@ -119,6 +119,19 @@ export function formatNextReview(value: string | null) {
 }
 
 /**
+ * The review state as the four Familiarity levels plus the never-reviewed
+ * "New" value. The main process stores the integer; the label is the renderer's
+ * translation and the store clamps out-of-range values on read.
+ */
+const FAMILIARITY_LABELS = ['New', 'Again', 'Hard', 'Good', 'Easy'];
+
+export function formatFamiliarity(value: number) {
+  const index = Number.isFinite(value) ? Math.min(4, Math.max(0, Math.round(value))) : 0;
+
+  return FAMILIARITY_LABELS[index];
+}
+
+/**
  * Two card titles that differ only in ASCII letter case name the same card.
  *
  * The main process owns the rule and enforces it in the store; the renderer
@@ -139,6 +152,8 @@ export function createFallbackCard(parsedCard: ParsedCrashCard, notePath: string
     metadata: {
       familiarity: 0,
       next_review: null,
+      interval_days: 0,
+      ease_factor: 2.5,
     },
     memory_tricks: {
       memory_technique: '',

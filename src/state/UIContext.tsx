@@ -19,7 +19,7 @@ import type { CrashpadHistoryEntry } from '../lib/crashpadHistory';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type WidgetTool = 'explorer' | 'daily-crashpad' | 'extensions';
+export type WidgetTool = 'explorer' | 'daily-crashpad' | 'review';
 
 export interface UIState {
   expandedFolders: Record<string, boolean>;

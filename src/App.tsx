@@ -8,6 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WeaverConfirmDialog } from './components/WeaverConfirmDialog';
 import { projectCards, selectDefaultWeaveCardUid, selectFocusedCard } from './lib/cardProjection';
 import { formatCardRestoreStatus } from './lib/crashpadStatus';
+import { DEFAULT_DRAFT_CONTENT, DEFAULT_DRAFT_PATH } from './lib/draftDefaults';
 import { computeLayoutStyle } from './lib/layout';
 import { useCardDetailState } from './hooks/useCardDetailState';
 import { useCrashpadActions } from './hooks/useCrashpadActions';
@@ -28,23 +29,13 @@ import { useVaultLoadActions } from './hooks/useVaultLoadActions';
 import { useVaultLifecycleActions } from './hooks/useVaultLifecycleActions';
 import { useEditorTabs } from './hooks/useEditorTabs';
 import { usePaneLayout } from './hooks/usePaneLayout';
+import { useReviewSession } from './hooks/useReviewSession';
 import { useWeaverController } from './hooks/useWeaverController';
 
 // ── Shared state contexts (replaces 47 local useState calls) ─────────────────
 import { useVaultState } from './state/VaultContext';
 import { useEditorState } from './state/EditorContext';
 import { useUIState } from './state/UIContext';
-
-// ── Constants / helpers that don't belong in state ───────────────────────────
-
-const DEFAULT_DRAFT_PATH = 'Inbox/Stage-2-scratch.md';
-const DEFAULT_DRAFT_CONTENT = [
-  '# Stage 2 Scratch Note',
-  '',
-  'CrashWeaver vault write validation note.',
-  '',
-  '#stage2 #vault',
-].join('\n');
 
 export default function App() {
   // ── Consume shared state from contexts (replaces 47 useState calls) ──────
@@ -111,6 +102,7 @@ export default function App() {
     isSettingsOpen,
     openFirstNoteOnVaultOpen,
     showHiddenEntries,
+    activeWidgetTool,
     focusedCardUid,
     focusedWindow,
     crashpadPast,
@@ -459,11 +451,8 @@ export default function App() {
     openNoteInEditor,
   });
 
-  const { handleToggleFolder, handleOpenExtensionsPlaceholder } = useSidebarActions({
+  const { handleToggleFolder } = useSidebarActions({
     setExpandedFolders,
-    setActiveWidgetTool,
-    setStatusMessage,
-    setErrorMessage,
   });
 
   const { saveCurrentNote, handleSaveNote, handleDiscard } = useNoteSaveActions({
@@ -525,6 +514,27 @@ export default function App() {
     refreshCrashpadCatalog,
   });
 
+  const review = useReviewSession({
+    vaultPath,
+    allCards,
+    activeEditorKind,
+    activeWidgetTool,
+    setAllCards,
+    setActiveEditorKind,
+    setActiveWidgetTool,
+    setStatusMessage,
+    setErrorMessage,
+  });
+
+  const handleOpenReview = () => {
+    if (hasUnsavedChanges) {
+      setStatusMessage('Save or discard current changes before starting a review.');
+      return;
+    }
+
+    review.startReview();
+  };
+
   // ── External vault change subscription (chokidar → renderer) ───────────
 
   useEffect(() => {
@@ -573,7 +583,7 @@ export default function App() {
       onOpenSettings={openSettings}
       onToggleExplorerPane={handleToggleExplorerPane}
       onOpenDailyCrashpad={() => void handleOpenDailyCrashpad()}
-      onOpenExtensionsPlaceholder={handleOpenExtensionsPlaceholder}
+      onOpenReview={handleOpenReview}
       overlays={
         <>
           {weaver.pendingDestructiveOps ? (
@@ -633,8 +643,10 @@ export default function App() {
         isMarkdownEditor={isMarkdownEditor}
         isCrashpadEditor={isCrashpadEditor}
         isCardEditor={isCardEditor}
+        isReviewEditor={activeEditorKind === 'review' && review.isActive}
         visibleCards={visibleCards}
         focusedCard={focusedCard}
+        review={review}
         tabs={{
           displayTabs,
           currentEditorPath,
@@ -681,6 +693,8 @@ export default function App() {
         activeMarkdownViewState={activeMarkdownViewState}
         onMarkdownTabViewStateChange={updateMarkdownTabViewState}
         onOpenNote={handleOpenNote}
+        onOpenVault={() => void handleSelectVault()}
+        onOpenSettings={openSettings}
       />
 
       <div

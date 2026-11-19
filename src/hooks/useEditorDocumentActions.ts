@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import type { EditorDocumentKind } from '../state/EditorContext';
 import type { CardScope } from '../lib/cards';
 import {
   getCardUidFromPath,
@@ -31,7 +32,7 @@ type UseEditorDocumentActionsOptions = {
   setStatusMessage: (message: string | null) => void;
   setErrorMessage: (message: string | null) => void;
   setActiveNote: (note: Awaited<ReturnType<typeof window.crashWeaver.readNote>>) => void;
-  setActiveEditorKind: (kind: 'markdown' | 'crashpad' | 'card') => void;
+  setActiveEditorKind: (kind: EditorDocumentKind) => void;
   setActiveCrashpad: Dispatch<SetStateAction<CrashpadDocument | null>>;
   setActiveCardFilePath: (filePath: string) => void;
   setActiveCardFileUid: (uid: string | null) => void;

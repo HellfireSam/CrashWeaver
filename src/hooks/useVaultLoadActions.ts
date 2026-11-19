@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import type { EditorDocumentKind } from '../state/EditorContext';
 import type { CardScope } from '../lib/cards';
 import type { CrashpadHistoryEntry } from '../lib/crashpadHistory';
 import type { CrashpadDocument, VaultDescriptor } from '../../electron/vault-contract';
@@ -33,7 +34,7 @@ type UseVaultLoadActionsOptions = {
   resetCardDetailState: () => void;
   setCrashpadPast: Dispatch<SetStateAction<CrashpadHistoryEntry[]>>;
   setCrashpadFuture: Dispatch<SetStateAction<CrashpadHistoryEntry[]>>;
-  setActiveEditorKind: Dispatch<SetStateAction<'markdown' | 'crashpad' | 'card'>>;
+  setActiveEditorKind: Dispatch<SetStateAction<EditorDocumentKind>>;
   setActiveNote: Dispatch<
     SetStateAction<Awaited<ReturnType<typeof window.crashWeaver.readNote>> | null>
   >;

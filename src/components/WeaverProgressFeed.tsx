@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { WeaveReActStep } from '../../electron/vault-contract';
+import { AppIcon, type AppIconName } from './AppIcon';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,46 +57,46 @@ function formatToolName(toolName: string): string {
   }
 }
 
-function getEntryIcon(entry: WeaverLiveEntry): string {
+function getEntryIcon(entry: WeaverLiveEntry): AppIconName {
   if (entry.status === 'running') {
     switch (entry.phase) {
       case 'call-model-start':
       case 'call-model-end':
-        return '🤔';
+        return 'sparkles';
       case 'execute-tool-start':
       case 'execute-tool-end':
-        return '🔍';
+        return 'wrench';
       case 'repair':
-        return '🔧';
+        return 'wrench';
       case 'finalize-start':
-        return '📋';
+        return 'clipboard-check';
       case 'validate-start':
       case 'validate-end':
-        return '✅';
+        return 'check-circle';
       case 'graph-start':
-        return '🚀';
+        return 'flag';
       default:
-        return '•';
+        return 'chevron-right';
     }
   }
   if (entry.status === 'error') {
-    if (entry.phase === 'graph-fail') return '❌';
-    if (entry.phase === 'validate-end') return '⚠️';
-    if (entry.phase === 'execute-tool-end') return '⚠️';
-    return '✗';
+    if (entry.phase === 'graph-fail') return 'alert-circle';
+    if (entry.phase === 'validate-end') return 'alert-triangle';
+    if (entry.phase === 'execute-tool-end') return 'alert-triangle';
+    return 'x';
   }
   // status === 'ok' or 'info'
   switch (entry.phase) {
     case 'graph-complete':
-      return '✨';
+      return 'sparkles';
     case 'graph-fail':
-      return '❌';
+      return 'alert-circle';
     case 'execute-tool-end':
-      return '🔍';
+      return 'wrench';
     case 'validate-end':
-      return '✅';
+      return 'check-circle';
     default:
-      return '✓';
+      return 'check';
   }
 }
 
@@ -208,19 +209,24 @@ export function WeaverProgressFeed({
 
   const lastVisible = visibleEntries[visibleEntries.length - 1];
   const collapsedLabel = isGenerating
-    ? `${getEntryIcon(lastVisible)} ${getEntryLabel(lastVisible)}`
+    ? getEntryLabel(lastVisible)
     : lastVisible.phase === 'graph-complete'
-      ? `✨ Done — ${lastVisible.operations ?? '?'} ops · ${lastVisible.latencyMs ?? '?'}ms`
+      ? `Done — ${lastVisible.operations ?? '?'} ${lastVisible.operations === 1 ? 'op' : 'ops'} · ${lastVisible.latencyMs ?? '?'}ms`
       : lastVisible.phase === 'graph-fail'
-        ? `❌ ${lastVisible.errorMessage ?? 'Generation failed'}`
+        ? (lastVisible.errorMessage ?? 'Generation failed')
         : `${visibleEntries.length} step${visibleEntries.length === 1 ? '' : 's'}`;
 
   if (isCollapsed) {
     return (
       <div className="weaverProgressFeed collapsed" onClick={onToggleCollapse}>
         <span className="weaverFeedCollapsedLabel">{collapsedLabel}</span>
-        <button type="button" className="weaverFeedExpandBtn" title="Expand progress feed">
-          ＋
+        <button
+          type="button"
+          className="weaverFeedExpandBtn"
+          title="Expand progress feed"
+          aria-label="Expand progress feed"
+        >
+          <AppIcon name="plus" />
         </button>
       </div>
     );
@@ -239,8 +245,9 @@ export function WeaverProgressFeed({
           className="weaverFeedCollapseBtn"
           onClick={onToggleCollapse}
           title="Collapse"
+          aria-label="Collapse progress feed"
         >
-          −
+          <AppIcon name="minus" />
         </button>
       </div>
       <div className="weaverFeedBody">
@@ -248,7 +255,9 @@ export function WeaverProgressFeed({
           {visibleEntries.map((entry, idx) => (
             <div key={entry.id} className="weaverStepEntry">
               <div className="weaverStepMarker">
-                <span className="weaverStepIcon">{getEntryIcon(entry)}</span>
+                <span className={`weaverStepIcon ${entry.status}`}>
+                  <AppIcon name={getEntryIcon(entry)} />
+                </span>
                 {idx < visibleEntries.length - 1 ? <span className="weaverStepConnector" /> : null}
               </div>
               <div className="weaverStepContent">
@@ -267,7 +276,7 @@ export function WeaverProgressFeed({
                     className="weaverStepMeta"
                     style={{ color: 'var(--weaver-feed-error, #f5b9b4)' }}
                   >
-                    ✗ {entry.errorMessage}
+                    <AppIcon name="x" /> {entry.errorMessage}
                   </div>
                 ) : null}
                 {entry.toolArguments && entry.phase === 'execute-tool-end' ? (

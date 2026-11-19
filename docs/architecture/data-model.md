@@ -47,16 +47,17 @@ Indexing is note-level, not card-level. `collectMarkdownFiles` recurses from the
 skips the `.crashweaver` directory by name, keeps files whose extension is `.md`
 (case-insensitively) and returns them sorted. Each note becomes a `VaultIndexEntry`:
 
-| Field               | Source                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `id`                | `createEntryId` — first 16 hex characters of the SHA-1 of the note's vault-relative path                           |
-| `filePath`, `title` | the vault-relative POSIX path; the basename with `.md` removed                                                     |
-| `tags`              | `extractTags` — `#tag` tokens matched by `/(^                                                                      | \s)#([A-Za-z0-9/_-]+)/gm`, lower-cased and sorted |
-| `updatedAt`         | the file's `mtime` as ISO 8601                                                                                     |
-| `review`            | `ReviewMetadata`, preserved from a previous entry with the same path or defaulted by `createDefaultReviewMetadata` |
+| Field               | Source                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| `id`                | `createEntryId` — first 16 hex characters of the SHA-1 of the note's vault-relative path |
+| `filePath`, `title` | the vault-relative POSIX path; the basename with `.md` removed                           |
+| `tags`              | `extractTags` — `#tag` tokens matched by `/(^                                            | \s)#([A-Za-z0-9/_-]+)/gm`, lower-cased and sorted |
+| `updatedAt`         | the file's `mtime` as ISO 8601                                                           |
 
-`VaultIndex.version` is the literal `1`. `readVaultIndex` reads the internal file first
-and falls back to the legacy root file; writes always target `.crashweaver/index.json`.
+`VaultIndex.version` is the literal `2`. The index holds no review state: version 1 files are read
+tolerantly (ids, titles, tags, timestamps preserved) and their former per-note `review` field is
+dropped on the next write. `readVaultIndex` reads the internal file first and falls back to the
+legacy root file; writes always target `.crashweaver/index.json`.
 
 ### The vault-root guard
 
@@ -171,12 +172,17 @@ returning `null` on `ENOENT` and rethrowing other fs errors; `cardDocumentExists
 filename rather than the file body — `coerceCardDocument(uid, …)` always sets `uid` to the
 value it is given — skips an unreadable file with a `console.warn`, and yields `[]` for a
 missing store directory. `coerceCardDocument` defaults missing `type`, `metadata`,
-`memory_tricks` and `referenced_in`, drops reference entries without a `note_path`, clamps line
+`memory_tricks` and `referenced_in`, normalises the scheduling fields of `metadata` (familiarity
+0–4, calendar-date `next_review`, non-negative integer `interval_days`, ease floored at 1.3), drops
+reference entries without a `note_path`, clamps line
 numbers to at least `1`, and falls back to a supplied block of text when `raw_content` is blank.
 
 Writing is `writeCardDocument`, which validates the UID, ensures the directory exists,
-coerces the document and writes it with `writeJsonAtomically`. `createCardDocument`
-produces an empty default card, and `vaultService.createCard` refuses a title whose case-folded
+coerces the document and writes it with `writeJsonAtomically`. Two callers write a card's
+scheduling state: `electron/reviewService.ts` is the review loop's writer (and the only one that
+computes a schedule), while `saveCard` writes whatever payload the crashpad editor hands it — the
+editor's form no longer carries the scheduling fields, so a payload save leaves them unchanged.
+`createCardDocument` produces an empty default card, and `vaultService.createCard` refuses a title whose case-folded
 form matches an existing card — the message echoes the stored title, not the typed one.
 `renameCardDocument` performs the file move for a rename, including the case-only replacement
 described above; `vaultService.renameCard` adds the folded duplicate check, the boundary rewrites
@@ -368,16 +374,16 @@ service branches on that string rather than on message text.
 | A UID is filesystem-safe                                | `assertValidCardUid` in `electron/cardUid.ts` applies `^[A-Za-z0-9_\- ]+$` and the 100-character cap before any path is built from it                                                                                                          |
 | A card holds at most one reference per note             | `upsertCardReference` replaces the entry with the same `note_path` instead of appending                                                                                                                                                        |
 | One reference per UID per note                          | `dedupeParsedCards` keeps the first occurrence of a duplicated UID and emits a diagnostic                                                                                                                                                      |
+| Scheduling state is single-writer and valid             | `electron/reviewService.ts` computes it; `coerceCardDocument` normalises every value on read and write; the crashpad editor's save carries `metadata` through untouched                                                                        |
 | Boundaries are paired                                   | `parseCrashCardsFromNote` reports unbalanced or mismatched pairs; `verifyBoundaryIntegrity` refuses to apply a weave operation while error-severity diagnostics exist; `hasBlockingDiagnostics` blocks reference pruning from a malformed note |
 | A note's span never overwrites an existing card payload | `upsertCardReference` assigns `raw_content` from the parsed block only when the card's `raw_content` is blank                                                                                                                                  |
 | card JSON is only ever written whole                    | `writeJsonAtomically` plus the temp-file rename in `writeTextAtomically`                                                                                                                                                                       |
 | Reference pruning never deletes card files              | `removeCardReference`, `syncParsedCrashCards` and `rebuildCardStoreFromNotes` mutate only `referenced_in`                                                                                                                                      |
-| The index schema version is fixed                       | `VaultIndex.version` is the literal `1` in `coerceStoredIndex` and `buildIndex`                                                                                                                                                                |
+| The index schema version is fixed                       | `VaultIndex.version` is the literal `2` in `coerceStoredIndex` and `buildIndex`                                                                                                                                                                |
 
-Scheduling state exists in two places, and only one is in use. `CardMetadata` (`familiarity`,
-`next_review`) inside each card file is the copy the UI reads and edits
-(`useCrashpadCardEditor`, `CardMetadataPanel`). Each index entry's `ReviewMetadata`
-(`familiarity`, `lastReviewedAt`, `nextReviewAt`, `intervalDays`, `repetition`, `easeFactor`) is
-created with defaults and preserved across rebuilds, and its scheduling values are read nowhere. It
-is **kept deliberately for the planned review loop**, not as a second live source: the card file
-remains the copy in use. [The roadmap](../roadmap.md) reserves it for that loop.
+Scheduling state exists in one place. `CardMetadata` (`familiarity`, `next_review`,
+`interval_days`, `ease_factor`) inside each card file is the only copy. It is written by
+`electron/reviewService.ts` when a Review is recorded and is read-only everywhere else — the
+crashpad editor preserves it and the metadata panel displays it. The index used to carry a per-note
+`ReviewMetadata`; that field was removed with the review loop's arrival
+([ADR-0003](../adr/0003-card-level-review-state.md)) and version 1 indexes are rewritten without it.

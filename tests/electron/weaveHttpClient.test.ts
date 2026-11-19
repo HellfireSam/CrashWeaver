@@ -11,6 +11,7 @@ describe('weaveHttpClient', () => {
     type: string;
     responseContent?: string;
     status?: number;
+    errorMessage?: string;
   };
 
   function makeFakeFetch(behaviour: FakeFetchBehaviour) {
@@ -59,7 +60,7 @@ describe('weaveHttpClient', () => {
           ok: false,
           status: behaviour.status,
           async text() {
-            return JSON.stringify({ error: { message: 'Server error' } });
+            return JSON.stringify({ error: { message: behaviour.errorMessage ?? 'Server error' } });
           },
         };
       }
@@ -163,6 +164,33 @@ describe('weaveHttpClient', () => {
         5000,
       ),
     ).rejects.toMatchObject({ errorCategory: 'auth-error' });
+  });
+
+  it('OpenRouterHttpClient reports a region-blocked 403 as a model config error', async () => {
+    const client = new OpenRouterHttpClient(
+      'sk-test-key',
+      'https://crashweaver.app',
+      makeFakeFetch({
+        type: 'http-error',
+        status: 403,
+        errorMessage: 'This model is not available in your region.',
+      }),
+    );
+
+    await expect(
+      client.chatCompletion(
+        {
+          model: 'openai/gpt-4o',
+          messages: [{ role: 'user', content: 'Hello' }],
+          maxTokens: 100,
+          temperature: 0.2,
+        },
+        5000,
+      ),
+    ).rejects.toMatchObject({
+      errorCategory: 'config-error',
+      message: expect.stringContaining('Choose a different model'),
+    });
   });
 
   it('OpenRouterHttpClient throws rate-limit for 429 status', async () => {

@@ -10,6 +10,7 @@ import type {
   WeaverProviderHealth,
   WeaveStrength,
 } from '../../electron/vault-contract';
+import { AppIcon } from './AppIcon';
 import type { CardViewRecord, FocusWindow } from '../lib/cards';
 import { formatCardSyncSummary, formatFocusWindow } from '../lib/cards';
 import { WeaverProposalPanel } from './WeaverProposalPanel';
@@ -377,13 +378,14 @@ export function InspectorPane({
                 className="inspectorPanelClose"
                 onClick={() => updatePanelVisibility(false, isLlmPanelOpen)}
                 disabled={!isLlmPanelOpen}
+                aria-label="Close context panel"
                 title={
                   isLlmPanelOpen
                     ? 'Close context panel'
                     : 'At least one right-panel section must stay open'
                 }
               >
-                ×
+                <AppIcon name="x" />
               </button>
             </div>
             <div className="inspectorSubpanelBody">{renderContextBody()}</div>

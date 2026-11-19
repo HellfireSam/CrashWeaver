@@ -48,6 +48,11 @@ export const IPC_CHANNELS = {
     getDeletePreferences: 'crashpad:get-delete-preferences',
     setDeletePreferences: 'crashpad:set-delete-preferences',
   },
+  /** The card review loop: previewing and recording a Review. */
+  review: {
+    previewCard: 'review:preview-card',
+    scheduleCard: 'review:schedule-card',
+  },
   /** Agent concerns: provider, model, settings, API key and session state. */
   weaver: {
     healthCheck: 'weaver:health-check',

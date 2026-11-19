@@ -61,7 +61,9 @@ export function CardsWorkspace({
           </p>
         </div>
         <div className="blocksPills">
-          <span className="blocksPill">{visibleCards.length} cards</span>
+          <span className="blocksPill">
+            {visibleCards.length} {visibleCards.length === 1 ? 'card' : 'cards'}
+          </span>
           <span className="blocksPill ok">Focus: {formatFocusWindow(focusedWindow)}</span>
           <span className="blocksPill">
             {cardScope === 'current-note' ? 'Current note scope' : 'Current vault scope'}

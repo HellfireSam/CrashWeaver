@@ -1,0 +1,229 @@
+/*
+ * The card review surface: session header, the card being reviewed, and the
+ * four rating controls. A review replaces the editor body, so this file also
+ * owns the "nothing due" and completion states.
+ */
+
+.reviewWorkspace {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem clamp(1.25rem, 3vw, 2.5rem) 3rem;
+}
+
+.reviewWorkspace > * {
+  width: 100%;
+  max-width: 900px;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.reviewHeader > * {
+  min-width: 0;
+}
+
+.reviewHeader .panelTitle {
+  margin-bottom: 0.15rem;
+}
+
+.reviewProgress {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Card under review ──────────────────────────────────────────────────── */
+
+.reviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.3rem 1.35rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.reviewCardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.reviewCardHeader .detailKey {
+  margin-bottom: 0.15rem;
+}
+
+.reviewCardHeader h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.reviewCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.reviewCard .cardTagRow {
+  margin: 0;
+}
+
+.reviewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reviewSection .cardContentMarkdown {
+  margin-top: 0;
+}
+
+.reviewSection .cardDetailText {
+  margin: 0;
+}
+
+/* ── Rating controls ────────────────────────────────────────────────────── */
+
+.reviewRatingBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding-top: 1rem;
+  margin-top: 0.2rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.reviewRatingButton {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background var(--duration) var(--ease),
+    border-color var(--duration) var(--ease),
+    transform var(--duration) var(--ease);
+}
+
+.reviewRatingButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.reviewRatingButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.reviewRatingButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.reviewRatingLabel {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+.reviewRatingInterval {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.reviewRatingKey {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.55rem;
+  min-width: 1.1rem;
+  padding: 0.02rem 0.28rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xs);
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.reviewRatingButton:nth-child(1):hover:not(:disabled) {
+  border-color: rgba(224, 122, 114, 0.5);
+  background: var(--error-wash);
+}
+
+.reviewRatingButton:nth-child(2):hover:not(:disabled) {
+  border-color: rgba(215, 154, 85, 0.5);
+  background: var(--warning-wash);
+}
+
+.reviewRatingButton:nth-child(4):hover:not(:disabled) {
+  border-color: rgba(111, 191, 149, 0.5);
+  background: var(--success-wash);
+}
+
+/* ── Completion and empty states ────────────────────────────────────────── */
+
+.reviewComplete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 2.5rem 2rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  max-width: 560px;
+}
+
+.reviewComplete .placeholderBody {
+  max-width: 44ch;
+}
+
+.reviewComplete .actionButton {
+  margin-top: 0.7rem;
+}
+
+@media (max-width: 760px) {
+  .reviewRatingBar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A quiet response cue: the rating label carries its semantic colour, the
+   surface stays neutral until hover. */
+.reviewRatingButton:nth-child(1) .reviewRatingLabel {
+  color: var(--error-strong);
+}
+
+.reviewRatingButton:nth-child(2) .reviewRatingLabel {
+  color: var(--warning);
+}
+
+.reviewRatingButton:nth-child(4) .reviewRatingLabel {
+  color: var(--success);
+}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { WeavePlanOperation } from '../../electron/vault-contract';
+import { AppIcon } from './AppIcon';
 
 export type WeaverConfirmDialogProps = {
   destructiveOps: WeavePlanOperation[];
@@ -57,7 +58,9 @@ export function WeaverConfirmDialog({
     <div className="weaverConfirmOverlay" onClick={onCancel}>
       <div className="weaverConfirmDialog" onClick={(e) => e.stopPropagation()}>
         <div className="weaverConfirmHeader">
-          <span className="weaverConfirmIcon">⚠</span>
+          <span className="weaverConfirmIcon">
+            <AppIcon name="alert-triangle" />
+          </span>
           <h3>Confirm destructive changes</h3>
         </div>
 

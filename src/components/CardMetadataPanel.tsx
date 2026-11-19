@@ -1,22 +1,15 @@
 import type { CardViewRecord } from '../lib/cards';
-import { formatNextReview } from '../lib/cards';
+import { formatFamiliarity, formatNextReview } from '../lib/cards';
 
 type CardMetadataPanelProps = {
   card: Pick<
     CardViewRecord,
     'uid' | 'metadata' | 'currentReference' | 'cardFilePath' | 'references'
   >;
-  familiarity?: number | string;
-  nextReview?: string | null;
   onOpenNote?: (filePath: string) => Promise<void> | void;
 };
 
-export function CardMetadataPanel({
-  card,
-  familiarity = card.metadata.familiarity,
-  nextReview = card.metadata.next_review,
-  onOpenNote,
-}: CardMetadataPanelProps) {
+export function CardMetadataPanel({ card, onOpenNote }: CardMetadataPanelProps) {
   const canOpenNotes = Boolean(onOpenNote);
 
   return (
@@ -25,11 +18,11 @@ export function CardMetadataPanel({
       <div className="cardMetaGrid wide">
         <div>
           <p className="detailKey">Familiarity</p>
-          <p className="detailValue">{familiarity}</p>
+          <p className="detailValue">{formatFamiliarity(card.metadata.familiarity)}</p>
         </div>
         <div>
           <p className="detailKey">Next review</p>
-          <p className="detailValue">{formatNextReview(nextReview)}</p>
+          <p className="detailValue">{formatNextReview(card.metadata.next_review)}</p>
         </div>
         <div>
           <p className="detailKey">Current reference</p>

@@ -71,6 +71,14 @@ function categorizeHttpError(
 ): { category: WeaveErrorCategory; message: string } {
   if (status === 401 || status === 403) {
     const detail = extractOpenRouterErrorMessage(responseBody);
+    // A 403 also covers OpenRouter's region gate ("This model is not available
+    // in your region"), which is a model-choice problem, not a key problem.
+    if (detail && /region|not available in your/i.test(detail)) {
+      return {
+        category: 'config-error',
+        message: `This model is not available from your region. Choose a different model in the Weaver model picker. (${detail})`,
+      };
+    }
     return {
       category: 'auth-error',
       message: detail

@@ -43,9 +43,9 @@
 
 .vaultCardsHint {
   margin-bottom: 1rem;
-  border: 1px dashed rgba(127, 156, 245, 0.24);
+  border: 1px dashed rgba(224, 178, 92, 0.24);
   border-radius: 0.7rem;
-  background: rgba(127, 156, 245, 0.06);
+  background: rgba(224, 178, 92, 0.06);
   padding: 0.75rem 0.85rem;
 }
 
@@ -55,7 +55,7 @@
   padding: 0.2rem;
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  background: #20242f;
+  background: var(--bg-panel-raised);
 }
 
 .scopeButton {
@@ -69,9 +69,9 @@
 
 .scopeButton.active,
 .scopeButton:hover {
-  background: #31384a;
+  background: var(--bg-active);
   color: var(--text-primary);
-  border-color: rgba(127, 156, 245, 0.3);
+  border-color: rgba(224, 178, 92, 0.3);
 }
 
 .blocksPill,
@@ -88,13 +88,13 @@
 
 .blocksPill.ok,
 .cardStatusBadge.ok {
-  border-color: rgba(114, 198, 161, 0.28);
+  border-color: rgba(111, 191, 149, 0.28);
   color: var(--success);
 }
 
 .blocksPill.warning,
 .cardStatusBadge.missing {
-  border-color: rgba(242, 133, 133, 0.28);
+  border-color: rgba(224, 122, 114, 0.28);
   color: var(--error);
 }
 
@@ -237,7 +237,7 @@
 .cpEditor {
   border: 1px solid var(--border-soft);
   border-radius: 0.9rem;
-  background: rgba(31, 34, 43, 0.9);
+  background: rgba(18, 20, 23, 0.9);
   overflow: hidden;
 }
 
@@ -301,9 +301,9 @@
 }
 
 .cpFeedback {
-  border: 1px solid rgba(114, 198, 161, 0.24);
+  border: 1px solid rgba(111, 191, 149, 0.24);
   border-radius: 0.65rem;
-  background: rgba(114, 198, 161, 0.08);
+  background: rgba(111, 191, 149, 0.08);
   color: var(--text-primary);
   padding: 0.55rem 0.75rem;
   font-size: 0.87rem;
@@ -311,8 +311,8 @@
 }
 
 .cpFeedback.error {
-  border-color: rgba(242, 133, 133, 0.26);
-  background: rgba(242, 133, 133, 0.08);
+  border-color: rgba(224, 122, 114, 0.26);
+  background: rgba(224, 122, 114, 0.08);
 }
 
 .cpEditorFields {
@@ -479,10 +479,10 @@
 .cpDeleteForm {
   display: grid;
   gap: 0.6rem;
-  border: 1px solid rgba(242, 133, 133, 0.2);
+  border: 1px solid rgba(224, 122, 114, 0.2);
   border-radius: 0.75rem;
   padding: 0.8rem 0.85rem;
-  background: rgba(242, 133, 133, 0.05);
+  background: rgba(224, 122, 114, 0.05);
 }
 
 .cpDeleteStrictRow {
@@ -499,13 +499,13 @@
 }
 
 .cpDeleteConfirm {
-  border-color: rgba(242, 133, 133, 0.4) !important;
-  background: rgba(242, 133, 133, 0.12) !important;
+  border-color: rgba(224, 122, 114, 0.4) !important;
+  background: rgba(224, 122, 114, 0.12) !important;
 }
 
 .cpDeleteConfirm:hover:enabled {
-  border-color: rgba(242, 133, 133, 0.6) !important;
-  background: rgba(242, 133, 133, 0.22) !important;
+  border-color: rgba(224, 122, 114, 0.6) !important;
+  background: rgba(224, 122, 114, 0.22) !important;
 }
 
 .cpHistoryPanel {
@@ -631,7 +631,7 @@
 .cardDetailPanel {
   border: 1px solid var(--border-soft);
   border-radius: 0.8rem;
-  background: rgba(31, 34, 43, 0.92);
+  background: rgba(18, 20, 23, 0.92);
 }
 
 .cardsRail {
@@ -646,7 +646,7 @@
 .cardsRailItem {
   border: 1px solid var(--border-soft);
   border-radius: 0.7rem;
-  background: rgba(43, 47, 59, 0.9);
+  background: rgba(26, 28, 33, 0.9);
   color: inherit;
   text-align: left;
   padding: 0.68rem 0.75rem;
@@ -658,8 +658,8 @@
 
 .cardsRailItem:hover,
 .cardsRailItem.active {
-  border-color: rgba(127, 156, 245, 0.35);
-  background: rgba(51, 58, 75, 0.96);
+  border-color: rgba(224, 178, 92, 0.35);
+  background: rgba(36, 39, 45, 0.96);
 }
 
 .cardsRailTitle {
@@ -721,9 +721,9 @@
   align-items: center;
   border-radius: 999px;
   padding: 0.24rem 0.6rem;
-  border: 1px solid rgba(127, 156, 245, 0.24);
-  background: rgba(127, 156, 245, 0.1);
-  color: #dbe4ff;
+  border: 1px solid rgba(224, 178, 92, 0.24);
+  background: rgba(224, 178, 92, 0.1);
+  color: var(--text-primary);
   font-size: 0.78rem;
 }
 
@@ -746,8 +746,8 @@
 
 .cardTemplatePanel {
   border-top-style: solid;
-  border-top-color: rgba(127, 156, 245, 0.2);
-  background: rgba(22, 26, 35, 0.65);
+  border-top-color: rgba(224, 178, 92, 0.2);
+  background: rgba(14, 16, 19, 0.65);
   border-radius: 0.75rem;
   padding: 0.95rem;
 }
@@ -759,7 +759,7 @@
   gap: 0.35rem;
   border: 1px solid var(--border-soft);
   border-radius: 0.7rem;
-  background: #222734;
+  background: var(--bg-panel-raised);
   padding: 0.25rem;
 }
 
@@ -775,8 +775,8 @@
 
 .cardSegmentTab.active,
 .cardSegmentTab:hover {
-  border-color: rgba(127, 156, 245, 0.36);
-  background: #333a4c;
+  border-color: rgba(224, 178, 92, 0.36);
+  background: var(--bg-active);
   color: var(--text-primary);
 }
 
@@ -784,7 +784,7 @@
   width: 100%;
   border: 1px solid var(--border-soft);
   border-radius: 0.55rem;
-  background: #242936;
+  background: var(--bg-panel-raised);
   color: var(--text-primary);
   text-align: left;
   padding: 0.55rem 0.7rem;
@@ -792,7 +792,7 @@
 }
 
 .cardSectionToggle:hover {
-  border-color: rgba(127, 156, 245, 0.35);
+  border-color: rgba(224, 178, 92, 0.35);
 }
 
 .cardDetailText {
@@ -805,7 +805,7 @@
   margin-top: 0.65rem;
   border: 1px solid var(--border-soft);
   border-radius: 0.7rem;
-  background: #171b25;
+  background: var(--bg-input);
   padding: 0.85rem 0.9rem;
   color: var(--text-primary);
   line-height: 1.72;
@@ -826,20 +826,20 @@
 }
 
 .cardContentMarkdown a {
-  color: #adc0ff;
+  color: var(--accent-strong);
 }
 
 .cardContentMarkdown img {
   max-width: min(520px, 100%);
   height: auto;
   border-radius: 0.6rem;
-  border: 1px solid rgba(127, 156, 245, 0.24);
+  border: 1px solid rgba(224, 178, 92, 0.24);
 }
 
 .cardContentMarkdown code {
   font-family: var(--font-mono);
   font-size: 0.86em;
-  background: #10131b;
+  background: var(--bg-input);
   border: 1px solid var(--border-soft);
   border-radius: 0.35rem;
   padding: 0.08rem 0.32rem;
@@ -849,7 +849,7 @@
   overflow-x: auto;
   border: 1px solid var(--border-soft);
   border-radius: 0.6rem;
-  background: #10131b;
+  background: var(--bg-input);
   padding: 0.8rem;
 }
 
@@ -862,7 +862,7 @@
   margin-top: 0.6rem;
   border: 1px solid var(--border-soft);
   border-radius: 0.45rem;
-  background: #2b3040;
+  background: var(--bg-hover);
   color: var(--text-primary);
   cursor: pointer;
   padding: 0.36rem 0.58rem;
@@ -890,11 +890,11 @@
 }
 
 .inlineRevealButton:hover {
-  border-color: rgba(127, 156, 245, 0.4);
+  border-color: rgba(224, 178, 92, 0.4);
 }
 
 .focusOutline {
-  outline: 1px solid rgba(114, 198, 161, 0.55);
+  outline: 1px solid rgba(111, 191, 149, 0.55);
   outline-offset: 2px;
 }
 
@@ -930,7 +930,7 @@
 .referenceLinkButton {
   border: none;
   background: transparent;
-  color: #dce5ff;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 0;
   text-align: left;
@@ -950,7 +950,7 @@
 .diagnosticPanel {
   border: 1px solid var(--border-soft);
   border-radius: 0.7rem;
-  background: rgba(37, 39, 48, 0.82);
+  background: rgba(18, 20, 23, 0.82);
   padding: 0.95rem 1rem;
 }
 
@@ -991,7 +991,7 @@
 .diagnosticItem {
   display: grid;
   gap: 0.18rem;
-  border-left: 2px solid rgba(242, 133, 133, 0.35);
+  border-left: 2px solid rgba(224, 122, 114, 0.35);
   padding-left: 0.7rem;
   color: var(--text-muted);
   font-size: 0.88rem;

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { formatCardEndBoundary, formatCardStartBoundary } from '../cardParser';
 import { assertValidCardUid } from '../cardUid';
-import { cardDocumentExists, getCardFilePath } from '../cardStoreService';
+import { cardDocumentExists, createCardDocument, getCardFilePath } from '../cardStoreService';
 import { syncNoteToCardStore } from '../cardSyncService';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { writeJsonAtomically, writeTextAtomically } from '../utils/jsonFile';
@@ -270,17 +270,7 @@ export async function applyCreateNote(
   if (!cardExists) {
     const cardFilePath = getCardFilePath(cardStorePath, cardUid);
     const defaultCard = {
-      uid: cardUid,
-      type: [] as string[],
-      raw_content: '',
-      metadata: {
-        familiarity: 0,
-        next_review: null as string | null,
-      },
-      memory_tricks: {
-        memory_technique: '',
-        qa_pairs: [] as { q: string; a: string }[],
-      },
+      ...createCardDocument(cardUid),
       referenced_in: [
         {
           note_path: targetPath,

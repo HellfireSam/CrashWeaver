@@ -11,6 +11,7 @@ import { useCrashpadCardEditor } from '../hooks/useCrashpadCardEditor';
 import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll';
 import { useStoredScrollSync } from '../hooks/useStoredScrollSync';
 import { renderMarkdownPreview } from '../lib/markdownPreview';
+import { AppIcon } from './AppIcon';
 
 type CrashpadWorkspaceProps = {
   activeCrashpad: CrashpadDocument | null;
@@ -114,10 +115,6 @@ export function CrashpadWorkspace({
     setRawContent,
     typeCsv,
     setTypeCsv,
-    familiarity,
-    setFamiliarity,
-    nextReview,
-    setNextReview,
     memoryTechnique,
     setMemoryTechnique,
     qaPairs,
@@ -477,29 +474,6 @@ export function CrashpadWorkspace({
                               onChange={(e) => setTypeCsv(e.target.value)}
                             />
                           </div>
-                          <div className="cpField cpFieldNarrow">
-                            <label className="settingLabel" htmlFor="cpFamiliarity">
-                              Familiarity
-                            </label>
-                            <input
-                              id="cpFamiliarity"
-                              className="notePathInput"
-                              value={familiarity}
-                              onChange={(e) => setFamiliarity(e.target.value)}
-                            />
-                          </div>
-                          <div className="cpField cpFieldNarrow">
-                            <label className="settingLabel" htmlFor="cpNextReview">
-                              Next review
-                            </label>
-                            <input
-                              id="cpNextReview"
-                              className="notePathInput"
-                              value={nextReview}
-                              onChange={(e) => setNextReview(e.target.value)}
-                              placeholder="ISO date or blank"
-                            />
-                          </div>
                         </div>
 
                         <div className="cpField">
@@ -566,7 +540,7 @@ export function CrashpadWorkspace({
                                     aria-label={`Remove QnA pair ${index + 1}`}
                                     onClick={() => removeQaPair(index)}
                                   >
-                                    ×
+                                    <AppIcon name="x" />
                                   </button>
                                 </li>
                               ))}
@@ -680,8 +654,6 @@ export function CrashpadWorkspace({
                         {previewTab === 'metadata' ? (
                           <CardMetadataPanel
                             card={focusedCard}
-                            familiarity={familiarity}
-                            nextReview={nextReview || null}
                             onOpenNote={vaultPath ? onOpenNote : undefined}
                           />
                         ) : null}

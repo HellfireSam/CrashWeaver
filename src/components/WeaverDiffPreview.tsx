@@ -12,6 +12,7 @@ import type {
   MoveDirectoryPayload,
   DeleteDirectoryPayload,
 } from '../../electron/vault-contract';
+import { AppIcon } from './AppIcon';
 
 // ── Boundary format helpers (inlined from cardParser.ts for renderer use) ───
 
@@ -201,7 +202,9 @@ function RenameNoteDiff({ payload }: { payload: RenameNotePayload }) {
       <div className="weaverDiffHeader">Rename note</div>
       <div className="weaverPathArrow">
         <code className="weaverPathOld">{payload.fromPath}</code>
-        <span className="weaverPathArrowIcon">→</span>
+        <span className="weaverPathArrowIcon">
+          <AppIcon name="arrow-right" />
+        </span>
         <code className="weaverPathNew">{payload.toPath}</code>
       </div>
       <p className="weaverDiffReason">{payload.renameReason}</p>
@@ -215,7 +218,9 @@ function MoveNoteDiff({ payload }: { payload: MoveNotePayload }) {
       <div className="weaverDiffHeader">Move note</div>
       <div className="weaverPathArrow">
         <code className="weaverPathOld">{payload.fromPath}</code>
-        <span className="weaverPathArrowIcon">→</span>
+        <span className="weaverPathArrowIcon">
+          <AppIcon name="arrow-right" />
+        </span>
         <code className="weaverPathNew">{payload.toPath}</code>
       </div>
       <p className="weaverDiffReason">{payload.moveReason}</p>
@@ -226,7 +231,9 @@ function MoveNoteDiff({ payload }: { payload: MoveNotePayload }) {
 function DeleteNoteDiff({ payload }: { payload: DeleteNotePayload }) {
   return (
     <div className="weaverDiffPreview weaverDiffDestructive">
-      <div className="weaverDiffHeader">⚠ Delete note</div>
+      <div className="weaverDiffHeader">
+        <AppIcon name="alert-triangle" /> Delete note
+      </div>
       <p className="weaverDiffReason">{payload.deleteReason}</p>
       <p className="weaverDiffWarning">
         This note and all its content will be permanently deleted.
@@ -253,10 +260,14 @@ function CreateDirectoryDiff({ payload }: { payload: CreateDirectoryPayload }) {
 function RenameDirectoryDiff({ payload }: { payload: RenameDirectoryPayload }) {
   return (
     <div className="weaverDiffPreview weaverDiffDestructive">
-      <div className="weaverDiffHeader">⚠ Rename directory</div>
+      <div className="weaverDiffHeader">
+        <AppIcon name="alert-triangle" /> Rename directory
+      </div>
       <div className="weaverPathArrow">
         <code className="weaverPathOld">{payload.fromPath}</code>
-        <span className="weaverPathArrowIcon">→</span>
+        <span className="weaverPathArrowIcon">
+          <AppIcon name="arrow-right" />
+        </span>
         <code className="weaverPathNew">{payload.toPath}</code>
       </div>
       <p className="weaverDiffReason">{payload.renameReason}</p>
@@ -267,10 +278,14 @@ function RenameDirectoryDiff({ payload }: { payload: RenameDirectoryPayload }) {
 function MoveDirectoryDiff({ payload }: { payload: MoveDirectoryPayload }) {
   return (
     <div className="weaverDiffPreview weaverDiffDestructive">
-      <div className="weaverDiffHeader">⚠ Move directory</div>
+      <div className="weaverDiffHeader">
+        <AppIcon name="alert-triangle" /> Move directory
+      </div>
       <div className="weaverPathArrow">
         <code className="weaverPathOld">{payload.fromPath}</code>
-        <span className="weaverPathArrowIcon">→</span>
+        <span className="weaverPathArrowIcon">
+          <AppIcon name="arrow-right" />
+        </span>
         <code className="weaverPathNew">{payload.toPath}</code>
       </div>
       <p className="weaverDiffReason">{payload.moveReason}</p>
@@ -281,7 +296,9 @@ function MoveDirectoryDiff({ payload }: { payload: MoveDirectoryPayload }) {
 function DeleteDirectoryDiff({ payload }: { payload: DeleteDirectoryPayload }) {
   return (
     <div className="weaverDiffPreview weaverDiffDestructive">
-      <div className="weaverDiffHeader">⚠ Delete directory</div>
+      <div className="weaverDiffHeader">
+        <AppIcon name="alert-triangle" /> Delete directory
+      </div>
       <p className="weaverDiffReason">{payload.deleteReason}</p>
       <p className="weaverDiffWarning">
         This directory and all its contents will be permanently deleted.

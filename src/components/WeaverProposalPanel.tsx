@@ -7,6 +7,7 @@ import type {
   WeaveStrength,
 } from '../../electron/vault-contract';
 import { WeaverCardChip } from './WeaverCardChip';
+import { AppIcon } from './AppIcon';
 import { WeaverProgressFeed, type WeaverLiveEntry } from './WeaverProgressFeed';
 import { traceToLiveEntries } from './WeaverProgressFeed';
 import {
@@ -488,6 +489,16 @@ export function WeaverProposalPanel({
     }
   }, [applyResult]);
 
+  // A new plan (or a cleared session) starts with no per-operation decisions.
+  // Without this reset the index-keyed sets below carry one plan's Applied
+  // badges onto the next plan's same-numbered operations.
+  useEffect(() => {
+    setAcceptedOps(new Set());
+    setRejectedOps(new Set());
+    setAppliedOps(new Set());
+    setExpandedOps(new Set([0]));
+  }, [planResult]);
+
   const healthChecked = useRef(false);
   const modelListFetched = useRef(false);
   const isIntelligent = kind === 'intelligent';
@@ -519,14 +530,14 @@ export function WeaverProposalPanel({
   const providerStatusLabel = isCheckingHealth
     ? 'Checking…'
     : !healthChecked.current && !providerHealth
-      ? 'Checking…'
+      ? 'Not connected'
       : providerHealth
         ? providerHealth.provider
         : 'Unavailable';
   const providerStatusTitle = isCheckingHealth
     ? 'Checking provider status…'
     : !healthChecked.current && !providerHealth
-      ? 'Waiting for provider check…'
+      ? 'No crashpad open — open one to check the Weaver provider.'
       : providerHealth
         ? `${providerHealth.provider} · ${providerHealth.model}`
         : 'Provider status unavailable.';
@@ -545,12 +556,15 @@ export function WeaverProposalPanel({
   }, [providerHealth]);
 
   // Check if the stub (offline) provider is active
+  // Re-probe when the provider health changes: saving or clearing an API key
+  // re-runs the health check, and the Demo Mode badge must follow it without a
+  // reload.
   useEffect(() => {
     window.crashWeaver
       .isStubWeaverProvider()
       .then(setIsStubProvider)
       .catch(() => {});
-  }, []);
+  }, [providerHealth]);
 
   useEffect(() => {
     if (!activeDock) {
@@ -663,7 +677,7 @@ export function WeaverProposalPanel({
         status = e.ok ? 'ok' : 'error';
       } else if (phase === 'graph-complete') {
         status = 'ok';
-        detail = `${e.operations ?? '?'} ops · ${e.latencyMs ?? '?'}ms`;
+        detail = `${e.operations ?? '?'} ${e.operations === 1 ? 'op' : 'ops'} · ${e.latencyMs ?? '?'}ms`;
       } else if (phase === 'graph-fail') {
         status = 'error';
       }
@@ -1182,7 +1196,10 @@ export function WeaverProposalPanel({
         <div className="weaverComposerFooter">
           <div className="weaverInlineMetaRow">
             {planResult ? (
-              <span className="weaverInlineMeta">{planResult.plan.operations.length} ops</span>
+              <span className="weaverInlineMeta">
+                {planResult.plan.operations.length}{' '}
+                {planResult.plan.operations.length === 1 ? 'op' : 'ops'}
+              </span>
             ) : null}
             {planResult ? <span className="weaverInlineMeta">{planResult.latencyMs}ms</span> : null}
             {latestDiagnosticCode ? (
@@ -1358,7 +1375,9 @@ export function WeaverProposalPanel({
             <div
               className={`weaverApplyResultBanner ${applyResult.allOk ? 'weaverApplySuccess' : 'weaverApplyPartial'}`}
             >
-              <span className="weaverApplyResultIcon">{applyResult.allOk ? '✓' : '⚠'}</span>
+              <span className="weaverApplyResultIcon">
+                <AppIcon name={applyResult.allOk ? 'check-circle' : 'alert-triangle'} />
+              </span>
               <span className="weaverApplyResultText">
                 {applyResult.appliedCount} applied, {applyResult.failedCount} failed
               </span>

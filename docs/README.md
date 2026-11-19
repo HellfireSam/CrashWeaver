@@ -25,12 +25,18 @@ only; everything superseded lives in [the archive](./archive/README.md).
 
 - [ADR-0001: keep the two reference-mutation directions separate](./adr/0001-separate-reference-mutation-directions.md)
 - [ADR-0002: keep UID boundary markers optional in a create-note plan](./adr/0002-boundary-markers-optional-in-create-note.md)
+- [ADR-0003: card-level review state is the only review state](./adr/0003-card-level-review-state.md)
+- [ADR-0004: four-response SM-2-OSR scheduling](./adr/0004-sm2-osr-review-scheduling.md)
 
 ## Reference
 
 - [Card schema](./reference/card-schema.md)
 - [Boundary format](./reference/boundary-format.md)
 - [Card insert templates](./reference/card-insert-templates.md)
+- [Review scheduling](./reference/review-scheduling.md) — the card's scheduling state, the four
+  responses, due dates and the review queue
+- [Interface and visual system](./reference/interface.md) — the shell, design tokens, iconography
+  and where each stylesheet lives
 
 ## Guides
 

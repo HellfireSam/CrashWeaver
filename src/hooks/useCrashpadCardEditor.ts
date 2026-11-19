@@ -39,8 +39,6 @@ export function useCrashpadCardEditor({
   const [cardUid, setCardUid] = useState('');
   const [rawContent, setRawContent] = useState('');
   const [typeCsv, setTypeCsv] = useState('');
-  const [familiarity, setFamiliarity] = useState('0');
-  const [nextReview, setNextReview] = useState('');
   const [memoryTechnique, setMemoryTechnique] = useState('');
   const [qaPairs, setQaPairs] = useState<CardQaPair[]>([]);
   const [copyEmbedFeedback, setCopyEmbedFeedback] = useState(false);
@@ -70,8 +68,6 @@ export function useCrashpadCardEditor({
     setCardUid('');
     setRawContent('');
     setTypeCsv('');
-    setFamiliarity('0');
-    setNextReview('');
     setMemoryTechnique('');
     setQaPairs([]);
     setIsDeleteOpen(false);
@@ -88,8 +84,6 @@ export function useCrashpadCardEditor({
     setCardUid(focusedCard.uid);
     setRawContent(focusedCard.rawContent);
     setTypeCsv(focusedCard.type.join(', '));
-    setFamiliarity(String(focusedCard.metadata.familiarity));
-    setNextReview(focusedCard.metadata.next_review ?? '');
     setMemoryTechnique(focusedCard.memoryTricks.memory_technique);
     setQaPairs(focusedCard.memoryTricks.qa_pairs.map((pair) => ({ ...pair })));
     setIsDeleteOpen(false);
@@ -140,10 +134,6 @@ export function useCrashpadCardEditor({
         uid: cardUid.trim() || focusedCard.uid,
         type: normalizedType,
         raw_content: rawContent,
-        metadata: {
-          familiarity: Number.isFinite(Number(familiarity)) ? Number(familiarity) : 0,
-          next_review: nextReview.trim() || null,
-        },
         memory_tricks: {
           memory_technique: memoryTechnique,
           qa_pairs: qaPairs,
@@ -214,10 +204,6 @@ export function useCrashpadCardEditor({
     setRawContent,
     typeCsv,
     setTypeCsv,
-    familiarity,
-    setFamiliarity,
-    nextReview,
-    setNextReview,
     memoryTechnique,
     setMemoryTechnique,
     qaPairs,
