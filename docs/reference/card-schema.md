@@ -27,18 +27,19 @@ Card documents are consumed by:
 | Main     | `electron/cardStoreService.ts`                                                                                                                                                                                  | Reads, writes, lists and deletes one card file per UID; owns normalisation.                                                                                                                                                                                                            |
 | Main     | `electron/cardSyncService.ts`                                                                                                                                                                                   | `enrichParsedCardsWithStoreState`, `syncParsedCrashCards` and `rebuildCardStoreFromNotes` create and refresh cards from note boundaries; only `enrichParsedCardsWithStoreState` attaches the stored card to each `ParsedCrashCard` as `linkedCard`, the other two returning summaries. |
 | Main     | `electron/vaultService.ts`                                                                                                                                                                                      | Orchestrates `createCard`, `saveCard`, `renameCard`, `deleteCard` and `restoreDeletedCard` over the `card-store:*` IPC channels.                                                                                                                                                       |
+| Main     | `electron/reviewService.ts`                                                                                                                                                                                     | The only writer of scheduling state: `previewCardReview` and `scheduleCardReview` re-read a card, apply `electron/services/reviewScheduling.ts` and write it back through the card store (the `review:*` channels).                                                                    |
 | Main     | `electron/services/crashpadCardMutationService.ts`, `electron/services/cardReferenceMutationService.ts`                                                                                                         | Rewrite UIDs in crashpad entries and snapshots on rename, and rewrite or remove UID boundaries in notes from a card's `referenced_in`.                                                                                                                                                 |
 | Main     | `electron/weaver/weaveContextService.ts`                                                                                                                                                                        | `buildWeaveContextSnapshot` reads the focused card and uses `uid`, `type`, `raw_content`, `memory_tricks` and `referenced_in` to build retrieval tokens and prompt context.                                                                                                            |
 | Main     | `electron/weaver/weaveApplyPathHandlers.ts`, `electron/weaver/weaveApplyNoteHandlers.ts`                                                                                                                        | Reads cards to rewrite `referenced_in` during note rename, move and delete (path-mutation handlers); creates a default card document when `create-note` targets a UID with no file (the note-content handler `applyCreateNote`).                                                       |
 | Preload  | `electron/preload.ts`                                                                                                                                                                                           | Declares the typed `window.crashWeaver` card surface, mirrored in `src/vite-env.d.ts`.                                                                                                                                                                                                 |
 | Renderer | `src/lib/cards.ts`                                                                                                                                                                                              | Maps `CardDocument` to the camelCase `CardViewRecord` the UI renders.                                                                                                                                                                                                                  |
-| Renderer | `src/components/CardMetadataPanel.tsx`, `src/components/CardsWorkspace.tsx`, `src/components/CrashpadWorkspace.tsx` with `src/hooks/useCrashpadCardEditor.ts` and `src/hooks/useCrashpadCardMutationActions.ts` | Reads card fields for display; the crashpad editor is the only surface that edits them.                                                                                                                                                                                                |
+| Renderer | `src/components/CardMetadataPanel.tsx`, `src/components/CardsWorkspace.tsx`, `src/components/CrashpadWorkspace.tsx` with `src/hooks/useCrashpadCardEditor.ts` and `src/hooks/useCrashpadCardMutationActions.ts` | Reads card fields for display; the crashpad editor edits the payload (title, tags, content, memory tricks) and preserves scheduling state untouched.                                                                                                                                   |
+| Renderer | `src/components/ReviewWorkspace.tsx` with `src/hooks/useReviewSession.ts` and `src/lib/reviewQueue.ts`                                                                                                          | The review surface: selects the Due cards, shows each card, previews the four intervals and records the response through the main process.                                                                                                                                             |
 
-`ReviewMetadata` in the same file is not part of a card. It belongs to `VaultIndexEntry.review`,
-the vault index entry for a note, and carries `familiarity`, `lastReviewedAt`, `nextReviewAt`,
-`intervalDays`, `repetition` and `easeFactor`; `createDefaultReviewMetadata` in
-`electron/services/vaultIndexService.ts` supplies them. A card's scheduling state is the smaller
-`CardMetadata` described below.
+There is one review state in the system and it lives on the card. The vault index has no review
+field; a former per-note `ReviewMetadata` was removed with the loop's arrival —
+[ADR-0003](../adr/0003-card-level-review-state.md) records why. The four responses, the scheduling
+formulas and the due rules are [review-scheduling.md](./review-scheduling.md).
 
 ## Fields
 
@@ -51,8 +52,10 @@ the field is absent or wrongly typed on disk.
 | `type`                           | `string[]`            | yes      | The card's categorisation. The crashpad editor labels the field "Tags" and edits it as a comma-separated list; the Weaver uses the entries as retrieval tokens. | `[]`. A non-array becomes `[]` and non-string entries are dropped; duplicates are kept.                                                                                                                                                                                                                                        |
 | `raw_content`                    | `string`              | yes      | The card's markdown payload: the knowledge the card stands for, and what a boundary span stands in for.                                                         | `''`. A non-string or whitespace-only value falls back to the parsed note block; if there is none, `''`. A card created from a boundary pair gets the block trimmed.                                                                                                                                                           |
 | `metadata`                       | `CardMetadata`        | yes      | The review-state container.                                                                                                                                     | The defaults below; a non-object is replaced wholesale.                                                                                                                                                                                                                                                                        |
-| `metadata.familiarity`           | `number`              | yes      | How well the user knows the card, as scheduling state.                                                                                                          | `0`. Accepted only when `typeof` is `number`, so `NaN` passes through. Nothing clamps or scales it.                                                                                                                                                                                                                            |
-| `metadata.next_review`           | `string \| null`      | yes      | The date the card becomes due for review.                                                                                                                       | `null`. Any string is accepted verbatim — the store never parses, validates or reformats it, and an empty string stays empty on disk. The editor turns a blank input into `null`.                                                                                                                                              |
+| `metadata.familiarity`           | `number`              | yes      | The last review response: `0` never reviewed, `1` Again, `2` Hard, `3` Good, `4` Easy.                                                                          | `0`. Rounded and clamped to 0–4; a non-number or `NaN` becomes `0`.                                                                                                                                                                                                                                                            |
+| `metadata.next_review`           | `string \| null`      | yes      | The calendar date (`YYYY-MM-DD`) the card next becomes Due.                                                                                                     | `null`. A string that is not a real `YYYY-MM-DD` date becomes `null`; nothing else is reformatted.                                                                                                                                                                                                                             |
+| `metadata.interval_days`         | `number`              | yes      | Whole days between the last review and the next one; `0` means due today.                                                                                       | `0`. Truncated to an integer and floored at 0; a non-number becomes `0`.                                                                                                                                                                                                                                                       |
+| `metadata.ease_factor`           | `number`              | yes      | The SM-2 ease: `2.5` at the start, floored at `1.3`.                                                                                                            | `2.5`. Rounded to two decimals and floored at `1.3`; a non-number becomes `2.5`.                                                                                                                                                                                                                                               |
 | `memory_tricks`                  | `CardMemoryTricks`    | yes      | The card's mnemonic aids.                                                                                                                                       | The defaults below; a non-object is replaced wholesale.                                                                                                                                                                                                                                                                        |
 | `memory_tricks.memory_technique` | `string`              | yes      | One technique phrase or keyword for the card.                                                                                                                   | `''`. Non-strings become `''`.                                                                                                                                                                                                                                                                                                 |
 | `memory_tricks.qa_pairs`         | `CardQaPair[]`        | yes      | Question and answer prompts.                                                                                                                                    | `[]`. A non-array becomes `[]`; entries that are not objects are dropped; `q` and `a` are forced to strings, and an entry with both sides empty is dropped.                                                                                                                                                                    |
@@ -63,10 +66,10 @@ the field is absent or wrongly typed on disk.
 | `referenced_in[].start_line`     | `number`              | yes      | 1-based line number of the `%%CW_CARD_START%%` marker.                                                                                                          | `1`. A number is truncated and clamped to at least 1, except a non-finite one, which passes through unchanged; a non-number becomes 1. A JSON file on disk cannot carry a non-finite number.                                                                                                                                   |
 | `referenced_in[].end_line`       | `number`              | yes      | 1-based line number of the matching `%%CW_CARD_END%%` marker.                                                                                                   | `1`, normalised the same way as `start_line`.                                                                                                                                                                                                                                                                                  |
 
-`familiarity` and `next_review` are the inputs to a planned review-scheduling function: the user
-reviews notes, and the app uses each card's familiarity together with a standard spaced-repetition
-algorithm to compute the next recommended review time. The store enforces no range or format today;
-the field meanings above are the contract until that function lands.
+The four `metadata` fields are the card's scheduling state. Only `electron/reviewService.ts` writes
+them, when a Review is recorded; the store normalises them on every read and write.
+[review-scheduling.md](./review-scheduling.md) states the formulas, and
+[ADR-0004](../adr/0004-sm2-osr-review-scheduling.md) records why this algorithm was chosen.
 
 ## Parsed and storage shapes around the card
 
@@ -87,7 +90,7 @@ This document matches `CardDocument` exactly: every field present, nested types 
   "uid": "reliability-001",
   "type": ["concept", "engineering"],
   "raw_content": "A system is reliable when it keeps its promises under load.",
-  "metadata": { "familiarity": 0, "next_review": null },
+  "metadata": { "familiarity": 0, "next_review": null, "interval_days": 0, "ease_factor": 2.5 },
   "memory_tricks": {
     "memory_technique": "Promise keeper",
     "qa_pairs": [{ "q": "What makes a system reliable?", "a": "It keeps its promises under load." }]
@@ -114,16 +117,20 @@ There are three entry points, and all three normalise.
    the renderer over the `card-store:list-cards` channel and become `CardViewRecord`s through
    `toCardViewRecordFromCard` or, for a parsed note card, `toCardViewRecordFromParsedCard`.
 3. From the renderer. `useCrashpadCardEditor` assembles a `CardDocument` in `handleSave`
-   (`buildEditableCard` maps a `CardViewRecord` back to the contract), and
-   `handleSaveCrashpadCard` in `src/hooks/useCrashpadCardMutationActions.ts` sends it through
-   `window.crashWeaver.saveCard` or, when the UID changed, `renameCard`; a new card goes through
-   `createCard`. `createFallbackCard` in `src/lib/cards.ts` also builds a card-shaped object from
-   a parsed span, but only for display when no card file is linked.
+   (`buildEditableCard` maps a `CardViewRecord` back to the contract, carrying `metadata` and
+   `referenced_in` through untouched), and `handleSaveCrashpadCard` in
+   `src/hooks/useCrashpadCardMutationActions.ts` sends it through `window.crashWeaver.saveCard` or,
+   when the UID changed, `renameCard`; a new card goes through `createCard`. `createFallbackCard`
+   in `src/lib/cards.ts` also builds a card-shaped object from a parsed span, but only for display
+   when no card file is linked.
+4. From a Review. `electron/reviewService.ts`'s `scheduleCardReview` reads the card, computes the
+   next `metadata` and writes the whole card through `writeCardDocument`; this is the only writer
+   of scheduling state.
 
-The exception is `applyCreateNote` in `electron/weaver/weaveApplyNoteHandlers.ts`: when a `create-note`
-operation names a `cardUid` with no file, it writes a default card document straight through
-`writeJsonAtomically` with an inline object literal. It matches the schema but is not produced by
-`coerceCardDocument`; the next read normalises it.
+`applyCreateNote` in `electron/weaver/weaveApplyNoteHandlers.ts` is not a fourth entry point any
+more: when a `create-note` operation names a `cardUid` with no file it builds the default document
+with `createCardDocument` (the same factory the card store uses), overrides `referenced_in`, and
+writes it straight through `writeJsonAtomically`; the next read normalises it.
 
 ## Where cards are stored on disk
 
@@ -249,17 +256,17 @@ projects the visible and focused cards and derives the default Weave card;
 
 Display. `src/components/CardsWorkspace.tsx` renders the `CardDetailTab` views `content`,
 `memory-technique`, `qna` and `metadata` from a `CardViewRecord`. `CardMetadataPanel` shows
-`metadata.familiarity`, `metadata.next_review` through `formatNextReview` (which prints
-"Not scheduled" for `null`), `currentReference` with its `start_line` and `end_line`,
-`cardFilePath`, and the count and list of `references`. These surfaces are read-only.
+`metadata.familiarity` through `formatFamiliarity` (New/Again/Hard/Good/Easy) and
+`metadata.next_review` through `formatNextReview` (which prints "Not scheduled" for `null`), plus
+`currentReference` with its `start_line` and `end_line`, `cardFilePath`, and the count and list of
+`references`. These surfaces are read-only; the values change only through a Review.
 
-Editing. `src/hooks/useCrashpadCardEditor.ts` is the form model, and its state mirrors the contract
-one-to-one: `cardUid`; `typeCsv`, a comma-separated string split and trimmed into `type`;
-`rawContent`; `familiarity`, a string that `handleSave` converts with `Number`, falling back to 0
-when not finite; `nextReview`, blank becoming `null`; `memoryTechnique`; and `qaPairs`, with
-`updateQaPair` and `removeQaPair`. `handleSave` merges those into a `CardDocument` over
-`buildEditableCard(focusedCard)`, leaving `referenced_in` untouched, and hands it to
-`onSaveFocusedCard`. `src/components/CrashpadWorkspace.tsx` renders those fields plus the
+Editing. `src/hooks/useCrashpadCardEditor.ts` is the form model for the card **payload**:
+`cardUid`; `typeCsv`, a comma-separated string split and trimmed into `type`; `rawContent`;
+`memoryTechnique`; and `qaPairs`, with `updateQaPair` and `removeQaPair`. `handleSave` merges those
+into a `CardDocument` over `buildEditableCard(focusedCard)`, which carries the stored `metadata` and
+`referenced_in` through untouched — scheduling state is read-only in this editor, so a save cannot
+overwrite a review's result. It hands the card to `onSaveFocusedCard`. `src/components/CrashpadWorkspace.tsx` renders those fields plus the
 `CardMetadataPanel` preview. `handleSaveCrashpadCard` in
 `src/hooks/useCrashpadCardMutationActions.ts` then calls `renameCard` when the edited UID differs
 from the stored one and `saveCard` otherwise; `applyCardRenameResult` in

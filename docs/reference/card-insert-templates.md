@@ -36,7 +36,8 @@ Each payload is a complete card-store document with the six `CardDocument` keys.
 - `referenced_in` is produced by the card sync from the note's UID boundaries: leave it `[]`.
 - `raw_content` is the prose the boundary pair wraps; `upsertCardReference` seeds an empty card from
   the wrapped span's text.
-- A new card starts at `familiarity: 0` and `next_review: null`.
+- A new card starts at `familiarity: 0`, `next_review: null`, `interval_days: 0` and
+  `ease_factor: 2.5`; only the review loop changes those.
 
 ### Concept card
 
@@ -48,7 +49,7 @@ gives the test that tells it apart from its neighbours; the memory trick carries
   "uid": "concept-polymorphism",
   "type": ["concept", "oop"],
   "raw_content": "## Polymorphism\n\nOne interface, many concrete implementations. The caller codes against a shared contract and runtime dispatch picks the behaviour.\n\nThe useful test: adding an implementation does not change the calling code.",
-  "metadata": { "familiarity": 0, "next_review": null },
+  "metadata": { "familiarity": 0, "next_review": null, "interval_days": 0, "ease_factor": 2.5 },
   "memory_tricks": {
     "memory_technique": "One plug, many sockets — the contract is the socket.",
     "qa_pairs": [
@@ -76,7 +77,7 @@ put the stopping condition at the end, and let the mnemonic compress the step na
   "uid": "process-branch-rebase",
   "type": ["process", "git"],
   "raw_content": "## Rebasing a feature branch\n\n1. Fetch the base branch.\n2. Rebase the feature branch onto it.\n3. Resolve conflicts, then continue the rebase.\n4. Force-push with lease.\n\nStop and ask if a conflict would rewrite a commit a teammate has already reviewed.",
-  "metadata": { "familiarity": 0, "next_review": null },
+  "metadata": { "familiarity": 0, "next_review": null, "interval_days": 0, "ease_factor": 2.5 },
   "memory_tricks": {
     "memory_technique": "Fetch, rebase, resolve, push-with-lease.",
     "qa_pairs": [
@@ -105,7 +106,7 @@ a short orientation block. Cards write `qa_pairs` directly.
   "uid": "drill-http-status-classes",
   "type": ["drill", "http"],
   "raw_content": "## HTTP status classes\n\n2xx success, 3xx redirection, 4xx caller error, 5xx server error.\n\nThis card is carried by its question and answer pairs.",
-  "metadata": { "familiarity": 0, "next_review": null },
+  "metadata": { "familiarity": 0, "next_review": null, "interval_days": 0, "ease_factor": 2.5 },
   "memory_tricks": {
     "memory_technique": "Four is your fault, five is theirs.",
     "qa_pairs": [
@@ -131,7 +132,7 @@ Use when two or more options must be told apart: put the alternatives in a table
   "uid": "compare-cache-aside-vs-write-through",
   "type": ["comparison", "caching"],
   "raw_content": "## Cache-aside vs write-through\n\n| | Cache-aside | Write-through |\n| --- | --- | --- |\n| Writes | Cache, source updated by caller | Cache and source together |\n| Failure mode | Stale reads unless invalidation is explicit | Higher write latency |\n\nChoose write-through when staleness is unacceptable; otherwise cache-aside is the simpler default.",
-  "metadata": { "familiarity": 0, "next_review": null },
+  "metadata": { "familiarity": 0, "next_review": null, "interval_days": 0, "ease_factor": 2.5 },
   "memory_tricks": {
     "memory_technique": "Write-through pays on every write to never be stale.",
     "qa_pairs": [
@@ -157,7 +158,7 @@ is `""` with no mnemonic aids, waiting for a first capture.
   "uid": "capture-etag-tradeoff",
   "type": ["capture"],
   "raw_content": "ETag revalidation saves payload transfer but costs a round trip — work out when it pays.",
-  "metadata": { "familiarity": 0, "next_review": null },
+  "metadata": { "familiarity": 0, "next_review": null, "interval_days": 0, "ease_factor": 2.5 },
   "memory_tricks": { "memory_technique": "", "qa_pairs": [] },
   "referenced_in": []
 }

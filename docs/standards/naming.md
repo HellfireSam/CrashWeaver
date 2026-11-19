@@ -8,7 +8,7 @@ Names are how the code and the domain stay the same language. The domain vocabul
 Every domain concept has one name, defined in [`CONTEXT.md`](../../CONTEXT.md): Crash Card (short
 form "card"), Note, Vault, Card store, UID, UID boundary, Reference, Orphaned card, Crashpad,
 Weaver, weave, Weave plan, Weave operation, Approval gate, Guided insert, Intelligent weave, Weave
-strength, Memory tricks, Familiarity, Next review, Diagnostic.
+strength, Memory tricks, Familiarity, Next review, Due, Review, Review session, Diagnostic.
 
 Use those words — in identifiers, tests, comments, commit messages and documentation. Do not
 introduce a synonym, however natural it sounds: "flashcard", "learning item", "study unit" and
@@ -43,7 +43,7 @@ declared once in `electron/ipcChannels.ts`; call sites read the declaration rath
 name again:
 
 - **Request/response channels** are `<area>:<imperative-verb>`, for example `vault:read-note`,
-  `card-store:save-card`, `weave:generate-plan`. The verb is what the main process does.
+  `card-store:save-card`, `review:schedule-card`, `weave:generate-plan`. The verb is what the main process does.
 - **Push/event channels** are `<area>:<event>`, for example `weave:plan-progress`,
   `vault:external-change`. The name is the event, not an instruction.
 - The area follows the same rule as everything else: **agent concerns use `weaver:`**, and

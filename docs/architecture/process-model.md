@@ -75,7 +75,7 @@ table groups the shapes by what they describe:
 
 | Group                                | Representative exports                                                                                                                                                                                                            | Who uses it                                                             |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Crash Card payload and review state  | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `ReviewMetadata`                                                                                                                           | Main persists it; renderer renders it                                   |
+| Crash Card payload and review state  | `CardDocument`, `CardMetadata`, `CardMemoryTricks`, `CardQaPair`, `CardNoteReference`, `CardReviewResponse`, `CardReviewSnapshot`                                                                                                 | Main persists it and schedules it; renderer renders and rates it        |
 | UID boundary parsing and Diagnostics | `ParsedCrashCard`, `ParsedCrashCardsNote`, `CardParseDiagnostic`                                                                                                                                                                  | Main produces Diagnostics; renderer displays them                       |
 | Vault                                | `VaultDescriptor`, `VaultNoteSummary`, `VaultNoteDocument`, `VaultIndex`, `VaultIndexEntry`, `VaultWriteNoteInput`, `VaultWriteNoteResult`                                                                                        | Returned by `vault:*` channels; the descriptor lives in `VaultContext`  |
 | Crashpad                             | `CrashpadDocument`, `CrashpadSummary`, `CrashpadCardEntry`, `CrashpadDeletedCardSnapshot`, `CrashpadDeletePreferences`                                                                                                            | Main persists; renderer authors and restores                            |
@@ -101,9 +101,10 @@ what is on the wire.
 
 `electron/ipcChannels.ts` declares every request/response and event channel exactly once. The
 names are a nested `as const` object, so every value is a string-literal type and the file holds
-no behaviour at all; they are grouped by area (`vault`, `cardStore`, `crashpad`, `weaver` for the
-agent's provider, model, settings, key and session channels, `weave` for the two channels of one
-run, and an `events` group for the two push channels). It is the only home for a channel string:
+no behaviour at all; they are grouped by area (`vault`, `cardStore`, `crashpad`, `review` for the
+card review loop's preview and scheduling channels, `weaver` for the agent's provider, model,
+settings, key and session channels, `weave` for the two channels of one run, and an `events` group
+for the two push channels). It is the only home for a channel string:
 `electron/main.ts` registers with `ipcMain.handle(IPC_CHANNELS.<area>.<name>, handler)` and
 `electron/preload.ts` invokes and subscribes with the same values, so a renamed channel is one
 edit and the two sides cannot spell it differently. The declaration imports nothing and is not
@@ -191,7 +192,7 @@ the three shell pieces:
 - `src/components/AppChrome.tsx` — the floating window utility strip, the widget rail and the
   layout grid the surfaces sit in.
 - `src/components/EditorSurface.tsx` — the editor tab strip, view-mode and card-scope controls,
-  the source, preview, cards and Crashpad surfaces, and the status bar.
+  the source, preview, cards, Crashpad and review surfaces, and the status bar.
 - `src/hooks/useWeaverController.ts` — the Weaver controller: composer state and its effects,
   provider health, plan generation, apply with the destructive-operation confirmation gate,
   session history and Weaver settings writes. `App.tsx` spreads the controller's `inspectorProps`
@@ -208,12 +209,12 @@ need.
 `EditorStateProvider`, `WeaverStateProvider`, `UIStateProvider`. `src/state/index.ts` re-exports
 the providers, hooks and types.
 
-| Context | File                          | State it owns                                                                                                                                                                                                                        | Hook                                                              |
-| ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Vault   | `src/state/VaultContext.tsx`  | `vaultPath`, the `vault` descriptor, `vaultAlias`, `allCards`, `internalDirectories`, `crashpadSummaries`, `activeCrashpad`, `crashpadDeletePreferences`                                                                             | `useVaultState`, plus `useVaultStateValues` for values-only memos |
-| Editor  | `src/state/EditorContext.tsx` | `activeEditorKind` (`markdown`, `crashpad`, `card`), active card and Note paths, `draftPath`/`draftContent`/`savedContent`, `activeNote`, `viewMode`, `cardScope`, loading flags, `statusMessage`, `errorMessage`, `editorFontSize`  | `useEditorState`, plus `clearEditorState` for a Vault close       |
-| Weaver  | `src/state/WeaverContext.tsx` | `weaveKind`, `weaveStrength`, guided-insert permissions, `weaveIntent`, `weaverModel`, `weavePlanResult`, `weaverProviderHealth`, `weaverSettings`, `weaverSessions`, `weaveApplyResult`, apply errors and in-flight flags           | `useWeaverState`                                                  |
-| UI      | `src/state/UIContext.tsx`     | `expandedFolders`, `activeSidebarTab`, sidebar and Inspector visibility, `isSettingsOpen`, `openFirstNoteOnVaultOpen`, `showHiddenEntries`, `focusedCardUid`, `focusedWindow`, `activeWidgetTool`, the Crashpad undo and redo stacks | `useUIState`, plus `pushCrashpadHistory`                          |
+| Context | File                          | State it owns                                                                                                                                                                                                                                 | Hook                                                              |
+| ------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Vault   | `src/state/VaultContext.tsx`  | `vaultPath`, the `vault` descriptor, `vaultAlias`, `allCards`, `internalDirectories`, `crashpadSummaries`, `activeCrashpad`, `crashpadDeletePreferences`                                                                                      | `useVaultState`, plus `useVaultStateValues` for values-only memos |
+| Editor  | `src/state/EditorContext.tsx` | `activeEditorKind` (`markdown`, `crashpad`, `card`, `review`), active card and Note paths, `draftPath`/`draftContent`/`savedContent`, `activeNote`, `viewMode`, `cardScope`, loading flags, `statusMessage`, `errorMessage`, `editorFontSize` | `useEditorState`, plus `clearEditorState` for a Vault close       |
+| Weaver  | `src/state/WeaverContext.tsx` | `weaveKind`, `weaveStrength`, guided-insert permissions, `weaveIntent`, `weaverModel`, `weavePlanResult`, `weaverProviderHealth`, `weaverSettings`, `weaverSessions`, `weaveApplyResult`, apply errors and in-flight flags                    | `useWeaverState`                                                  |
+| UI      | `src/state/UIContext.tsx`     | `expandedFolders`, `activeSidebarTab`, sidebar and Inspector visibility, `isSettingsOpen`, `openFirstNoteOnVaultOpen`, `showHiddenEntries`, `focusedCardUid`, `focusedWindow`, `activeWidgetTool`, the Crashpad undo and redo stacks          | `useUIState`, plus `pushCrashpadHistory`                          |
 
 All four are in-memory only; durable state lives in the Vault or in the main-process settings
 document.
@@ -226,30 +227,31 @@ document.
 `useEditorDocumentActions`, `useNoteSaveActions`, `useEditorTabs`, `useEditorTabViewState`,
 `useStoredScrollSync` and `useHorizontalWheelScroll`; Crashpad work in `useCrashpadActions`,
 `useCrashpadCardEditor`, `useCrashpadCardMutationActions`, `useCrashpadHistoryActions` and
-`useDailyCrashpadActions`; cards in `useCardDetailState` and `useCardRenameActions`; UI in
-`useAppUiInteractions`, `useSidebarActions` and `usePaneLayout`; the Weaver controller in
-`useWeaverController`. Most take their dependencies as an options object and return callbacks;
+`useDailyCrashpadActions`; cards in `useCardDetailState` and `useCardRenameActions`; the review session in
+`useReviewSession`; UI in `useAppUiInteractions`, `useSidebarActions` and `usePaneLayout`; the
+Weaver controller in `useWeaverController`. Most take their dependencies as an options object and return callbacks;
 `App.tsx` supplies the context setters. The Weaver controller is the exception: it reads the state
 contexts itself and takes only the catalogue refreshes, the active-editor flag, the focused
 Crashpad card and the editor ref from the root.
 
 `src/components/` holds the renderer components: `AppSidebar` (explorer and Vault info tabs, built with
 `buildExplorerTree` and the virtualised `ExplorerTree`), the authoring and inspection surfaces
-`CardsWorkspace`, `CrashpadWorkspace`, `CardMetadataPanel` and `InspectorPane`, `SettingsModal`,
-and the Weaver surfaces `WeaverProposalPanel`, `WeaverCardChip`, `WeaverProgressFeed`,
-`WeaverOperationItem`, `WeaverDiffPreview`, `WeaverUnifiedDiffModal`, `WeaverConfirmDialog` and
-`WeaverSessionHistory`. A few components call `window.crashWeaver` directly rather than going
+`CardsWorkspace`, `CrashpadWorkspace`, `CardMetadataPanel`, `ReviewWorkspace` and
+`InspectorPane`, `SettingsModal`, and the Weaver surfaces `WeaverProposalPanel`,
+`WeaverCardChip`, `WeaverProgressFeed`, `WeaverOperationItem`, `WeaverDiffPreview`,
+`WeaverUnifiedDiffModal`, `WeaverConfirmDialog` and `WeaverSessionHistory`. A few components call `window.crashWeaver` directly rather than going
 through `App.tsx`: `WeaverProposalPanel` uses `isStubWeaverProvider`, `listWeaverModels` and
 `onWeavePlanProgress`, `WeaverSessionHistory` uses `getWeaverSession`, and
-`WeaverUnifiedDiffModal` uses `readNote`. `src/components/WeaverCardChip.test.tsx` is the first
-component suite: it runs under jsdom and asserts the card chip's rendered title and tooltip,
-because CSS line clamping is not unit-testable.
+`WeaverUnifiedDiffModal` uses `readNote`. Two component suites exist: `WeaverCardChip.test.tsx`
+asserts the card chip's rendered title and tooltip, because CSS line clamping is not unit-testable,
+and `ReviewWorkspace.test.tsx` renders the review surface and asserts the card, the per-response
+intervals, the click and keyboard ratings, and the completion summary.
 
 `src/lib/` holds the pure helpers — `cardProjection.ts`, `cards.ts`, `crashpadHistory.ts`,
 `crashpadStatus.ts`, `editorPaths.ts`, `errorUtils.ts`, `explorerTree.ts`, `layout.ts`,
-`markdownPreview.ts`, `stateUtils.ts` — with no React state and no IPC. Vitest suites sit beside
-`cardProjection.ts`, `crashpadStatus.ts`, `editorPaths.ts`, `layout.ts` and
-`markdownPreview.ts`.
+`markdownPreview.ts`, `reviewQueue.ts`, `stateUtils.ts` — with no React state and no IPC. Vitest
+suites sit beside `cardProjection.ts`, `cards.ts`, `crashpadStatus.ts`, `editorPaths.ts`,
+`layout.ts`, `markdownPreview.ts` and `reviewQueue.ts`.
 
 ### Error boundaries
 

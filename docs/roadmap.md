@@ -20,6 +20,7 @@ state is a note about that sequence, not a verification.
 | 5. Weaver planning and guided insert     | Guided insert with optional content permissions, intelligent restructuring, live provider path, session history, progress feed, budget controls, embedding search           | reached |
 | 6. Approval layer and diff UX            | Explicit accept/reject review before any Weaver write, apply service for all operation kinds, per-operation diff previews, destructive-operation confirmation               | reached |
 | 7. Repository rework                     | Green baseline, one-command gate in CI, documentation consolidation, one test runner, module splits, naming rule, IPC channel contract, card titles that may contain spaces | reached |
+| 8. Card review loop                      | Due-card queue, dedicated review surface, four-response SM-2-OSR scheduling on card metadata, card-level state only, note-level review metadata removed, ADR-0003/ADR-0004  | reached |
 
 ## The rework (completed)
 
@@ -31,22 +32,21 @@ now resume on a repository that can state what is true and prove a change is saf
 
 ## Planned next
 
-### Card-level scheduling and review
+### Review loop follow-ups
 
-The review loop does not exist yet. Its data does: a card carries `metadata.familiarity` (how well
-the card is known) and `metadata.next_review` (when it becomes due), and the card metadata panel and
-crashpad card editor are where they are read and written.
+The loop schedules cards, and deliberately stops there. Deferred, in rough order of value:
 
-The intended function is that the user reviews notes, and the app uses each card's familiarity
-together with a standard spaced-repetition algorithm to compute the next recommended review time,
-which `metadata.next_review` then records. The range for familiarity and the date format for
-`next_review` will be specified with that function; until then the store enforces neither.
-
-One piece of state is already reserved for this step. Each vault-index entry carries a
-`ReviewMetadata` with a wider shape — `familiarity` plus `lastReviewedAt`, `nextReviewAt`,
-`intervalDays`, `repetition` and `easeFactor` — which is written with defaults and whose scheduling
-values are consumed nowhere today. It is kept deliberately as a future concept rather than deleted;
-see [the data model](./architecture/data-model.md) for where both copies live.
+- **Due visibility**: a due count/badge and a due filter in the Cards workspace (CRUD views are
+  currently read-only about schedules).
+- **A daily review entry point**: a "review today" surface, the shape the Obsidian reference started
+  from.
+- **Review history and statistics** — requires storing per-review events, which SM-2-OSR does not
+  need and v1 does not keep.
+- **Active-recall mode**: reveal the card after a prompt instead of reading it, plus a shuffle.
+- **Algorithm refinements**: deterministic load balancing and late-review compensation, both of
+  which the reference plugin has and v1 deliberately omits (ADR-0004).
+- **A note-level review workflow**, which would need its own scheduling state now that the
+  placeholder index field is gone (ADR-0003).
 
 ### A boundary-marker visibility toggle
 
@@ -67,6 +67,18 @@ scope for the rework and are not started.
 ## Known gaps
 
 Real limitations of the current code, recorded here rather than implied away in the documents:
+
+- The review loop has no history: only the latest scheduling state is kept, so "what did I rate
+  last month" cannot be answered, and no statistics can be computed.
+- A hand-dropped card file whose filename is outside the UID grammar can appear in the review
+  queue; its preview fails the store's validation, the session reports the error and drops it.
+- The scheduler has no load balancing or late-review compensation; every card rated in one batch
+  shares a due date (ADR-0004 records the trade-off).
+- Scheduling constants are not configurable; changing them means editing
+  `electron/services/reviewScheduling.ts` and invalidating the assumption that a vault's state is
+  comparable.
+- Reviewing is only reachable from the widget rail; there is no due badge, due filter, statistics
+  view, reminder or daily/periodic entry point.
 
 - Crashpads cannot be renamed, deleted, or created by name through the app; the daily crashpad is
   the only creation path wired up. The final application should support all three: a rename moves

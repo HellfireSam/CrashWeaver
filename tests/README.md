@@ -57,12 +57,16 @@ it where a ticket does.
   the `event.sender.send` and `webContents.send` calls — is not observable in a Node test, and a
   wrong _declared_ key selection at a call site still compiles; no test can see a channel the code
   never passes.
-- **Renderer UI layer.** Only the pure helpers in `src/lib/` and one component are covered:
-  `src/components/WeaverCardChip.test.tsx` is the first renderer component test — it runs under
-  jsdom (`// @vitest-environment jsdom`) and asserts the card chip's rendered title. The rest of
-  `src/components/**`, `src/App.tsx`, `src/hooks/**` and `src/state/**` have no tests. The pure
-  logic extracted from the largest module is tested — `src/lib/cardProjection.ts` (the rendered
-  card surface) and `src/lib/layout.ts` (the shell layout style). The remaining split landed as
+- **Renderer UI layer.** The pure helpers in `src/lib/` and two components are covered:
+  `src/components/WeaverCardChip.test.tsx` asserts the card chip's rendered title, and
+  `src/components/ReviewWorkspace.test.tsx` renders the review surface and asserts its card,
+  per-response intervals, click and keyboard ratings, and completion state; both run under jsdom
+  (`// @vitest-environment jsdom`). The rest of `src/components/**`, `src/App.tsx`, `src/hooks/**`
+  and `src/state/**` have no tests, including `src/hooks/useReviewSession.ts`, whose queue and
+  preview/rating orchestration is exercised only through the review main-process suites and by
+  hand. The pure logic extracted from the largest module is tested — `src/lib/cardProjection.ts`
+  (the rendered card surface) and `src/lib/layout.ts` (the shell layout style) — and the review
+  queue is `src/lib/reviewQueue.ts`. The remaining split landed as
   `src/components/EditorSurface.tsx` and `src/hooks/useWeaverController.ts` (#15); it added no
   test seam, so those components and hooks stay untested, and no open ticket currently owns adding
   more renderer component tests.

@@ -31,12 +31,12 @@ Directories** and **Use Vault Root Only** configure where cards and images live.
 
 The window is a widget rail, a left sidebar, the editor surface and the right panel.
 
-| Region                 | What it shows                                                                                                                                           | Collapse / resize                                                                                 |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Widget rail (far left) | `☰` "Toggle explorer pane", `CP` "Open daily Crashpad", `+` "Extensions placeholder"                                                                   | `☰` toggles the sidebar; `CP` is disabled until a vault is open; `+` only posts a status message |
-| Sidebar                | Tabs **Explorer** and **Vault**                                                                                                                         | `☰`, or drag the splitter whose accessible name is `Resize explorer pane`                        |
-| Editor pane            | Tab strip, view-mode tabs, active surface                                                                                                               | Drag either splitter                                                                              |
-| Right Panel            | **Info** and **LLM** toggle buttons, context sub-panel above the Weaver panel, and the top-right strip's `≣` "Toggle right panel" / `⚙` "Open settings" | `≣`, or the `×` on a sub-panel; settings closes on **Close**, Escape, or a click outside          |
+| Region                 | What it shows                                                                                                                                           | Collapse / resize                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Widget rail (far left) | `☰` "Toggle explorer pane", `CP` "Open daily Crashpad", `RV` "Review due cards"                                                                        | `☰` toggles the sidebar; `CP` and `RV` are disabled until a vault is open               |
+| Sidebar                | Tabs **Explorer** and **Vault**                                                                                                                         | `☰`, or drag the splitter whose accessible name is `Resize explorer pane`               |
+| Editor pane            | Tab strip, view-mode tabs, active surface                                                                                                               | Drag either splitter                                                                     |
+| Right Panel            | **Info** and **LLM** toggle buttons, context sub-panel above the Weaver panel, and the top-right strip's `≣` "Toggle right panel" / `⚙` "Open settings" | `≣`, or the `×` on a sub-panel; settings closes on **Close**, Escape, or a click outside |
 
 The **Explorer** tab (`Files`, `ExplorerTree`) is a virtualized tree: folders expand with `▸`/`▾`, files open with a
 click, and the selected row is highlighted. Notes are listed without `.md`, crashpads without
@@ -107,9 +107,10 @@ The header shows the crashpad's name, path, **Created**/**Updated** timestamps, 
    **Create new**, typing into `Enter new card title / ID (e.g. Three-way handshake)`. Press
    **Attach**/**Create** or Enter, then pick a card from the rail — each entry shows its title,
    whether it is `new` or `attached`, and its refs.
-2. In **Edit** mode fill in **Card title / ID**, **Tags (comma-separated)**, **Familiarity**,
-   **Next review** (`ISO date or blank`), **Content (markdown)**, **Memory technique** and
-   **QnA Pairs** (**+ Add pair**, `×` to remove one), then press **Save** (`Saved card <uid>.`).
+2. In **Edit** mode fill in **Card title / ID**, **Tags (comma-separated)**, **Content
+   (markdown)**, **Memory technique** and **QnA Pairs** (**+ Add pair**, `×` to remove one), then
+   press **Save** (`Saved card <uid>.`). Familiarity and Next review are scheduling state: they are
+   not edited here, and saving the card leaves them untouched.
    Renaming the UID rewrites boundaries in every note that used the old UID and every crashpad
    listing the card: `Renamed card <old> to <new>. Updated N notes and M crashpads.`
 3. **Preview** reads the card back through the **Content**, **Memory Technique**, **QnA** and
@@ -235,20 +236,31 @@ note**, **Edit note content**, **Create vault note**, **Rename note**, **Move no
 failure.` and the status bar reads `Applied X/Y operation(s). Z failed. Check the results for
 details.`
 
-## 8. Card metadata: familiarity and next review
+## 8. Review due cards and the scheduling state
 
-**Familiarity** and **Next review** belong to the card, not to the note. They are edited in the
-crashpad card editor's **Edit** mode — **Familiarity** (a number; a non-numeric entry is stored as
-`0`) and **Next review** (`ISO date or blank`) — and written when you press **Save**.
+**Familiarity**, **Next review**, `interval_days` and `ease_factor` belong to the card, not to the
+note, and only the review loop writes them. [Review scheduling](../reference/review-scheduling.md)
+has the formulas.
 
-Everywhere else they are read-only: the card detail **Meta data** tab shows **Familiarity**,
-**Next review** (falling back to `Not scheduled`), the **Current reference** note and its **Boundary
-lines**, the **Card file** path and the number of **Linked references**; in the crashpad's
-**Metadata** preview tab the values are the ones currently in the editor.
+1. Click `RV` in the widget rail (tooltip **Review due cards**). If the open note has unsaved
+   changes the app refuses with `Save or discard current changes before starting a review.`;
+   otherwise the editor pane becomes the review session and the status bar reports
+   `Reviewing N due cards.`
+2. Each card shows its title, tags, rendered **Content**, **Memory technique**, **QnA prompts**
+   (**Reveal answer** / **Hide answer**) and the first note it appears in. The header shows how many
+   cards remain and how many have been reviewed.
+3. Rate the card with **Again**, **Hard**, **Good** or **Easy** (or the `1`–`4` keys). Each button
+   shows the interval it would produce (`Again · today`, `Good · 3 days`, …); the rating is written
+   immediately. **Again** leaves the card due today and returns it at the end of the session.
+4. When no cards remain the surface says **Review complete** with the number reviewed and a
+   **Done** button; **Exit review** ends early. Either way you return to the surface the session
+   started from, and every rating already written stays written.
 
-Familiarity and next review are the inputs to a planned review-scheduling function: the app will use
-them with a spaced-repetition algorithm to compute the next recommended review time. Nothing in the
-UI updates them from a review yet.
+Outside the session the state is read-only. The card detail **Meta data** tab shows **Familiarity**
+as **New**, **Again**, **Hard**, **Good** or **Easy**, and **Next review** (falling back to
+`Not scheduled`), plus the **Current reference** note and its **Boundary lines**, the **Card file**
+path and the number of **Linked references**. A card is **Due** when it has never been reviewed or
+its next review is today-or-earlier; new cards come first, then the most overdue.
 
 ## 9. Errors and edge states
 
@@ -256,7 +268,7 @@ The status bar below the editor carries status and error messages; the crashpad 
 
 | Situation                                                              | What you see                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| No vault open                                                          | Explorer reads `Select a vault to load markdown notes and crashpad files.`; `CP` is disabled; saving, refreshing and card-store actions report `Select a vault before ...` / `Open a vault before ...`; the Weaver panel says `Open a crashpad to start a Weaver session in the right panel.`                                                                                                                                                                                                                                                          |
+| No vault open                                                          | Explorer reads `Select a vault to load markdown notes and crashpad files.`; `CP` and `RV` are disabled; saving, refreshing and card-store actions report `Select a vault before ...` / `Open a vault before ...`; the Weaver panel says `Open a crashpad to start a Weaver session in the right panel.`                                                                                                                                                                                                                                                |
 | No crashpad or no card for a weave                                     | `Open an active crashpad before using Weaver.` or `Attach or focus a crashpad card before generating a Weaver proposal.`                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Missing target note during apply                                       | That operation fails with `Note not found: <path>`, later operations are skipped, and the failure is listed in the apply result                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Target text moved since the plan was generated                         | `Target text not found in note "<path>". The note may have been modified since the plan was generated.`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -269,9 +281,10 @@ The status bar below the editor carries status and error messages; the crashpad 
 
 ## 10. Limits, and where CrashWeaver writes
 
-Three places say so out loud: the `+` widget button only posts `Widget extensions will be added here
-in a later stage.`, the card list carries a **Future vault card picker** hint, and the Info panel
-notes the crashpad stays source-only. There is also no UI for naming a crashpad, and no review loop.
+Three places say so out loud: the card list carries a **Future vault card picker** hint, the Vault
+cards view still calls itself a hint-to-be, and the Info panel notes the crashpad stays source-only.
+There is also no UI for naming a crashpad, no due badge/filter, no review statistics or reminders,
+and no daily/periodic review entry point.
 
 | Path                                        | Contents                                                             |
 | ------------------------------------------- | -------------------------------------------------------------------- |
