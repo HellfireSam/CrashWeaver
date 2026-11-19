@@ -5,7 +5,7 @@ import type {
   CrashpadDeletePreferences,
   CrashpadDocument,
 } from '../../electron/vault-contract';
-import type { CardViewRecord } from '../lib/cards';
+import { CARD_TITLE_MAX_LENGTH, type CardViewRecord } from '../lib/cards';
 import { CardMetadataPanel } from './CardMetadataPanel';
 import { useCrashpadCardEditor } from '../hooks/useCrashpadCardEditor';
 import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll';
@@ -352,7 +352,7 @@ export function CrashpadWorkspace({
                         <input
                           className="notePathInput"
                           value={addCardUid}
-                          maxLength={100}
+                          maxLength={CARD_TITLE_MAX_LENGTH}
                           onChange={(e) => setAddCardUid(e.target.value)}
                           placeholder={
                             addCardMode === 'attach'
@@ -462,7 +462,7 @@ export function CrashpadWorkspace({
                               id="cpUid"
                               className="notePathInput"
                               value={cardUid}
-                              maxLength={100}
+                              maxLength={CARD_TITLE_MAX_LENGTH}
                               onChange={(e) => setCardUid(e.target.value)}
                             />
                           </div>

@@ -213,6 +213,7 @@ describe('weavePlanPrompts', () => {
 
     expect(turn).toMatch(/REQUEST SPECIFICATION/);
     expect(turn).toMatch(/Focused card UID: CW-001/);
+    expect(turn).toMatch(/may contain spaces; copy it exactly as given, including its casing/);
     expect(turn).toMatch(/VAULT CONTEXT SNAPSHOT/);
 
     // The budget reminder deliberately lives in the system prompt's tool-loop

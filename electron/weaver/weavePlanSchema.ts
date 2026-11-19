@@ -143,7 +143,7 @@ function normalizeGuidedInsertPermissions(value: unknown): GuidedInsertPermissio
   };
 }
 
-function normalizeCardUid(value: unknown, label: string) {
+function normalizePlanCardUid(value: unknown, label: string) {
   // Grammar is checked here so a traversal UID is rejected when the plan is
   // normalised, not when apply reaches the card store. Keep the field label in
   // the message so schema repair knows which payload value to fix.
@@ -239,7 +239,7 @@ function validateInsertBoundaryPairOperation(
     throw new Error('Insert-boundary-pair payload must be an object.');
   }
 
-  const cardUid = normalizeCardUid(payload.cardUid, 'Insert-boundary-pair payload.cardUid');
+  const cardUid = normalizePlanCardUid(payload.cardUid, 'Insert-boundary-pair payload.cardUid');
 
   if (cardUid !== requestCardUid) {
     throw new Error('Insert-boundary-pair payload.cardUid must match the focused request card.');
@@ -338,7 +338,7 @@ function validateCreateNoteOperation(
     throw new Error('Create-note payload must be an object.');
   }
 
-  const cardUid = normalizeCardUid(payload.cardUid, 'Create-note payload.cardUid');
+  const cardUid = normalizePlanCardUid(payload.cardUid, 'Create-note payload.cardUid');
 
   if (cardUid !== requestCardUid) {
     throw new Error('Create-note payload.cardUid must match the focused request card.');
@@ -742,7 +742,7 @@ export function validateWeavePlanRequest(
     throw new Error('Weaver kind is invalid.');
   }
 
-  const cardUid = normalizeCardUid(request.cardUid, 'Weaver cardUid');
+  const cardUid = normalizePlanCardUid(request.cardUid, 'Weaver cardUid');
   const effectiveMax = resolveDefaultMaxOperations(request, settings);
   const absoluteCap = settings?.disableBudgetRestrictions
     ? UNRESTRICTED_MAX_OPERATIONS

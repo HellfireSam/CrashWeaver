@@ -11,6 +11,7 @@ const {
   cardDocumentExists,
   createCardDocument,
   deleteCardDocument,
+  findCardByFoldedUid,
   getCardFilePath,
   readCardDocument,
   removeCardReference,
@@ -201,10 +202,27 @@ describe('cardStoreService', () => {
     });
 
     expect(renamed.uid).toBe('my card');
-    // Exactly one card file, named with the new casing. On a case-insensitive
-    // filesystem the unlink the naive rename would do would delete this file.
+    // Exactly one card file, named with the new casing. On Windows this is the
+    // assertion the unsafe write-then-unlink implementation fails (it deletes
+    // the only file); on Linux it pins the same end state.
     expect(await fs.readdir(cardStorePath)).toEqual(['my card.json']);
     const onDisk = JSON.parse(await fs.readFile(path.join(cardStorePath, 'my card.json'), 'utf8'));
     expect(onDisk.uid).toBe('my card');
+  });
+
+  it('finds a stored card through a case-folded title and can exclude one card', async () => {
+    const { cardStorePath } = await setupCardStore();
+    await writeCardDocument(cardStorePath, createCardDocument('My Card'));
+
+    expect((await findCardByFoldedUid(cardStorePath, 'my card')).uid).toBe('My Card');
+    expect(await findCardByFoldedUid(cardStorePath, 'MY CARD', 'My Card')).toBeNull();
+    expect(await findCardByFoldedUid(cardStorePath, 'Other Card')).toBeNull();
+  });
+
+  it('fails closed when a case-folded match cannot be read', async () => {
+    const { cardStorePath } = await setupCardStore();
+    await fs.writeFile(path.join(cardStorePath, 'My Card.json'), '{ not json', 'utf8');
+
+    await expect(findCardByFoldedUid(cardStorePath, 'my card')).rejects.toThrow();
   });
 });

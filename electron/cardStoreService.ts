@@ -284,6 +284,51 @@ export async function listCardsReferencingNote(cardStorePath: string, notePath: 
   return cards.filter((card) => card.referenced_in.some((entry) => entry.note_path === notePath));
 }
 
+/**
+ * The card whose stored title folds to `uid`, if any. Card identity is
+ * case-insensitive, so this is the one duplicate check `createCard` and
+ * `renameCard` share; a rename passes the card it is renaming as
+ * `excludedUid`, so changing only the casing is not reported as a duplicate.
+ *
+ * The matching card is read through the guarded reader rather than the
+ * tolerant listing: a corrupt case-folded match must fail the duplicate check
+ * instead of being skipped, which would let a second case variant be created
+ * silently. The echoed title is the filename's, because the filename is the
+ * card's address when a hand-edited body disagrees with it.
+ */
+export async function findCardByFoldedUid(
+  cardStorePath: string,
+  uid: string,
+  excludedUid?: string,
+): Promise<CardDocument | null> {
+  let entries;
+
+  try {
+    entries = await fs.readdir(cardStorePath, { withFileTypes: true });
+  } catch (error) {
+    if (getFsErrorCode(error) === 'ENOENT') {
+      return null;
+    }
+
+    throw error;
+  }
+
+  const foldedMatch = entries
+    .filter((entry) => entry.isFile() && path.extname(entry.name).toLowerCase() === '.json')
+    .map((entry) => path.basename(entry.name, '.json'))
+    .find(
+      (name) =>
+        areCardUidsEqual(name, uid) &&
+        (excludedUid === undefined || !areCardUidsEqual(name, excludedUid)),
+    );
+
+  if (foldedMatch === undefined) {
+    return null;
+  }
+
+  return readCardDocument(cardStorePath, foldedMatch);
+}
+
 export function createCardDocument(uid: string): CardDocument {
   return createDefaultCardDocument(assertValidCardUid(uid), '');
 }
@@ -300,40 +345,24 @@ export async function writeCardDocument(
 }
 
 /**
- * Writes the card under its new UID and removes the previous file when the
- * title genuinely changed.
+ * Replaces the card file whose name differs from the previous one only by
+ * letter case.
  *
- * A case-only rename is the trap: on a case-insensitive filesystem (Windows,
- * macOS) the old and new names are the same file, so writing the new file and
- * then unlinking the old one destroys the card. The live file is moved to a
- * unique backup name, the freshly written temp file takes the new casing, and
- * the backup is removed only after the new name is in place. The temp and
- * backup names never end in `.json`, so the card listing cannot mistake a
- * half-finished rename for a card.
+ * This is the trap: on a case-insensitive filesystem (Windows, macOS) the old
+ * and new names are the same file, so writing the new file and then unlinking
+ * the old one destroys the card. The live file is moved to a unique backup
+ * name, the freshly written temp file takes the new casing, and the backup is
+ * removed only after the new name is in place. The temp and backup names never
+ * end in `.json`, so the card listing cannot mistake a half-finished rename for
+ * a card.
  */
-export async function renameCardDocument(
+async function replaceCardFileWithNewCasing(
   cardStorePath: string,
   previousUid: string,
-  card: CardDocument,
-): Promise<CardDocument> {
-  const normalizedPreviousUid = assertValidCardUid(previousUid);
-  const nextCard = coerceCardDocument(assertValidCardUid(card.uid), card);
-  const normalizedNextUid = nextCard.uid;
-  await ensureCardStoreDirectory(cardStorePath);
-
-  if (normalizedPreviousUid === normalizedNextUid) {
-    await writeJsonAtomically(getCardFilePath(cardStorePath, normalizedNextUid), nextCard);
-    return nextCard;
-  }
-
-  if (!areCardUidsEqual(normalizedPreviousUid, normalizedNextUid)) {
-    await writeJsonAtomically(getCardFilePath(cardStorePath, normalizedNextUid), nextCard);
-    await deleteCardDocument(cardStorePath, normalizedPreviousUid);
-    return nextCard;
-  }
-
-  const previousPath = getCardFilePath(cardStorePath, normalizedPreviousUid);
-  const nextPath = getCardFilePath(cardStorePath, normalizedNextUid);
+  nextPath: string,
+  nextCard: CardDocument,
+) {
+  const previousPath = getCardFilePath(cardStorePath, previousUid);
   const tempPath = path.join(cardStorePath, `.card-rename-${randomUUID()}.json.tmp`);
   const backupPath = path.join(cardStorePath, `.card-rename-${randomUUID()}.json.bak`);
 
@@ -355,6 +384,38 @@ export async function renameCardDocument(
   }
 
   await fs.rm(backupPath, { force: true });
+}
+
+/**
+ * Writes the card under its new UID and removes the previous file when the
+ * title genuinely changed. A case-only rename goes through the guarded
+ * replacement above; see it for why the file is never written and unlinked in
+ * that order.
+ */
+export async function renameCardDocument(
+  cardStorePath: string,
+  previousUid: string,
+  card: CardDocument,
+): Promise<CardDocument> {
+  const normalizedPreviousUid = assertValidCardUid(previousUid);
+  const nextCard = coerceCardDocument(assertValidCardUid(card.uid), card);
+  const normalizedNextUid = nextCard.uid;
+  await ensureCardStoreDirectory(cardStorePath);
+
+  const nextPath = getCardFilePath(cardStorePath, normalizedNextUid);
+
+  if (normalizedPreviousUid === normalizedNextUid) {
+    await writeJsonAtomically(nextPath, nextCard);
+    return nextCard;
+  }
+
+  if (areCardUidsEqual(normalizedPreviousUid, normalizedNextUid)) {
+    await replaceCardFileWithNewCasing(cardStorePath, normalizedPreviousUid, nextPath, nextCard);
+    return nextCard;
+  }
+
+  await writeJsonAtomically(nextPath, nextCard);
+  await deleteCardDocument(cardStorePath, normalizedPreviousUid);
   return nextCard;
 }
 

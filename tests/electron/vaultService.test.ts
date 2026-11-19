@@ -517,10 +517,20 @@ describe('vaultService', () => {
       );
     }
 
-    it('createCard and saveCard keep a spaced title verbatim in the file and the body', async () => {
+    it('createCard writes a spaced title verbatim into the file and the body', async () => {
       const rootPath = await setupVault();
 
       const created = await vaultService.createCard(rootPath, '  Three-way handshake  ');
+
+      expect(created.uid).toBe('Three-way handshake');
+      expect(await listCardFileNames(rootPath)).toEqual(['Three-way handshake.json']);
+      expect((await readCardFile(rootPath, 'Three-way handshake')).uid).toBe('Three-way handshake');
+    });
+
+    it('saveCard keeps a spaced title verbatim while updating the payload', async () => {
+      const rootPath = await setupVault();
+      const created = await vaultService.createCard(rootPath, 'Three-way handshake');
+
       const saved = await vaultService.saveCard(rootPath, {
         ...created,
         raw_content: 'SYN, SYN-ACK, ACK',
@@ -554,6 +564,30 @@ describe('vaultService', () => {
       await expect(vaultService.createCard(rootPath, 'TCP: handshake')).rejects.toThrow(
         'Card title / ID must use only letters, numbers, spaces, underscores, or dashes.',
       );
+    });
+
+    it('renameCard rejects a target title that folds to another card and echoes its stored casing', async () => {
+      const rootPath = await setupVault();
+      await vaultService.createCard(rootPath, 'My Card');
+      const otherCard = await vaultService.createCard(rootPath, 'Other Card');
+
+      await expect(
+        vaultService.renameCard(rootPath, 'Other Card', { ...otherCard, uid: 'my card' }),
+      ).rejects.toThrow('Card My Card already exists.');
+
+      expect((await listCardFileNames(rootPath)).sort()).toEqual([
+        'My Card.json',
+        'Other Card.json',
+      ]);
+    });
+
+    it('createCard fails closed when a case-folded card file is unreadable', async () => {
+      const rootPath = await setupVault();
+      const cardStorePath = cardStoreDirectory(rootPath);
+      await fs.mkdir(cardStorePath, { recursive: true });
+      await fs.writeFile(path.join(cardStorePath, 'My Card.json'), '{ not json', 'utf8');
+
+      await expect(vaultService.createCard(rootPath, 'my card')).rejects.toThrow();
     });
 
     it('renameCard rewrites a spaced title across the note, crashpad and card file', async () => {
@@ -672,7 +706,7 @@ describe('vaultService', () => {
       expect(updatedCrashpad.cards.map((entry: { uid: string }) => entry.uid)).toEqual(['my card']);
     });
 
-    it('deleteCard and restoreDeletedCard keep a spaced title verbatim', async () => {
+    it('deleteCard removes a spaced title from the note boundaries and the store', async () => {
       const rootPath = await setupVault();
       const notePath = path.join(rootPath, 'notes', 'tcp.md');
       await fs.mkdir(path.dirname(notePath), { recursive: true });
@@ -689,9 +723,8 @@ describe('vaultService', () => {
       );
 
       const created = await vaultService.createCard(rootPath, 'Three-way handshake');
-      const saved = await vaultService.saveCard(rootPath, {
+      await vaultService.saveCard(rootPath, {
         ...created,
-        raw_content: 'SYN, SYN-ACK, ACK.',
         referenced_in: [{ note_path: 'notes/tcp.md', start_line: 3, end_line: 5 }],
       });
 
@@ -699,11 +732,26 @@ describe('vaultService', () => {
         removeNoteBoundaries: true,
       });
 
+      expect(deleteResult.uid).toBe('Three-way handshake');
       expect(deleteResult.removedCardFile).toBe(true);
       expect(deleteResult.removedBoundariesFrom).toBe(1);
       expect(deleteResult.removedBoundaryLines).toBe(2);
       expect(await listCardFileNames(rootPath)).toEqual([]);
       expect(await fs.readFile(notePath, 'utf8')).not.toContain('Three-way handshake');
+    });
+
+    it('restoreDeletedCard writes a spaced title back with its note boundaries', async () => {
+      const rootPath = await setupVault();
+      const notePath = path.join(rootPath, 'notes', 'tcp.md');
+      await fs.mkdir(path.dirname(notePath), { recursive: true });
+      await fs.writeFile(notePath, ['# TCP notes', '', 'SYN, SYN-ACK, ACK.'].join('\n'), 'utf8');
+
+      const created = await vaultService.createCard(rootPath, 'Three-way handshake');
+      const saved = await vaultService.saveCard(rootPath, {
+        ...created,
+        raw_content: 'SYN, SYN-ACK, ACK.',
+        referenced_in: [{ note_path: 'notes/tcp.md', start_line: 3, end_line: 5 }],
+      });
 
       const restoreResult = await vaultService.restoreDeletedCard(
         rootPath,

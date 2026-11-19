@@ -90,6 +90,26 @@ describe('cardParser', () => {
     });
   });
 
+  it('accepts a title at the 100-character cap and rejects one over it', () => {
+    const atCap = 'a'.repeat(100);
+    const atCapResult = parseCrashCardsFromNote(
+      'notes/at-cap.md',
+      [formatCardStartBoundary(atCap), 'Prose.', formatCardEndBoundary(atCap)].join('\n'),
+    );
+    expect(atCapResult.diagnostics).toEqual([]);
+    expect(atCapResult.cards).toHaveLength(1);
+
+    const overCap = 'a'.repeat(101);
+    const overCapResult = parseCrashCardsFromNote(
+      'notes/over-cap.md',
+      [formatCardStartBoundary(overCap), 'Prose.', formatCardEndBoundary(overCap)].join('\n'),
+    );
+    expect(overCapResult.cards).toEqual([]);
+    expect(
+      overCapResult.diagnostics.map((diagnostic: { code: string }) => diagnostic.code),
+    ).toEqual(['invalid-start-boundary', 'invalid-end-boundary']);
+  });
+
   it('keeps the existing marker diagnostics unchanged', () => {
     const invalidStart = parseCrashCardsFromNote('notes/invalid.md', '%%CW_CARD_START CW-001%%');
     expect(invalidStart.diagnostics.map((diagnostic: { code: string }) => diagnostic.code)).toEqual(

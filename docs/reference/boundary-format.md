@@ -28,19 +28,19 @@ const START_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_START\\s+uid:([${CARD_UID_
 const END_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_END\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
 ```
 
-| Slot        | Accepted form                               | Notes                                                                                                                                                                                                                                          |
-| ----------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Marker text | literal `%%CW_CARD_START` / `%%CW_CARD_END` | No case folding: both patterns are case-sensitive, and the fallback prefix checks use `String.prototype.startsWith` with the same literal.                                                                                                     |
-| Separator   | `\s+`                                       | One or more whitespace characters between the marker text and `uid:`.                                                                                                                                                                          |
-| UID key     | literal `uid:`                              | Lowercase only. Whitespace immediately after `uid:` is part of the captured title and is trimmed, so `uid: My Card` and `uid:My Card` name the same UID.                                                                                       |
-| UID         | `<the card title>`                          | At least one character from `[A-Za-z0-9_\- ]+` — ASCII letters, digits, spaces, underscore and hyphen — so a title such as `Three-way handshake` is a legal UID. The parser trims the captured title, and the store applies the same alphabet. |
-| Terminator  | `%%` at end of line                         | The patterns are anchored with `^` and `$`, and the parser matches one trimmed line at a time.                                                                                                                                                 |
+| Slot        | Accepted form                               | Notes                                                                                                                                                                                                                                                                                                                                            |
+| ----------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Marker text | literal `%%CW_CARD_START` / `%%CW_CARD_END` | No case folding: both patterns are case-sensitive, and the fallback prefix checks use `String.prototype.startsWith` with the same literal.                                                                                                                                                                                                       |
+| Separator   | `\s+`                                       | One or more whitespace characters between the marker text and `uid:`.                                                                                                                                                                                                                                                                            |
+| UID key     | literal `uid:`                              | Lowercase only. Whitespace immediately after `uid:` is part of the captured title and is trimmed, so `uid: My Card` and `uid:My Card` name the same UID.                                                                                                                                                                                         |
+| UID         | `<the card title>`                          | At least one character from `[A-Za-z0-9_\- ]+` — ASCII letters, digits, spaces, underscore and hyphen — so a title such as `Three-way handshake` is a legal UID; at most 100 characters after trimming. The parser trims and validates the captured title with the store's `isValidCardUid`, so it accepts exactly the titles the store accepts. |
+| Terminator  | `%%` at end of line                         | The patterns are anchored with `^` and `$`, and the parser matches one trimmed line at a time.                                                                                                                                                                                                                                                   |
 
 A card's UID is its title, and it may contain spaces; identity folds ASCII letter case in the
 card store (see [card-schema.md](./card-schema.md)). The parser trims the captured title, so
 `%%CW_CARD_START uid:My Card %%` records the UID `My Card`; interior runs of spaces are preserved.
-A marker whose captured UID is only whitespace is reported as an invalid boundary rather than
-opening an empty pair.
+A marker whose captured title is empty, whitespace only, outside the alphabet or longer than 100
+characters is reported as an invalid boundary rather than opening a pair the store cannot address.
 
 A marker is recognised only when it is a whole line. `parseCrashCardsFromNote` computes
 `const line = rawLine.trim()` before matching, so indentation and trailing whitespace are tolerated
@@ -64,6 +64,13 @@ or rename, because they compare against the canonical marker exactly.
 - An end marker with no active boundary is reported and ignored.
 - A start marker while a boundary is already active is reported and ignored, whatever UID it names.
 - A still-active boundary at end of file is reported once.
+
+The UID comparison is **exact**, including letter case: card identity folds case in the store, but
+boundary pairing is the pre-existing strict-title rule. A hand-authored note that spells one stored
+card's title in another casing therefore reaches the store as a different UID (on a case-sensitive
+filesystem) or as a body/filename casing disagreement (on a case-insensitive one); it shares the
+legacy case-variant limitation recorded in [card-schema.md](./card-schema.md) rather than being
+migrated.
 
 | Note content                                 | Result                                                                                                                                                                                                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

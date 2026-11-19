@@ -127,12 +127,15 @@ fewer.`). Internal runs of spaces are preserved exactly; only the ends are trimm
 alphabet also makes a UID unusable as a traversal vector.
 
 Card identity folds ASCII case: `My Card` and `my card` are the same card, the typed casing is
-preserved in the JSON body and the filename, and `areCardUidsEqual` is the one comparison. Two
-files that differ only in case are a known legacy limitation: such a store is not migrated. A
-case-only rename is a filesystem trap — on Windows and macOS both names are the same file — so
-`renameCardDocument` moves the live file to a unique backup, renames a freshly written temp file
-to the new casing, and removes the backup only once the new name exists. A genuinely different
-title is written and the previous file unlinked.
+preserved in the JSON body and the filename, and `areCardUidsEqual` is the main process's one
+comparison (the renderer mirrors it for its attach and duplicate checks, because it cannot import a
+main-process module). `createCard` and `renameCard` answer the duplicate question through
+`findCardByFoldedUid`, which reads a matched card through the guarded reader so a corrupt matching
+file fails closed rather than being skipped. Two files that differ only in case are a known legacy
+limitation: such a store is not migrated. A case-only rename is a filesystem trap — on Windows and
+macOS both names are the same file — so `renameCardDocument` moves the live file to a unique backup,
+renames a freshly written temp file to the new casing, and removes the backup only once the new name
+exists. A genuinely different title is written and the previous file unlinked.
 
 `getCardFilePath` is the single UID-to-path hop and it calls that validator, so every UID-addressed
 card read, existence check, write and delete fails closed on a UID that could escape the store: a
@@ -145,8 +148,15 @@ There is no second UID-to-path builder. `listCardDocuments` is the deliberate ex
 enumerates files by name and derives each UID from the basename, so a hand-dropped filename outside
 the grammar stays listable; the sync and index rebuild skip such a card instead of failing the
 whole operation, because the guarded builder cannot address it. `cardParser` builds its two
-boundary patterns from the same `cardUid` alphabet and trims the captured title, so the parser and
-the store really share one grammar rather than two copies kept in step by hand.
+boundary patterns from the same `cardUid` alphabet, trims the captured title and validates it with
+`isValidCardUid`, so the parser rejects exactly the titles the store would reject and the two really
+share one grammar rather than two copies kept in step by hand.
+
+Boundary _pairing_ still compares the two captured titles exactly, not folded: a hand-authored note
+whose start and end markers spell the same title differently is a `mismatched-boundary-uid` report,
+and a note that spells a stored card's title in another casing reaches the store as a different
+UID. That is pre-existing parser strictness rather than part of the case-insensitive card identity,
+and it shares the legacy case-variant limitation above rather than being migrated here.
 
 The default store is `<vault>/.crashweaver/cards` (`getDefaultCardStorePath`).
 `getCardStoreConfig` returns the per-vault override recorded in `cardStoreByVault` keyed

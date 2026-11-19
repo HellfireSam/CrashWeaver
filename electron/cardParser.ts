@@ -1,9 +1,11 @@
 import type { CardParseDiagnostic, ParsedCrashCard, ParsedCrashCardsNote } from './vault-contract';
-import { CARD_UID_ALPHABET, normalizeCardUid } from './cardUid';
+import { CARD_UID_ALPHABET, isValidCardUid, normalizeCardUid } from './cardUid';
 
 // Both boundary patterns are built from the shared card-UID alphabet in
-// `electron/cardUid.ts`, so the parser and the card store cannot drift. The
-// capture is trimmed below because a title may end in a space before `%%`.
+// `electron/cardUid.ts`. The capture is then trimmed and validated against the
+// full grammar below, so the parser and the card store accept exactly the same
+// titles: the store would reject a title the parser let through, and a note
+// carrying such a boundary would fail to open instead of reporting a diagnostic.
 const START_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_START\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
 const END_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_END\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
 
@@ -69,9 +71,10 @@ export function parseCrashCardsFromNote(notePath: string, content: string): Pars
     if (startMatch) {
       const uid = normalizeCardUid(startMatch[1]);
 
-      // A marker whose UID is only whitespace has no title; report it like the
-      // malformed markers below rather than opening an empty boundary.
-      if (!uid) {
+      // A marker whose captured title is not a legal UID — empty, whitespace
+      // only, or longer than the cap — is reported like the malformed markers
+      // below rather than opening a boundary the card store cannot address.
+      if (!isValidCardUid(uid)) {
         diagnostics.push(
           createDiagnostic('invalid-start-boundary', lineNumber, INVALID_START_BOUNDARY_MESSAGE),
         );
@@ -104,7 +107,7 @@ export function parseCrashCardsFromNote(notePath: string, content: string): Pars
     if (endMatch) {
       const uid = normalizeCardUid(endMatch[1]);
 
-      if (!uid) {
+      if (!isValidCardUid(uid)) {
         diagnostics.push(
           createDiagnostic('invalid-end-boundary', lineNumber, INVALID_END_BOUNDARY_MESSAGE),
         );

@@ -213,7 +213,7 @@ Each operation object shape:
     "cardUid": "Three-way handshake",
     "placement": "after-heading",
     "headingText": "## Transport Layer",
-    "boundaryBlock": "%%CW_CARD_START uid:Three-way handshake%%\\nTCP establishes connections via a three-way handshake (SYN, SYN-ACK, ACK) before data transfer begins.\\n%%CW_CARD_END uid:Three-way handshake%%"
+    "boundaryBlock": "%%CW_CARD_START uid:Three-way handshake%%\\nTCP establishes connections via a three-way handshake.\\n%%CW_CARD_END uid:Three-way handshake%%"
   },
   "rationale": "Anchors the TCP card to the relevant transport-layer paragraph it annotates."
 }

@@ -14,10 +14,11 @@ import {
 import { reinsertCardBoundariesForReferences } from './services/cardRestoreMutationService';
 import { dedupeNoteReferencesByPath } from './services/noteReferenceMutationService';
 import { writeVaultIndex } from './services/vaultIndexService';
-import { areCardUidsEqual, assertValidCardUid } from './cardUid';
+import { assertValidCardUid } from './cardUid';
 import {
   createCardDocument,
   deleteCardDocument,
+  findCardByFoldedUid,
   listCardDocuments,
   readCardDocument,
   renameCardDocument,
@@ -316,9 +317,7 @@ export async function createCard(rootPath: string, uid: string): Promise<CardDoc
   // Card identity is case-insensitive: `My Card` and `my card` are the same
   // card, so the duplicate check folds the store rather than looking up the
   // exact filename. The error echoes the stored title, not the typed one.
-  const duplicateCard = (await listCardDocuments(cardStore.cardStorePath)).find((storedCard) =>
-    areCardUidsEqual(storedCard.uid, normalizedUid),
-  );
+  const duplicateCard = await findCardByFoldedUid(cardStore.cardStorePath, normalizedUid);
 
   if (duplicateCard) {
     throw new Error(`Card ${duplicateCard.uid} already exists.`);
@@ -363,10 +362,10 @@ export async function renameCard(
   // Identity folds case, so a rename may only take a title that no *other*
   // card already owns; the card being renamed is excluded from the check and
   // the error echoes the stored title of the card that owns it.
-  const duplicateCard = (await listCardDocuments(cardStore.cardStorePath)).find(
-    (storedCard) =>
-      !areCardUidsEqual(storedCard.uid, normalizedPreviousUid) &&
-      areCardUidsEqual(storedCard.uid, normalizedNextUid),
+  const duplicateCard = await findCardByFoldedUid(
+    cardStore.cardStorePath,
+    normalizedNextUid,
+    normalizedPreviousUid,
   );
 
   if (duplicateCard) {

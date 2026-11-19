@@ -10,6 +10,14 @@ import type {
 } from '../../electron/vault-contract';
 
 export type CardScope = 'current-note' | 'current-vault';
+
+/**
+ * The DOM cap on a card-title input. The main process owns the grammar and the
+ * real limit (`CARD_UID_MAX_LENGTH` in `electron/cardUid.ts`); the renderer
+ * cannot import that module, so this mirrors it for the input attribute only.
+ */
+export const CARD_TITLE_MAX_LENGTH = 100;
+
 export type FocusWindow =
   | 'explorer'
   | 'source-editor'

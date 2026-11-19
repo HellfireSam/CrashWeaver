@@ -67,11 +67,13 @@ it where a ticket does.
   test seam, so those components and hooks stay untested, and no open ticket currently owns adding
   more renderer component tests.
 - **The title inputs and the case-preserving UID labels.** The add-card and editor inputs'
-  `maxLength={100}` and spaced placeholders, the renderer's case-folded attach/duplicate checks in
+  `maxLength` and spaced placeholders, the renderer's case-folded attach/duplicate checks in
   `src/hooks/useCrashpadCardMutationActions.ts`, and the `detailUid` label class are not covered by
   a unit test — the hooks and components have no test harness. The main-process side of the same
   rules is covered by the vault and store suites; the DOM behaviour was checked by driving the
-  built app under the headless harness recorded in `.scratch/` (see `.scratch/professional-standard/grilling.md` §10).
+  built app under the headless harness recorded in `.scratch/` (see
+  `.scratch/professional-standard/grilling.md` §10). No open ticket owns adding a renderer test
+  seam for it.
 - **The Weaver card chip's three-line clamp and ellipsis.** CSS clamping is not unit-testable
   (#23), so the chip suite only asserts the rendered text and the `title` tooltip. A headless
   Electron harness now exists (`.scratch/professional-standard/grilling.md` §10), but the manual
@@ -99,5 +101,13 @@ behaviour is pinned by the `weavePlanSchema` characterisation tests rather than 
 
 A second product limitation comes with case-insensitive card identity: a legacy card store that
 already contains two files whose titles differ only in letter case is not migrated or reconciled.
-`createCard` and `renameCard` refuse to add another such pair, and the store's own reads still take
-one UID per filename; #24 records the limitation rather than silently rewriting a user's files.
+`createCard` and `renameCard` refuse to add another such pair (a corrupt case-folded match fails the
+duplicate check instead of being skipped), and the store's own reads still take one UID per
+filename; #24 records the limitation rather than silently rewriting a user's files.
+
+Boundary pairing has the same residual edge. `parseCrashCardsFromNote` compares the two captured
+titles exactly, not folded, so a hand-authored note that spells a stored card's title in another
+casing becomes its own UID on a case-sensitive filesystem (or a body/filename casing disagreement
+on a case-insensitive one). That is pre-existing parser strictness, recorded in
+[boundary-format.md](../docs/reference/boundary-format.md) and [data-model.md](../docs/architecture/data-model.md),
+and it is not migrated with the rest of #24.

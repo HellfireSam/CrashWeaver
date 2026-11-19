@@ -3,6 +3,7 @@ import type {
   CardDocument,
   CardRenameResult,
   CardRestoreMode,
+  CrashpadCardEntry,
   CrashpadDeletePreferences,
   CrashpadDeletedCardSnapshot,
   CrashpadDocument,
@@ -10,6 +11,11 @@ import type {
 import { areCardUidsEqual, type CardViewRecord } from '../lib/cards';
 import type { CrashpadDeleteRequest, CrashpadHistoryEntry } from '../lib/crashpadHistory';
 import { getErrorMessage } from '../lib/errorUtils';
+
+/** The crashpad entry whose UID folds to `uid`, if the card is already there. */
+function findCrashpadCardByFoldedUid(cards: CrashpadCardEntry[], uid: string) {
+  return cards.find((entry) => areCardUidsEqual(entry.uid, uid)) ?? null;
+}
 
 type UseCrashpadCardMutationActionsOptions = {
   vaultPath: string | null;
@@ -72,9 +78,7 @@ export function useCrashpadCardMutationActions({
         return false;
       }
 
-      const crashpadCard = activeCrashpad.cards.find((entry) =>
-        areCardUidsEqual(entry.uid, normalizedUid),
-      );
+      const crashpadCard = findCrashpadCardByFoldedUid(activeCrashpad.cards, normalizedUid);
 
       if (crashpadCard) {
         setErrorMessage(`Card ${crashpadCard.uid} is already in this crashpad.`);
@@ -132,9 +136,7 @@ export function useCrashpadCardMutationActions({
         return false;
       }
 
-      const crashpadCard = activeCrashpad.cards.find((entry) =>
-        areCardUidsEqual(entry.uid, normalizedUid),
-      );
+      const crashpadCard = findCrashpadCardByFoldedUid(activeCrashpad.cards, normalizedUid);
 
       if (crashpadCard) {
         setErrorMessage(`Card ${crashpadCard.uid} is already present in this crashpad.`);

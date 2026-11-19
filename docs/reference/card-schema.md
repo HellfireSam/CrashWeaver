@@ -158,8 +158,10 @@ The parser (`electron/cardParser.ts`) is strict; the store is permissive.
 Parsing. A boundary line must match `%%CW_CARD_START uid:<UID>%%` or `%%CW_CARD_END uid:<UID>%%`
 after trimming, with `<UID>` built from the card-UID alphabet
 (`[A-Za-z0-9_\- ]+` — letters, numbers, spaces, underscores and dashes). Both patterns come from
-`electron/cardUid.ts`, so the parser and the store share one grammar; the parser trims the captured
-title, and a UID that is only whitespace is an invalid boundary. Every deviation becomes a
+`electron/cardUid.ts`, and the parser trims the captured title and validates it with the same
+`isValidCardUid` the store uses, so a boundary whose title is empty, whitespace only, outside the
+alphabet or longer than 100 characters is an invalid boundary rather than a pair the store cannot
+address. Every deviation becomes a
 `CardParseDiagnostic` with severity `error` and one of the codes on `CardParseDiagnosticCode`:
 `invalid-start-boundary`, `invalid-end-boundary`, `nested-start-boundary`,
 `unmatched-start-boundary`, `unmatched-end-boundary` or `mismatched-boundary-uid`. A card is
@@ -199,11 +201,14 @@ migration rather than relying on passthrough.
 
 - UID alphabet, length and uniqueness. `assertValidCardUid` and the boundary patterns both read
   `electron/cardUid.ts`, so only a boundary title that is also a legal card title can match a card
-  file. The alphabet is ASCII letters, digits, spaces, underscores and dashes; the cap is 100
-  characters after trimming; interior runs of spaces are preserved. Identity folds ASCII letter
-  case: `createCard` and `renameCard` refuse a title whose folded form matches another card, and
-  the error echoes the stored title. A legacy store that already contains two files differing only
-  in case is a known limitation and is not migrated.
+  file; the parser additionally validates the captured title with `isValidCardUid`, cap included.
+  The alphabet is ASCII letters, digits, spaces, underscores and dashes; the cap is 100 characters
+  after trimming; interior runs of spaces are preserved. Identity folds ASCII letter case:
+  `createCard` and `renameCard` refuse a title whose folded form matches another card, and the
+  error echoes the stored title. Boundary pairing, by contrast, compares the titles exactly, so a
+  hand-authored note that spells a stored title in another casing is the same legacy limitation as
+  a store that already contains two files differing only in case: it is a known limitation and is
+  not migrated.
 - One Reference per note. `upsertCardReference` looks up `referenced_in` by `note_path` and
   replaces the matching entry in place, so a UID appearing twice in one note keeps a single
   Reference; a new entry is appended and the array is sorted by `note_path`. `removeCardReference`
