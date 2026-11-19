@@ -230,6 +230,14 @@ function createMainWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Electron 20+ sandboxes renderers by default. A sandboxed preload can
+      // only require `electron`, so it cannot load the shared channel
+      // declaration (`./ipcChannels`); without this the preload fails to load,
+      // `window.crashWeaver` is never exposed and the renderer boots to the
+      // error boundary. contextIsolation stays on, so the renderer still has no
+      // Node access; bundling the preload is the alternative if the sandbox
+      // must be kept.
+      sandbox: false,
     },
   });
 

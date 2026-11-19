@@ -28,9 +28,16 @@ services, which import `electron/settingsService.ts`. `app.whenReady()` calls
 
 `createMainWindow()` builds one `BrowserWindow` with fixed geometry: width 1320, height 860,
 minimum 1080 by 720, a `#f4ede2` background colour and the title `CrashWeaver`. Its
-`webPreferences` set exactly three things: `preload` to `path.join(__dirname, 'preload.js')`
-(the compiled script in `dist-electron/`, beside `main.js`), `contextIsolation: true`, and
-`nodeIntegration: false`, so the renderer has no `require`, `process` or Node globals.
+`webPreferences` set four things: `preload` to `path.join(__dirname, 'preload.js')` (the compiled
+script in `dist-electron/`, beside `main.js`), `contextIsolation: true`, `nodeIntegration: false`,
+so the renderer has no `require`, `process` or Node globals, and `sandbox: false`.
+
+The renderer sandbox is off deliberately. Electron 20+ defaults it on, and a sandboxed preload can
+only require `electron` — it cannot load a relative module. Since #20 the preload reads the shared
+channel declaration (`./ipcChannels`), so with the default sandbox the preload fails to load,
+`window.crashWeaver` is never exposed and the renderer boots to the error boundary. Bundling the
+preload would let the sandbox stay on; until the build does that, `contextIsolation` is the
+boundary between the renderer and the preload's Node access.
 
 `isDev` is `Boolean(process.env.VITE_DEV_SERVER_URL)`. When it is set the window calls
 `loadURL(process.env.VITE_DEV_SERVER_URL)`; otherwise it calls
