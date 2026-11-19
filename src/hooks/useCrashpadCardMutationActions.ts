@@ -7,7 +7,7 @@ import type {
   CrashpadDeletedCardSnapshot,
   CrashpadDocument,
 } from '../../electron/vault-contract';
-import type { CardViewRecord } from '../lib/cards';
+import { areCardUidsEqual, type CardViewRecord } from '../lib/cards';
 import type { CrashpadDeleteRequest, CrashpadHistoryEntry } from '../lib/crashpadHistory';
 import { getErrorMessage } from '../lib/errorUtils';
 
@@ -72,12 +72,21 @@ export function useCrashpadCardMutationActions({
         return false;
       }
 
-      if (activeCrashpad.cards.some((entry) => entry.uid === normalizedUid)) {
-        setErrorMessage(`Card ${normalizedUid} is already in this crashpad.`);
+      const crashpadCard = activeCrashpad.cards.find((entry) =>
+        areCardUidsEqual(entry.uid, normalizedUid),
+      );
+
+      if (crashpadCard) {
+        setErrorMessage(`Card ${crashpadCard.uid} is already in this crashpad.`);
         return false;
       }
 
-      if (!allCards.some((card) => card.uid === normalizedUid)) {
+      // Identity folds case, so look the title up case-insensitively and use
+      // the stored card's own casing for the crashpad entry, the history and
+      // the feedback message.
+      const storedCard = allCards.find((card) => areCardUidsEqual(card.uid, normalizedUid));
+
+      if (!storedCard) {
         setErrorMessage(`Card ${normalizedUid} was not found in the current card store.`);
         return false;
       }
@@ -86,14 +95,14 @@ export function useCrashpadCardMutationActions({
         ...activeCrashpad,
         cards: [
           ...activeCrashpad.cards,
-          { uid: normalizedUid, origin: 'existing', addedAt: new Date().toISOString() },
+          { uid: storedCard.uid, origin: 'existing', addedAt: new Date().toISOString() },
         ],
       };
 
       await persistCrashpad(nextCrashpad);
-      pushCrashpadHistory({ kind: 'attach-existing', uid: normalizedUid });
-      setFocusedCardUid(normalizedUid);
-      setStatusMessage(`Opened existing card ${normalizedUid} in the crashpad.`);
+      pushCrashpadHistory({ kind: 'attach-existing', uid: storedCard.uid });
+      setFocusedCardUid(storedCard.uid);
+      setStatusMessage(`Opened existing card ${storedCard.uid} in the crashpad.`);
       setErrorMessage(null);
       return true;
     },
@@ -123,27 +132,33 @@ export function useCrashpadCardMutationActions({
         return false;
       }
 
-      if (activeCrashpad.cards.some((entry) => entry.uid === normalizedUid)) {
-        setErrorMessage(`Card ${normalizedUid} is already present in this crashpad.`);
+      const crashpadCard = activeCrashpad.cards.find((entry) =>
+        areCardUidsEqual(entry.uid, normalizedUid),
+      );
+
+      if (crashpadCard) {
+        setErrorMessage(`Card ${crashpadCard.uid} is already present in this crashpad.`);
         return false;
       }
 
       try {
-        await window.crashWeaver.createCard(vaultPath, normalizedUid);
+        // The store returns the title with the casing it stored, which is the
+        // created title — the echoed messages and crashpad entry use that.
+        const createdCard = await window.crashWeaver.createCard(vaultPath, normalizedUid);
         const nextCrashpad: CrashpadDocument = {
           ...activeCrashpad,
           cards: [
             ...activeCrashpad.cards,
-            { uid: normalizedUid, origin: 'new', addedAt: new Date().toISOString() },
+            { uid: createdCard.uid, origin: 'new', addedAt: new Date().toISOString() },
           ],
         };
 
         await refreshCardsCatalog(vaultPath);
         await refreshInternalDirectories(vaultPath);
         await persistCrashpad(nextCrashpad);
-        pushCrashpadHistory({ kind: 'create-new', uid: normalizedUid });
-        setFocusedCardUid(normalizedUid);
-        setStatusMessage(`Created card ${normalizedUid} and added it to the crashpad.`);
+        pushCrashpadHistory({ kind: 'create-new', uid: createdCard.uid });
+        setFocusedCardUid(createdCard.uid);
+        setStatusMessage(`Created card ${createdCard.uid} and added it to the crashpad.`);
         setErrorMessage(null);
         return true;
       } catch (error) {

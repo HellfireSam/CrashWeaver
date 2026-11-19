@@ -7,6 +7,7 @@ import type {
   ParsedCrashCardsNote,
 } from './vault-contract';
 import { parseCrashCardsFromNote } from './cardParser';
+import { isValidCardUid } from './cardUid';
 import {
   cardDocumentExists,
   ensureCardStoreDirectory,
@@ -16,7 +17,6 @@ import {
   removeCardReference,
   upsertCardReference,
   getCardFilePath,
-  isValidCardUid,
 } from './cardStoreService';
 
 function createDiagnostic(line: number, uid: string, message: string): CardParseDiagnostic {

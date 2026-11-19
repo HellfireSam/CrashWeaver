@@ -478,4 +478,252 @@ describe('vaultService', () => {
       ).rejects.toThrow(/Card title \/ ID/);
     });
   });
+
+  describe('card titles that contain spaces', () => {
+    const tempDirs: string[] = [];
+
+    afterEach(async () => {
+      settingsService.__setSettingsFilePathForTests(null);
+      settingsService.__resetSettingsMutationQueueForTests();
+      await Promise.all(
+        tempDirs.splice(0).map((tempDir) => fs.rm(tempDir, { recursive: true, force: true })),
+      );
+    });
+
+    async function setupVault() {
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-vault-spaced-title-'));
+      tempDirs.push(tempDir);
+      const settingsPath = path.join(tempDir, 'crashweaver-settings.json');
+      const rootPath = path.join(tempDir, 'vault-root');
+      await fs.mkdir(rootPath, { recursive: true });
+      settingsService.__resetSettingsMutationQueueForTests();
+      settingsService.__setSettingsFilePathForTests(settingsPath);
+      return rootPath;
+    }
+
+    function cardStoreDirectory(rootPath: string) {
+      return path.join(rootPath, '.crashweaver', 'cards');
+    }
+
+    async function readCardFile(rootPath: string, uid: string) {
+      return JSON.parse(
+        await fs.readFile(path.join(cardStoreDirectory(rootPath), `${uid}.json`), 'utf8'),
+      );
+    }
+
+    async function listCardFileNames(rootPath: string) {
+      return (await fs.readdir(cardStoreDirectory(rootPath))).filter((name) =>
+        name.endsWith('.json'),
+      );
+    }
+
+    it('createCard and saveCard keep a spaced title verbatim in the file and the body', async () => {
+      const rootPath = await setupVault();
+
+      const created = await vaultService.createCard(rootPath, '  Three-way handshake  ');
+      const saved = await vaultService.saveCard(rootPath, {
+        ...created,
+        raw_content: 'SYN, SYN-ACK, ACK',
+      });
+
+      expect(saved.uid).toBe('Three-way handshake');
+      expect(await listCardFileNames(rootPath)).toEqual(['Three-way handshake.json']);
+      const onDisk = await readCardFile(rootPath, 'Three-way handshake');
+      expect(onDisk.uid).toBe('Three-way handshake');
+      expect(onDisk.raw_content).toBe('SYN, SYN-ACK, ACK');
+    });
+
+    it('createCard rejects a stored title regardless of letter case and echoes the stored casing', async () => {
+      const rootPath = await setupVault();
+      await vaultService.createCard(rootPath, 'My Card');
+
+      await expect(vaultService.createCard(rootPath, 'my card')).rejects.toThrow(
+        'Card My Card already exists.',
+      );
+      await expect(vaultService.createCard(rootPath, 'My Card')).rejects.toThrow(
+        'Card My Card already exists.',
+      );
+    });
+
+    it('createCard rejects a too-long or illegal title with the user-facing reason', async () => {
+      const rootPath = await setupVault();
+
+      await expect(vaultService.createCard(rootPath, 'a'.repeat(101))).rejects.toThrow(
+        'Card title / ID must be 100 characters or fewer.',
+      );
+      await expect(vaultService.createCard(rootPath, 'TCP: handshake')).rejects.toThrow(
+        'Card title / ID must use only letters, numbers, spaces, underscores, or dashes.',
+      );
+    });
+
+    it('renameCard rewrites a spaced title across the note, crashpad and card file', async () => {
+      const rootPath = await setupVault();
+      const notePath = path.join(rootPath, 'notes', 'tcp.md');
+      await fs.mkdir(path.dirname(notePath), { recursive: true });
+      await fs.writeFile(
+        notePath,
+        [
+          formatCardStartBoundary('Three-way handshake'),
+          'SYN, SYN-ACK, ACK.',
+          formatCardEndBoundary('Three-way handshake'),
+        ].join('\n'),
+        'utf8',
+      );
+
+      const created = await vaultService.createCard(rootPath, 'Three-way handshake');
+      const saved = await vaultService.saveCard(rootPath, {
+        ...created,
+        referenced_in: [{ note_path: 'notes/tcp.md', start_line: 1, end_line: 3 }],
+      });
+      const crashpad = await vaultService.createVaultCrashpad(rootPath, 'daily');
+      await vaultService.saveCrashpad(rootPath, {
+        ...crashpad,
+        cards: [
+          {
+            uid: 'Three-way handshake',
+            origin: 'existing',
+            addedAt: new Date().toISOString(),
+          },
+        ],
+        deletedCards: [
+          {
+            uid: 'Three-way handshake',
+            origin: 'new',
+            deletedAt: new Date().toISOString(),
+            removeNoteBoundaries: true,
+            card: saved,
+          },
+        ],
+      });
+
+      const renamed = await vaultService.renameCard(rootPath, 'Three-way handshake', {
+        ...saved,
+        uid: 'Three-way handshake revisited',
+      });
+
+      expect(renamed.previousUid).toBe('Three-way handshake');
+      expect(renamed.card.uid).toBe('Three-way handshake revisited');
+      expect(renamed.updatedNotePaths).toEqual(['notes/tcp.md']);
+      expect(renamed.updatedCrashpads).toBe(1);
+
+      const noteContent = await fs.readFile(notePath, 'utf8');
+      expect(noteContent).toContain(formatCardStartBoundary('Three-way handshake revisited'));
+      expect(noteContent).toContain(formatCardEndBoundary('Three-way handshake revisited'));
+      expect(noteContent).not.toContain(formatCardStartBoundary('Three-way handshake'));
+
+      expect(await listCardFileNames(rootPath)).toEqual(['Three-way handshake revisited.json']);
+      expect((await readCardFile(rootPath, 'Three-way handshake revisited')).uid).toBe(
+        'Three-way handshake revisited',
+      );
+
+      const updatedCrashpad = await vaultService.openCrashpad(rootPath, crashpad.id);
+      expect(updatedCrashpad.cards.map((entry: { uid: string }) => entry.uid)).toEqual([
+        'Three-way handshake revisited',
+      ]);
+      expect(updatedCrashpad.deletedCards[0].uid).toBe('Three-way handshake revisited');
+      expect(updatedCrashpad.deletedCards[0].card.uid).toBe('Three-way handshake revisited');
+    });
+
+    it('a case-only rename keeps one card file and moves the casing through note and crashpad', async () => {
+      const rootPath = await setupVault();
+      const notePath = path.join(rootPath, 'notes', 'case.md');
+      await fs.mkdir(path.dirname(notePath), { recursive: true });
+      await fs.writeFile(
+        notePath,
+        [formatCardStartBoundary('My Card'), 'Card prose.', formatCardEndBoundary('My Card')].join(
+          '\n',
+        ),
+        'utf8',
+      );
+
+      const created = await vaultService.createCard(rootPath, 'My Card');
+      const saved = await vaultService.saveCard(rootPath, {
+        ...created,
+        referenced_in: [{ note_path: 'notes/case.md', start_line: 1, end_line: 3 }],
+      });
+      const crashpad = await vaultService.createVaultCrashpad(rootPath, 'daily');
+      await vaultService.saveCrashpad(rootPath, {
+        ...crashpad,
+        cards: [
+          {
+            uid: 'My Card',
+            origin: 'existing',
+            addedAt: new Date().toISOString(),
+          },
+        ],
+      });
+
+      const renamed = await vaultService.renameCard(rootPath, 'My Card', {
+        ...saved,
+        uid: 'my card',
+      });
+
+      expect(renamed.previousUid).toBe('My Card');
+      expect(renamed.card.uid).toBe('my card');
+      expect(renamed.updatedNotePaths).toEqual(['notes/case.md']);
+      expect(await listCardFileNames(rootPath)).toEqual(['my card.json']);
+      expect((await readCardFile(rootPath, 'my card')).uid).toBe('my card');
+
+      const noteContent = await fs.readFile(notePath, 'utf8');
+      expect(noteContent).toContain(formatCardStartBoundary('my card'));
+      expect(noteContent).toContain(formatCardEndBoundary('my card'));
+
+      const updatedCrashpad = await vaultService.openCrashpad(rootPath, crashpad.id);
+      expect(updatedCrashpad.cards.map((entry: { uid: string }) => entry.uid)).toEqual(['my card']);
+    });
+
+    it('deleteCard and restoreDeletedCard keep a spaced title verbatim', async () => {
+      const rootPath = await setupVault();
+      const notePath = path.join(rootPath, 'notes', 'tcp.md');
+      await fs.mkdir(path.dirname(notePath), { recursive: true });
+      await fs.writeFile(
+        notePath,
+        [
+          '# TCP notes',
+          '',
+          formatCardStartBoundary('Three-way handshake'),
+          'SYN, SYN-ACK, ACK.',
+          formatCardEndBoundary('Three-way handshake'),
+        ].join('\n'),
+        'utf8',
+      );
+
+      const created = await vaultService.createCard(rootPath, 'Three-way handshake');
+      const saved = await vaultService.saveCard(rootPath, {
+        ...created,
+        raw_content: 'SYN, SYN-ACK, ACK.',
+        referenced_in: [{ note_path: 'notes/tcp.md', start_line: 3, end_line: 5 }],
+      });
+
+      const deleteResult = await vaultService.deleteCard(rootPath, 'Three-way handshake', {
+        removeNoteBoundaries: true,
+      });
+
+      expect(deleteResult.removedCardFile).toBe(true);
+      expect(deleteResult.removedBoundariesFrom).toBe(1);
+      expect(deleteResult.removedBoundaryLines).toBe(2);
+      expect(await listCardFileNames(rootPath)).toEqual([]);
+      expect(await fs.readFile(notePath, 'utf8')).not.toContain('Three-way handshake');
+
+      const restoreResult = await vaultService.restoreDeletedCard(
+        rootPath,
+        {
+          uid: 'Three-way handshake',
+          origin: 'existing',
+          deletedAt: new Date().toISOString(),
+          removeNoteBoundaries: true,
+          card: saved,
+        },
+        { mode: 'reinsert-note-boundaries' },
+      );
+
+      expect(restoreResult.uid).toBe('Three-way handshake');
+      expect(restoreResult.reinsertedInto).toBe(1);
+      expect(await listCardFileNames(rootPath)).toEqual(['Three-way handshake.json']);
+      expect((await readCardFile(rootPath, 'Three-way handshake')).uid).toBe('Three-way handshake');
+      const restoredNote = await fs.readFile(notePath, 'utf8');
+      expect(restoredNote).toContain(formatCardStartBoundary('Three-way handshake'));
+      expect(restoredNote).toContain(formatCardEndBoundary('Three-way handshake'));
+    });
+  });
 });

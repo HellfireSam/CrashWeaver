@@ -1,7 +1,16 @@
 import type { CardParseDiagnostic, ParsedCrashCard, ParsedCrashCardsNote } from './vault-contract';
+import { CARD_UID_ALPHABET, normalizeCardUid } from './cardUid';
 
-const START_BOUNDARY_PATTERN = /^%%CW_CARD_START\s+uid:([A-Za-z0-9_-]+)%%$/;
-const END_BOUNDARY_PATTERN = /^%%CW_CARD_END\s+uid:([A-Za-z0-9_-]+)%%$/;
+// Both boundary patterns are built from the shared card-UID alphabet in
+// `electron/cardUid.ts`, so the parser and the card store cannot drift. The
+// capture is trimmed below because a title may end in a space before `%%`.
+const START_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_START\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
+const END_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_END\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
+
+const INVALID_START_BOUNDARY_MESSAGE =
+  'Card start boundary must follow the format %%CW_CARD_START uid:<UID>%%.';
+const INVALID_END_BOUNDARY_MESSAGE =
+  'Card end boundary must follow the format %%CW_CARD_END uid:<UID>%%.';
 
 interface ActiveBoundary {
   uid: string;
@@ -58,7 +67,16 @@ export function parseCrashCardsFromNote(notePath: string, content: string): Pars
     const endMatch = line.match(END_BOUNDARY_PATTERN);
 
     if (startMatch) {
-      const uid = startMatch[1];
+      const uid = normalizeCardUid(startMatch[1]);
+
+      // A marker whose UID is only whitespace has no title; report it like the
+      // malformed markers below rather than opening an empty boundary.
+      if (!uid) {
+        diagnostics.push(
+          createDiagnostic('invalid-start-boundary', lineNumber, INVALID_START_BOUNDARY_MESSAGE),
+        );
+        continue;
+      }
 
       if (activeBoundary) {
         diagnostics.push(
@@ -78,17 +96,20 @@ export function parseCrashCardsFromNote(notePath: string, content: string): Pars
 
     if (line.startsWith('%%CW_CARD_START')) {
       diagnostics.push(
-        createDiagnostic(
-          'invalid-start-boundary',
-          lineNumber,
-          'Card start boundary must follow the format %%CW_CARD_START uid:<UID>%%.',
-        ),
+        createDiagnostic('invalid-start-boundary', lineNumber, INVALID_START_BOUNDARY_MESSAGE),
       );
       continue;
     }
 
     if (endMatch) {
-      const uid = endMatch[1];
+      const uid = normalizeCardUid(endMatch[1]);
+
+      if (!uid) {
+        diagnostics.push(
+          createDiagnostic('invalid-end-boundary', lineNumber, INVALID_END_BOUNDARY_MESSAGE),
+        );
+        continue;
+      }
 
       if (!activeBoundary) {
         diagnostics.push(
@@ -121,11 +142,7 @@ export function parseCrashCardsFromNote(notePath: string, content: string): Pars
 
     if (line.startsWith('%%CW_CARD_END')) {
       diagnostics.push(
-        createDiagnostic(
-          'invalid-end-boundary',
-          lineNumber,
-          'Card end boundary must follow the format %%CW_CARD_END uid:<UID>%%.',
-        ),
+        createDiagnostic('invalid-end-boundary', lineNumber, INVALID_END_BOUNDARY_MESSAGE),
       );
     }
   }

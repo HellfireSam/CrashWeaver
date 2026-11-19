@@ -13,7 +13,7 @@ Architecture lives in [`docs/architecture/`](./docs/architecture/overview.md).
 | **Note**              | A markdown file in the vault. Holds prose and, where cards are placed, the boundaries marking which text belongs to which card — never a card's full payload.                        |
 | **Vault**             | The folder the user opens as their knowledge base. Notes and their boundaries stay inside it; the card store lives inside it by default but can be configured elsewhere.             |
 | **Card store**        | The folder holding the full payload of every card, one file per card.                                                                                                                |
-| **UID**               | A card's unique identifier — the only thing linking a note's boundaries to a card's payload.                                                                                         |
+| **UID**               | A card's unique identifier and title — the only thing linking a note's boundaries to a card's payload, and the name of the card file. It may contain spaces.                         |
 | **UID boundary**      | The paired start/end markers delimiting the span of a note attributed to one card.                                                                                                   |
 | **Reference**         | A link from a card to a specific line span in a specific note where that card appears. A card holds many. `referenced_in` is only the field that stores references, not the concept. |
 | **Orphaned card**     | A card whose references have all gone.                                                                                                                                               |

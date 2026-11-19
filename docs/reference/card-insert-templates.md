@@ -28,8 +28,11 @@ insert behaviour branches on them, and the archived catalog's "Template A–F" f
 
 Each payload is a complete card-store document with the six `CardDocument` keys. Four conventions apply:
 
-- `uid` may use only letters, numbers, underscores and dashes — `assertValidCardUid` rejects anything
-  else, and the boundary patterns in `cardParser` accept exactly that set.
+- `uid` is the card's title and may use letters, numbers, spaces, underscores and dashes — for
+  example `Three-way handshake`. `assertValidCardUid` in `electron/cardUid.ts` trims it, rejects
+  anything outside that alphabet, rejects more than 100 characters, and the boundary patterns in
+  `cardParser` are built from the same alphabet. Identity folds ASCII letter case, so two templates
+  cannot differ only in case.
 - `referenced_in` is produced by the card sync from the note's UID boundaries: leave it `[]`.
 - `raw_content` is the prose the boundary pair wraps; `upsertCardReference` seeds an empty card from
   the wrapped span's text.

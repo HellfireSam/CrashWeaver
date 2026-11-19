@@ -25,6 +25,7 @@ describe('editorPaths', () => {
   it('extracts crashpad id and card uid from paths', () => {
     expect(getCrashpadIdFromPath('folder/daily.crashpad.json')).toBe('daily');
     expect(getCardUidFromPath('folder/topic-card.json')).toBe('topic-card');
+    expect(getCardUidFromPath('folder/my card.json')).toBe('my card');
   });
 
   it('guards whether paths stay inside the vault', () => {

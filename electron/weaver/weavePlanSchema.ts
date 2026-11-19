@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { assertValidCardUid } from '../cardStoreService';
+import { assertValidCardUid } from '../cardUid';
 import { toPosixPath } from '../utils/paths';
 import type {
   GuidedInsertPermissions,

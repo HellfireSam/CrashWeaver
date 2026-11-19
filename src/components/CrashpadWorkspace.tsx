@@ -352,11 +352,12 @@ export function CrashpadWorkspace({
                         <input
                           className="notePathInput"
                           value={addCardUid}
+                          maxLength={100}
                           onChange={(e) => setAddCardUid(e.target.value)}
                           placeholder={
                             addCardMode === 'attach'
-                              ? 'Enter existing card title / ID (e.g. CW-001)'
-                              : 'Enter new card title / ID (e.g. CW-002)'
+                              ? 'Enter existing card title / ID (e.g. Three-way handshake)'
+                              : 'Enter new card title / ID (e.g. Three-way handshake)'
                           }
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') void handleAddCard();
@@ -461,6 +462,7 @@ export function CrashpadWorkspace({
                               id="cpUid"
                               className="notePathInput"
                               value={cardUid}
+                              maxLength={100}
                               onChange={(e) => setCardUid(e.target.value)}
                             />
                           </div>
@@ -722,7 +724,7 @@ export function CrashpadWorkspace({
                 <div className="cpHistoryItem" key={`${snapshot.uid}-${snapshot.deletedAt}`}>
                   <div className="cpHistoryItemHeader">
                     <div>
-                      <p className="detailKey">{snapshot.uid}</p>
+                      <p className="detailKey detailUid">{snapshot.uid}</p>
                       <p className="cardsRailTitle">{snapshot.card.uid}</p>
                     </div>
                     <div className="cpHistoryItemMeta">

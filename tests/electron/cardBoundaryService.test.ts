@@ -55,4 +55,34 @@ describe('cardBoundaryService', () => {
     expect(result.alreadyPresent).toBe(false);
     expect(result.content).toBe(['top', start, 'question', 'answer', end, 'bottom'].join('\n'));
   });
+
+  it('removes and renames boundary lines whose UID contains spaces', () => {
+    const uid = 'Three-way handshake';
+    const nextUid = 'Three-way handshake revisited';
+    const content = [
+      'before',
+      formatCardStartBoundary(uid),
+      'inside',
+      formatCardEndBoundary(uid),
+      'after',
+    ].join('\n');
+
+    const renamed = replaceCardBoundaryUids(content, uid, nextUid);
+
+    expect(renamed.replaced).toBe(true);
+    expect(renamed.content).toBe(
+      [
+        'before',
+        formatCardStartBoundary(nextUid),
+        'inside',
+        formatCardEndBoundary(nextUid),
+        'after',
+      ].join('\n'),
+    );
+
+    const removed = removeCardBoundaryLines(renamed.content, nextUid);
+
+    expect(removed.removedBoundaryLines).toBe(2);
+    expect(removed.content).toBe(['before', 'inside', 'after'].join('\n'));
+  });
 });

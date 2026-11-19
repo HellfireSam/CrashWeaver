@@ -125,7 +125,7 @@ export function CardsWorkspace({
                 }}
               >
                 <div>
-                  <p className="detailKey">{card.uid}</p>
+                  <p className="detailKey detailUid">{card.uid}</p>
                   <p className="cardsRailTitle">{card.uid}</p>
                 </div>
                 <div className="cardsRailMeta">

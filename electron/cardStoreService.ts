@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { areCardUidsEqual, assertValidCardUid } from './cardUid';
 import { getFsErrorCode } from './utils/fsErrors';
 import { writeJsonAtomically } from './utils/jsonFile';
 import type {
@@ -8,8 +10,6 @@ import type {
   CardQaPair,
   ParsedCrashCard,
 } from './vault-contract';
-
-const CARD_UID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 function toStringArray(value: unknown) {
   return Array.isArray(value)
@@ -284,35 +284,6 @@ export async function listCardsReferencingNote(cardStorePath: string, notePath: 
   return cards.filter((card) => card.referenced_in.some((entry) => entry.note_path === notePath));
 }
 
-export function assertValidCardUid(uid: string) {
-  const normalizedUid = uid.trim();
-
-  if (!normalizedUid) {
-    throw new Error('Card title / ID is required.');
-  }
-
-  if (!CARD_UID_PATTERN.test(normalizedUid)) {
-    throw new Error('Card title / ID must use only letters, numbers, underscores, or dashes.');
-  }
-
-  return normalizedUid;
-}
-
-/**
- * True when the UID can be addressed through `getCardFilePath`. A hand-dropped
- * card file can have any basename; callers that enumerate such files use this
- * to skip the ones the guarded path builder would refuse rather than failing
- * the whole operation.
- */
-export function isValidCardUid(uid: string): boolean {
-  try {
-    assertValidCardUid(uid);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function createCardDocument(uid: string): CardDocument {
   return createDefaultCardDocument(assertValidCardUid(uid), '');
 }
@@ -325,6 +296,65 @@ export async function writeCardDocument(
   await ensureCardStoreDirectory(cardStorePath);
   const nextCard = coerceCardDocument(uid, card);
   await writeJsonAtomically(getCardFilePath(cardStorePath, uid), nextCard);
+  return nextCard;
+}
+
+/**
+ * Writes the card under its new UID and removes the previous file when the
+ * title genuinely changed.
+ *
+ * A case-only rename is the trap: on a case-insensitive filesystem (Windows,
+ * macOS) the old and new names are the same file, so writing the new file and
+ * then unlinking the old one destroys the card. The live file is moved to a
+ * unique backup name, the freshly written temp file takes the new casing, and
+ * the backup is removed only after the new name is in place. The temp and
+ * backup names never end in `.json`, so the card listing cannot mistake a
+ * half-finished rename for a card.
+ */
+export async function renameCardDocument(
+  cardStorePath: string,
+  previousUid: string,
+  card: CardDocument,
+): Promise<CardDocument> {
+  const normalizedPreviousUid = assertValidCardUid(previousUid);
+  const nextCard = coerceCardDocument(assertValidCardUid(card.uid), card);
+  const normalizedNextUid = nextCard.uid;
+  await ensureCardStoreDirectory(cardStorePath);
+
+  if (normalizedPreviousUid === normalizedNextUid) {
+    await writeJsonAtomically(getCardFilePath(cardStorePath, normalizedNextUid), nextCard);
+    return nextCard;
+  }
+
+  if (!areCardUidsEqual(normalizedPreviousUid, normalizedNextUid)) {
+    await writeJsonAtomically(getCardFilePath(cardStorePath, normalizedNextUid), nextCard);
+    await deleteCardDocument(cardStorePath, normalizedPreviousUid);
+    return nextCard;
+  }
+
+  const previousPath = getCardFilePath(cardStorePath, normalizedPreviousUid);
+  const nextPath = getCardFilePath(cardStorePath, normalizedNextUid);
+  const tempPath = path.join(cardStorePath, `.card-rename-${randomUUID()}.json.tmp`);
+  const backupPath = path.join(cardStorePath, `.card-rename-${randomUUID()}.json.bak`);
+
+  await writeJsonAtomically(tempPath, nextCard);
+
+  try {
+    await fs.rename(previousPath, backupPath);
+  } catch (error) {
+    await fs.rm(tempPath, { force: true });
+    throw error;
+  }
+
+  try {
+    await fs.rename(tempPath, nextPath);
+  } catch (error) {
+    await fs.rename(backupPath, previousPath);
+    await fs.rm(tempPath, { force: true });
+    throw error;
+  }
+
+  await fs.rm(backupPath, { force: true });
   return nextCard;
 }
 

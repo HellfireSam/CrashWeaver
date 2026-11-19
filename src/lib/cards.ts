@@ -110,6 +110,19 @@ export function formatNextReview(value: string | null) {
   return value ?? 'Not scheduled';
 }
 
+/**
+ * Two card titles that differ only in ASCII letter case name the same card.
+ *
+ * The main process owns the rule and enforces it in the store; the renderer
+ * mirrors the fold so attaching an existing card picks the stored title (and
+ * its casing) instead of writing a second case variant. The renderer cannot
+ * import the main-process grammar module, so this is a deliberate second copy
+ * of the comparison, not of the character rule.
+ */
+export function areCardUidsEqual(left: string, right: string) {
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
 export function createFallbackCard(parsedCard: ParsedCrashCard, notePath: string): CardDocument {
   return {
     uid: parsedCard.uid,

@@ -1983,4 +1983,82 @@ describe('weaveApplyService', () => {
       expect(await snapshotVault(vault.rootPath)).toEqual(before);
     });
   });
+
+  // ── card titles that contain spaces ─────────────────────────────────────────
+
+  describe('card titles that contain spaces', () => {
+    it('inserts a boundary pair for a card title containing spaces', async () => {
+      const cardUid = 'Three-way handshake';
+      const vault = await setupTestVault({
+        'notes/networking.md': '# Networking\n\nExisting prose.\n',
+      });
+      await writeCard(vault, makeCard(cardUid, []));
+
+      const result = await applyOperations(vault, [
+        makeOperation('insert-boundary-pair', 'notes/networking.md', {
+          cardUid,
+          placement: 'append-to-note',
+          boundaryBlock: boundaryBlock(cardUid, 'TCP establishes connections.'),
+        }),
+      ]);
+
+      expect(result.allOk).toBe(true);
+      const noteContent = await readVaultFile(vault, 'notes/networking.md');
+      expect(noteContent).toContain(formatCardStartBoundary(cardUid));
+      expect(noteContent).toContain(formatCardEndBoundary(cardUid));
+      expect(
+        (await readCard(vault, cardUid)).referenced_in.map((entry) => entry.note_path),
+      ).toEqual(['notes/networking.md']);
+    });
+
+    it('creates a note whose default card title contains spaces', async () => {
+      const cardUid = 'Three-way handshake revisited';
+      const vault = await setupTestVault({});
+
+      const result = await applyOperations(vault, [
+        makeOperation('create-note', 'notes/tcp.md', {
+          cardUid,
+          title: 'TCP',
+          content: boundaryBlock(cardUid, 'TCP establishes connections.'),
+        }),
+      ]);
+
+      expect(result.allOk).toBe(true);
+      expect(await pathExists(path.join(vault.cardStorePath, `${cardUid}.json`))).toBe(true);
+      const card = await readCard(vault, cardUid);
+      expect(card.uid).toBe(cardUid);
+      expect(card.raw_content).toBe('TCP establishes connections.');
+    });
+
+    it('rewrites referenced_in for a spaced title when a note is renamed', async () => {
+      const cardUid = 'Three-way handshake';
+      const vault = await setupTestVault({
+        'notes/old.md': [
+          formatCardStartBoundary(cardUid),
+          'body one',
+          formatCardEndBoundary(cardUid),
+          '',
+        ].join('\n'),
+      });
+      await writeCard(
+        vault,
+        makeCard(cardUid, [{ note_path: 'notes/old.md', start_line: 1, end_line: 3 }], {
+          raw_content: 'body one',
+        }),
+      );
+
+      const result = await applyOperations(vault, [
+        makeOperation('rename-note', 'notes/new.md', {
+          fromPath: 'notes/old.md',
+          toPath: 'notes/new.md',
+          renameReason: 'Better name',
+        }),
+      ]);
+
+      expect(result.allOk).toBe(true);
+      expect((await readCard(vault, cardUid)).referenced_in).toEqual([
+        { note_path: 'notes/new.md', start_line: 1, end_line: 3 },
+      ]);
+    });
+  });
 });

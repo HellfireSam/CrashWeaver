@@ -120,10 +120,10 @@ These invariants prevent avoidable repair loops:
   "kind": "insert-boundary-pair",
   "targetPath": "notes/networking.md",
   "payload": {
-    "cardUid": "CW-003",
+    "cardUid": "Three-way handshake",
     "placement": "after-heading",
     "headingText": "## Transport Layer",
-    "boundaryBlock": "%%CW_CARD_START uid:CW-003%%\nTCP establishes connections via a three-way handshake (SYN, SYN-ACK, ACK) before data transfer begins.\n%%CW_CARD_END uid:CW-003%%"
+    "boundaryBlock": "%%CW_CARD_START uid:Three-way handshake%%\nTCP establishes connections via a three-way handshake (SYN, SYN-ACK, ACK) before data transfer begins.\n%%CW_CARD_END uid:Three-way handshake%%"
   },
   "rationale": "Anchors the TCP card to the relevant transport-layer paragraph it annotates."
 }
@@ -210,10 +210,10 @@ Each operation object shape:
   "kind": "insert-boundary-pair",
   "targetPath": "notes/networking.md",
   "payload": {
-    "cardUid": "CW-003",
+    "cardUid": "Three-way handshake",
     "placement": "after-heading",
     "headingText": "## Transport Layer",
-    "boundaryBlock": "%%CW_CARD_START uid:CW-003%%\\nTCP establishes connections via a three-way handshake.\\n%%CW_CARD_END uid:CW-003%%"
+    "boundaryBlock": "%%CW_CARD_START uid:Three-way handshake%%\\nTCP establishes connections via a three-way handshake (SYN, SYN-ACK, ACK) before data transfer begins.\\n%%CW_CARD_END uid:Three-way handshake%%"
   },
   "rationale": "Anchors the TCP card to the relevant transport-layer paragraph it annotates."
 }
@@ -461,6 +461,9 @@ export function buildRequestSpecification(
 
   lines.push(`Kind: ${request.kind}`);
   lines.push(`Focused card UID: ${request.cardUid}`);
+  lines.push(
+    'The focused card title (its UID) may contain spaces; copy it exactly as given, including its casing.',
+  );
   // When budget restrictions are disabled, don't confuse the LLM with artificial limits
   if (!settings?.disableBudgetRestrictions) {
     lines.push(

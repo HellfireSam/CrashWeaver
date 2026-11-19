@@ -16,31 +16,42 @@ result, or mutates the text.
 
 ## Marker syntax
 
-The two patterns are defined verbatim in `electron/cardParser.ts`:
+The two patterns are built in `electron/cardParser.ts` from the card-UID alphabet and grammar in
+`electron/cardUid.ts`, so the parser and the card store share one definition:
 
 ```ts
-const START_BOUNDARY_PATTERN = /^%%CW_CARD_START\s+uid:([A-Za-z0-9_-]+)%%$/;
-const END_BOUNDARY_PATTERN = /^%%CW_CARD_END\s+uid:([A-Za-z0-9_-]+)%%$/;
+// electron/cardUid.ts
+export const CARD_UID_ALPHABET = 'A-Za-z0-9_\\- ';
+
+// electron/cardParser.ts
+const START_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_START\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
+const END_BOUNDARY_PATTERN = new RegExp(`^%%CW_CARD_END\\s+uid:([${CARD_UID_ALPHABET}]+)%%$`);
 ```
 
-| Slot        | Accepted form                               | Notes                                                                                                                                                                      |
-| ----------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Marker text | literal `%%CW_CARD_START` / `%%CW_CARD_END` | No case folding: both patterns are case-sensitive, and the fallback prefix checks use `String.prototype.startsWith` with the same literal.                                 |
-| Separator   | `\s+`                                       | One or more whitespace characters between the marker text and `uid:`.                                                                                                      |
-| UID key     | literal `uid:`                              | Lowercase only. No whitespace is permitted between `uid:` and the UID, or between the UID and `%%`.                                                                        |
-| UID         | `[A-Za-z0-9_-]+`                            | ASCII letters, digits, underscore and hyphen; at least one character. The card store enforces the same alphabet with `CARD_UID_PATTERN` in `electron/cardStoreService.ts`. |
-| Terminator  | `%%` at end of line                         | The patterns are anchored with `^` and `$`, and the parser matches one trimmed line at a time.                                                                             |
+| Slot        | Accepted form                               | Notes                                                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Marker text | literal `%%CW_CARD_START` / `%%CW_CARD_END` | No case folding: both patterns are case-sensitive, and the fallback prefix checks use `String.prototype.startsWith` with the same literal.                                                                                                     |
+| Separator   | `\s+`                                       | One or more whitespace characters between the marker text and `uid:`.                                                                                                                                                                          |
+| UID key     | literal `uid:`                              | Lowercase only. Whitespace immediately after `uid:` is part of the captured title and is trimmed, so `uid: My Card` and `uid:My Card` name the same UID.                                                                                       |
+| UID         | `<the card title>`                          | At least one character from `[A-Za-z0-9_\- ]+` — ASCII letters, digits, spaces, underscore and hyphen — so a title such as `Three-way handshake` is a legal UID. The parser trims the captured title, and the store applies the same alphabet. |
+| Terminator  | `%%` at end of line                         | The patterns are anchored with `^` and `$`, and the parser matches one trimmed line at a time.                                                                                                                                                 |
+
+A card's UID is its title, and it may contain spaces; identity folds ASCII letter case in the
+card store (see [card-schema.md](./card-schema.md)). The parser trims the captured title, so
+`%%CW_CARD_START uid:My Card %%` records the UID `My Card`; interior runs of spaces are preserved.
+A marker whose captured UID is only whitespace is reported as an invalid boundary rather than
+opening an empty pair.
 
 A marker is recognised only when it is a whole line. `parseCrashCardsFromNote` computes
 `const line = rawLine.trim()` before matching, so indentation and trailing whitespace are tolerated
 around an otherwise exact marker. `formatCardStartBoundary` and `formatCardEndBoundary` emit the
-canonical single-space form, `%%CW_CARD_START uid:<UID>%%`, and that is what the app's own mutation
-services and the manual copy-embed path produce. It is **not** guaranteed for a Weaver-supplied
-block: `applyInsertBoundaryPair` persists the plan's `boundaryBlock` as written, and
-`assertBoundaryBlockIncludesCard` only requires the focused card's canonical markers to appear
-somewhere in it. A plan can therefore place a pair the parser accepts (with `\s+` between the
-prefix and `uid:`) but the mutation services cannot strip or rename, because they compare against
-the canonical marker exactly.
+canonical single-space form, `%%CW_CARD_START uid:<UID>%%`, unchanged — a spaced UID is
+interpolated as-is. That form is what the app's own mutation services and the manual copy-embed
+path produce. It is **not** guaranteed for a Weaver-supplied block: `applyInsertBoundaryPair`
+persists the plan's `boundaryBlock` as written, and `assertBoundaryBlockIncludesCard` only requires
+the focused card's canonical markers to appear somewhere in it. A plan can therefore place a pair
+the parser accepts (with `\s+` between the prefix and `uid:`) but the mutation services cannot strip
+or rename, because they compare against the canonical marker exactly.
 
 ## Pairing rules
 
@@ -227,6 +238,18 @@ derived reference as:
 ```json
 { "note_path": "notes/tcp.md", "start_line": 3, "end_line": 5 }
 ```
+
+A UID that is the card's title may contain spaces, and the canonical formatters interpolate it
+unchanged:
+
+```markdown
+%%CW_CARD_START uid:Three-way handshake%%
+SYN, SYN-ACK, ACK.
+%%CW_CARD_END uid:Three-way handshake%%
+```
+
+The parse records `uid: "Three-way handshake"` — the same string the card store uses as the
+`<uid>.json` filename — and a trailing space before `%%` is trimmed from the captured title.
 
 A malformed variant that changes only the end marker's UID:
 

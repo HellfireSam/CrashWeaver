@@ -115,10 +115,24 @@ A card is a `CardDocument` (`electron/vault-contract.ts`), the full payload desc
 [card-schema.md](../reference/card-schema.md). `electron/cardStoreService.ts` owns its
 persistence as a flat directory of JSON files, one per card: `getCardFilePath` is
 `path.join(cardStorePath, `${assertValidCardUid(uid)}.json`)`. The UID is therefore both the
-card's identity and its filename. `assertValidCardUid` trims it and rejects an empty UID
-(`Card title / ID is required.`) or one not matching `^[A-Za-z0-9_-]+$` (`Card title / ID must
-use only letters, numbers, underscores, or dashes.`); that pattern also makes a UID unusable as
-a traversal vector.
+card's identity and its title and filename.
+
+The UID grammar lives in one dependency-free module, `electron/cardUid.ts`, which both the card
+store and the boundary parser import; neither keeps its own copy. `assertValidCardUid` trims the
+title, rejects an empty one (`Card title / ID is required.`), rejects a character outside the
+Windows-filename-safe alphabet (`^[A-Za-z0-9_\- ]+$`, message `Card title / ID must use only
+letters, numbers, spaces, underscores, or dashes.`) and rejects more than
+`CARD_UID_MAX_LENGTH = 100` characters after trimming (`Card title / ID must be 100 characters or
+fewer.`). Internal runs of spaces are preserved exactly; only the ends are trimmed. The same
+alphabet also makes a UID unusable as a traversal vector.
+
+Card identity folds ASCII case: `My Card` and `my card` are the same card, the typed casing is
+preserved in the JSON body and the filename, and `areCardUidsEqual` is the one comparison. Two
+files that differ only in case are a known legacy limitation: such a store is not migrated. A
+case-only rename is a filesystem trap — on Windows and macOS both names are the same file — so
+`renameCardDocument` moves the live file to a unique backup, renames a freshly written temp file
+to the new casing, and removes the backup only once the new name exists. A genuinely different
+title is written and the previous file unlinked.
 
 `getCardFilePath` is the single UID-to-path hop and it calls that validator, so every UID-addressed
 card read, existence check, write and delete fails closed on a UID that could escape the store: a
@@ -130,9 +144,9 @@ build boundaries, write a note or touch the store.
 There is no second UID-to-path builder. `listCardDocuments` is the deliberate exception: it
 enumerates files by name and derives each UID from the basename, so a hand-dropped filename outside
 the grammar stays listable; the sync and index rebuild skip such a card instead of failing the
-whole operation, because the guarded builder cannot address it. `cardParser` carries the boundary
-grammar's alphabet, which is the same rule read in the other direction; it is not a validator, and
-the two copies are kept in step by hand until #24 introduces the one shared grammar module.
+whole operation, because the guarded builder cannot address it. `cardParser` builds its two
+boundary patterns from the same `cardUid` alphabet and trims the captured title, so the parser and
+the store really share one grammar rather than two copies kept in step by hand.
 
 The default store is `<vault>/.crashweaver/cards` (`getDefaultCardStorePath`).
 `getCardStoreConfig` returns the per-vault override recorded in `cardStoreByVault` keyed
@@ -152,9 +166,13 @@ numbers to at least `1`, and falls back to a supplied block of text when `raw_co
 
 Writing is `writeCardDocument`, which validates the UID, ensures the directory exists,
 coerces the document and writes it with `writeJsonAtomically`. `createCardDocument`
-produces an empty default card, and `vaultService.createCard` refuses a UID that already
-has a file. `deleteCardDocument` unlinks the file and reports `false` when it was already
-gone. `upsertCardReference` and `removeCardReference` are the two reference-level writes.
+produces an empty default card, and `vaultService.createCard` refuses a title whose case-folded
+form matches an existing card — the message echoes the stored title, not the typed one.
+`renameCardDocument` performs the file move for a rename, including the case-only replacement
+described above; `vaultService.renameCard` adds the folded duplicate check, the boundary rewrites
+and the crashpad updates around it. `deleteCardDocument` unlinks the file and reports `false`
+when it was already gone. `upsertCardReference` and `removeCardReference` are the two
+reference-level writes.
 
 All JSON in the data layer goes through the same atomic writer. Cards, crashpads and settings
 serialise through `writeJsonAtomically` (two-space indentation plus a trailing newline), which
@@ -336,8 +354,8 @@ service branches on that string rather than on message text.
 
 | Invariant                                               | Enforced by                                                                                                                                                                                                                                    |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A UID names at most one card file                       | `getCardFilePath` maps a UID to one `<uid>.json`; `vaultService.createCard` and `renameCard` refuse an existing UID; `listCardDocuments` takes each UID from its filename                                                                      |
-| A UID is filesystem-safe                                | `assertValidCardUid` applies `^[A-Za-z0-9_-]+$` before any path is built from it                                                                                                                                                               |
+| A UID names at most one card file                       | `getCardFilePath` maps a UID to one `<uid>.json`; `vaultService.createCard` and `renameCard` refuse a case-folded duplicate title; `listCardDocuments` takes each UID from its filename                                                        |
+| A UID is filesystem-safe                                | `assertValidCardUid` in `electron/cardUid.ts` applies `^[A-Za-z0-9_\- ]+$` and the 100-character cap before any path is built from it                                                                                                          |
 | A card holds at most one reference per note             | `upsertCardReference` replaces the entry with the same `note_path` instead of appending                                                                                                                                                        |
 | One reference per UID per note                          | `dedupeParsedCards` keeps the first occurrence of a duplicated UID and emits a diagnostic                                                                                                                                                      |
 | Boundaries are paired                                   | `parseCrashCardsFromNote` reports unbalanced or mismatched pairs; `verifyBoundaryIntegrity` refuses to apply a weave operation while error-severity diagnostics exist; `hasBlockingDiagnostics` blocks reference pruning from a malformed note |

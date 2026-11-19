@@ -14,12 +14,13 @@ import {
 import { reinsertCardBoundariesForReferences } from './services/cardRestoreMutationService';
 import { dedupeNoteReferencesByPath } from './services/noteReferenceMutationService';
 import { writeVaultIndex } from './services/vaultIndexService';
+import { areCardUidsEqual, assertValidCardUid } from './cardUid';
 import {
-  assertValidCardUid,
   createCardDocument,
   deleteCardDocument,
   listCardDocuments,
   readCardDocument,
+  renameCardDocument,
   writeCardDocument,
 } from './cardStoreService';
 import { createCrashpad, listCrashpads, readCrashpad, writeCrashpad } from './crashpadService';
@@ -312,8 +313,15 @@ export async function createCard(rootPath: string, uid: string): Promise<CardDoc
   const { cardStore } = await resolveVaultCardStoreContext(rootPath);
   const normalizedUid = assertValidCardUid(uid);
 
-  if (await readCardDocument(cardStore.cardStorePath, normalizedUid)) {
-    throw new Error(`Card ${normalizedUid} already exists.`);
+  // Card identity is case-insensitive: `My Card` and `my card` are the same
+  // card, so the duplicate check folds the store rather than looking up the
+  // exact filename. The error echoes the stored title, not the typed one.
+  const duplicateCard = (await listCardDocuments(cardStore.cardStorePath)).find((storedCard) =>
+    areCardUidsEqual(storedCard.uid, normalizedUid),
+  );
+
+  if (duplicateCard) {
+    throw new Error(`Card ${duplicateCard.uid} already exists.`);
   }
 
   return writeCardDocument(cardStore.cardStorePath, createCardDocument(normalizedUid));
@@ -352,11 +360,22 @@ export async function renameCard(
     };
   }
 
-  if (await readCardDocument(cardStore.cardStorePath, normalizedNextUid)) {
-    throw new Error(`Card ${normalizedNextUid} already exists.`);
+  // Identity folds case, so a rename may only take a title that no *other*
+  // card already owns; the card being renamed is excluded from the check and
+  // the error echoes the stored title of the card that owns it.
+  const duplicateCard = (await listCardDocuments(cardStore.cardStorePath)).find(
+    (storedCard) =>
+      !areCardUidsEqual(storedCard.uid, normalizedPreviousUid) &&
+      areCardUidsEqual(storedCard.uid, normalizedNextUid),
+  );
+
+  if (duplicateCard) {
+    throw new Error(`Card ${duplicateCard.uid} already exists.`);
   }
 
-  const nextCard = await writeCardDocument(cardStore.cardStorePath, {
+  // The store owns the case-only file replacement so the old file is never
+  // unlinked while it is still the live card (see `renameCardDocument`).
+  const nextCard = await renameCardDocument(cardStore.cardStorePath, normalizedPreviousUid, {
     ...card,
     uid: normalizedNextUid,
   });
@@ -370,8 +389,6 @@ export async function renameCard(
     nextUid: normalizedNextUid,
     notePaths: referencedNotePaths,
   });
-
-  await deleteCardDocument(cardStore.cardStorePath, normalizedPreviousUid);
   const updatedCrashpads = await renameCardUidAcrossCrashpads(
     resolvedRoot,
     normalizedPreviousUid,

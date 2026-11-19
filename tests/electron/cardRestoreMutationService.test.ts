@@ -65,4 +65,31 @@ describe('cardRestoreMutationService', () => {
     expect(result.alreadyPresentIn).toBe(0);
     expect(result.skippedNotePaths).toEqual(['notes/topic.md']);
   });
+
+  it('reinsertCardBoundariesForReferences reinserts boundaries for a spaced title', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-restore-mutation-spaced-'));
+    const rootPath = path.join(tempDir, 'vault-root');
+    const cardStorePath = path.join(rootPath, '.crashweaver', 'cards');
+    const notePath = path.join(rootPath, 'notes', 'tcp.md');
+    const uid = 'Three-way handshake';
+
+    await fs.mkdir(path.dirname(notePath), { recursive: true });
+    await fs.mkdir(cardStorePath, { recursive: true });
+    await fs.writeFile(notePath, ['top', 'SYN, SYN-ACK, ACK.', 'bottom'].join('\n'), 'utf8');
+
+    const result = await reinsertCardBoundariesForReferences({
+      rootPath,
+      cardStorePath,
+      uid,
+      rawContent: 'SYN, SYN-ACK, ACK.',
+      references: [{ note_path: 'notes/tcp.md', start_line: 2, end_line: 4 }],
+    });
+
+    expect(result.reinsertedInto).toBe(1);
+    expect(result.skippedNotePaths).toEqual([]);
+
+    const nextContent = await fs.readFile(notePath, 'utf8');
+    expect(nextContent).toContain(formatCardStartBoundary(uid));
+    expect(nextContent).toContain(formatCardEndBoundary(uid));
+  });
 });

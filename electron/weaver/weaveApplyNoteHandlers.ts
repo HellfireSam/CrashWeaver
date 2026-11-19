@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { formatCardEndBoundary, formatCardStartBoundary } from '../cardParser';
-import { assertValidCardUid, cardDocumentExists, getCardFilePath } from '../cardStoreService';
+import { assertValidCardUid } from '../cardUid';
+import { cardDocumentExists, getCardFilePath } from '../cardStoreService';
 import { syncNoteToCardStore } from '../cardSyncService';
 import { getFsErrorCode } from '../utils/fsErrors';
 import { writeJsonAtomically, writeTextAtomically } from '../utils/jsonFile';

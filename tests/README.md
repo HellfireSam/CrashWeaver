@@ -25,7 +25,10 @@ npx vitest run src/lib/markdownPreview.test.ts
 
 Vitest's `include` lists every suite in the repository: the renderer suites beside the modules they
 cover — the pure helpers in `src/lib/` and the first component suite beside
-`src/components/WeaverCardChip.tsx` — and the main-process suites in `tests/electron/`.
+`src/components/WeaverCardChip.tsx` — and the main-process suites in `tests/electron/`. The card
+grammar has its own suites: `tests/electron/cardUid.test.ts` pins the title alphabet, the 100-cap,
+trimming and case-folded identity, and `tests/electron/cardParser.test.ts` pins the boundary
+handling of spaced titles.
 
 | Layer    | Files                                            |
 | -------- | ------------------------------------------------ |
@@ -63,14 +66,21 @@ it where a ticket does.
   `src/components/EditorSurface.tsx` and `src/hooks/useWeaverController.ts` (#15); it added no
   test seam, so those components and hooks stay untested, and no open ticket currently owns adding
   more renderer component tests.
+- **The title inputs and the case-preserving UID labels.** The add-card and editor inputs'
+  `maxLength={100}` and spaced placeholders, the renderer's case-folded attach/duplicate checks in
+  `src/hooks/useCrashpadCardMutationActions.ts`, and the `detailUid` label class are not covered by
+  a unit test — the hooks and components have no test harness. The main-process side of the same
+  rules is covered by the vault and store suites; the DOM behaviour was checked by driving the
+  built app under the headless harness recorded in `.scratch/` (see `.scratch/professional-standard/grilling.md` §10).
 - **The Weaver card chip's three-line clamp and ellipsis.** CSS clamping is not unit-testable
-  (#23), so the chip suite only asserts the rendered text and the `title` tooltip. The manual
-  narrow- and wide-panel visual check the ticket asks for was not run: this environment has no
-  desktop session to launch Electron. No open ticket owns it.
-- **Untested pure renderer helpers.** `src/lib/cards.ts`, `src/lib/crashpadHistory.ts`,
-  `src/lib/errorUtils.ts`, `src/lib/explorerTree.ts` and `src/lib/stateUtils.ts` have no test
-  files of their own; only the `cards.ts` mapping functions are exercised, indirectly through the
-  card-projection suite.
+  (#23), so the chip suite only asserts the rendered text and the `title` tooltip. A headless
+  Electron harness now exists (`.scratch/professional-standard/grilling.md` §10), but the manual
+  narrow- and wide-panel visual check the ticket asked for is still outstanding and no open ticket
+  owns it.
+- **Untested pure renderer helpers.** `src/lib/crashpadHistory.ts`, `src/lib/errorUtils.ts`,
+  `src/lib/explorerTree.ts` and `src/lib/stateUtils.ts` have no test files of their own.
+  `src/lib/cards.ts` has a suite only for its case-folded title comparison; its mapping functions
+  are exercised indirectly through the card-projection suite.
 - **Weaver orchestration — `electron/weaver/weaveService.ts`.** The graph, nodes, providers,
   schema, prompts and context retrieval have suites; the service facade that sequences them and
   owns session history and request logging (`weaverSessionHistory.ts`, `weaveRequestLogger.ts`)
@@ -86,3 +96,8 @@ boundary marker from `create-note` content is accepted. That is deliberate — t
 reference consequence are in
 [ADR-0002](../docs/adr/0002-boundary-markers-optional-in-create-note.md), and the acceptance
 behaviour is pinned by the `weavePlanSchema` characterisation tests rather than left untested.
+
+A second product limitation comes with case-insensitive card identity: a legacy card store that
+already contains two files whose titles differ only in letter case is not migrated or reconciled.
+`createCard` and `renameCard` refuse to add another such pair, and the store's own reads still take
+one UID per filename; #24 records the limitation rather than silently rewriting a user's files.

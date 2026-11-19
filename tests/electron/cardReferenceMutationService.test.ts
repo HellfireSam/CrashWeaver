@@ -84,4 +84,38 @@ describe('cardReferenceMutationService', () => {
     expect(nextContent).not.toContain(start);
     expect(nextContent).not.toContain(end);
   });
+
+  it('renameCardBoundariesAcrossReferences rewrites boundaries for a spaced title', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-ref-mutation-spaced-'));
+    const rootPath = path.join(tempDir, 'vault-root');
+    const cardStorePath = path.join(rootPath, '.crashweaver', 'cards');
+    const notePath = path.join(rootPath, 'notes', 'spaced.md');
+
+    await fs.mkdir(path.dirname(notePath), { recursive: true });
+    await fs.mkdir(cardStorePath, { recursive: true });
+
+    const previousUid = 'My Card';
+    const nextUid = 'my card';
+    await fs.writeFile(
+      notePath,
+      [formatCardStartBoundary(previousUid), 'payload', formatCardEndBoundary(previousUid)].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const updated = await renameCardBoundariesAcrossReferences({
+      rootPath,
+      cardStorePath,
+      previousUid,
+      nextUid,
+      notePaths: ['notes/spaced.md'],
+    });
+
+    expect(updated).toEqual(['notes/spaced.md']);
+    const nextContent = await fs.readFile(notePath, 'utf8');
+    expect(nextContent).toContain(formatCardStartBoundary(nextUid));
+    expect(nextContent).toContain(formatCardEndBoundary(nextUid));
+    expect(nextContent).not.toContain(formatCardStartBoundary(previousUid));
+  });
 });

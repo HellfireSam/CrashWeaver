@@ -424,6 +424,11 @@ body.rowResizeActive * {
   letter-spacing: 0.06em;
 }
 
+/* A UID is the card's title, so it keeps the casing the user typed. */
+.detailUid {
+  text-transform: none;
+}
+
 .detailValue {
   margin: 0.28rem 0 0;
   color: var(--text-muted);

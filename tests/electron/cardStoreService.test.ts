@@ -14,6 +14,7 @@ const {
   getCardFilePath,
   readCardDocument,
   removeCardReference,
+  renameCardDocument,
   upsertCardReference,
   writeCardDocument,
 } = require('../../dist-electron/cardStoreService.js');
@@ -128,5 +129,82 @@ describe('cardStoreService', () => {
 
     expect(await deleteCardDocument(cardStorePath, 'CW-001')).toBe(true);
     expect(await cardDocumentExists(cardStorePath, 'CW-001')).toBe(false);
+  });
+
+  it('writes a title containing spaces to the file named for that title', async () => {
+    const { cardStorePath } = await setupCardStore();
+    const card = { ...createCardDocument('Three-way handshake'), raw_content: 'SYN, SYN-ACK, ACK' };
+
+    const written = await writeCardDocument(cardStorePath, card);
+
+    expect(written.uid).toBe('Three-way handshake');
+    expect(getCardFilePath(cardStorePath, 'Three-way handshake')).toBe(
+      path.join(cardStorePath, 'Three-way handshake.json'),
+    );
+    const onDisk = JSON.parse(
+      await fs.readFile(path.join(cardStorePath, 'Three-way handshake.json'), 'utf8'),
+    );
+    expect(onDisk.uid).toBe('Three-way handshake');
+    expect(await readCardDocument(cardStorePath, 'Three-way handshake')).toEqual(written);
+  });
+
+  it('trims a UID before naming the file and storing the body', async () => {
+    const { cardStorePath } = await setupCardStore();
+
+    const written = await writeCardDocument(cardStorePath, {
+      ...createCardDocument('My Card'),
+      uid: '  My Card  ',
+    });
+
+    expect(written.uid).toBe('My Card');
+    expect(await fs.readdir(cardStorePath)).toEqual(['My Card.json']);
+    const onDisk = JSON.parse(await fs.readFile(path.join(cardStorePath, 'My Card.json'), 'utf8'));
+    expect(onDisk.uid).toBe('My Card');
+  });
+
+  it('rejects a title longer than the maximum before writing anything', async () => {
+    const { cardStorePath } = await setupCardStore();
+    const tooLongCard = { ...createCardDocument('CW-001'), uid: 'a'.repeat(101) };
+
+    await expect(writeCardDocument(cardStorePath, tooLongCard)).rejects.toThrow(
+      'Card title / ID must be 100 characters or fewer.',
+    );
+    expect(await fs.readdir(cardStorePath)).toEqual([]);
+  });
+
+  it('renames a card to a genuinely different title and removes the previous file', async () => {
+    const { cardStorePath } = await setupCardStore();
+    const card = createCardDocument('Three-way handshake');
+    await writeCardDocument(cardStorePath, card);
+
+    const renamed = await renameCardDocument(cardStorePath, 'Three-way handshake', {
+      ...card,
+      uid: 'Three-way handshake revisited',
+    });
+
+    expect(renamed.uid).toBe('Three-way handshake revisited');
+    expect(await fs.readdir(cardStorePath)).toEqual(['Three-way handshake revisited.json']);
+    const onDisk = JSON.parse(
+      await fs.readFile(path.join(cardStorePath, 'Three-way handshake revisited.json'), 'utf8'),
+    );
+    expect(onDisk.uid).toBe('Three-way handshake revisited');
+  });
+
+  it('renames a card whose title differs only in case without losing it', async () => {
+    const { cardStorePath } = await setupCardStore();
+    const card = createCardDocument('My Card');
+    await writeCardDocument(cardStorePath, card);
+
+    const renamed = await renameCardDocument(cardStorePath, 'My Card', {
+      ...card,
+      uid: 'my card',
+    });
+
+    expect(renamed.uid).toBe('my card');
+    // Exactly one card file, named with the new casing. On a case-insensitive
+    // filesystem the unlink the naive rename would do would delete this file.
+    expect(await fs.readdir(cardStorePath)).toEqual(['my card.json']);
+    const onDisk = JSON.parse(await fs.readFile(path.join(cardStorePath, 'my card.json'), 'utf8'));
+    expect(onDisk.uid).toBe('my card');
   });
 });
